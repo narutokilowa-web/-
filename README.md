@@ -7,9 +7,10 @@
 
 ## الحالة
 
-**المرحلة الحالية: مواصفات المنتج والمعمارية — بانتظار الموافقة قبل التنفيذ.**
+**المرحلة الحالية: مواصفات Lean Pilot — بانتظار الموافقة قبل كتابة أي كود.**
 
-📄 [وثيقة Product + Architecture Specification](docs/spec/README.md)
+- 📄 [المواصفات طويلة المدى (Product + Architecture Specification)](docs/spec/README.md) — معتمدة
+- 🧪 [Lean Pilot Specification — Street Light Vertical Slice](docs/lean-pilot/README.md) — بانتظار الموافقة
 
 ## البنية المخططة للمستودع
 
@@ -22,4 +23,4 @@ deploy/    Docker Compose، إعدادات البنية
 tools/     البذور، طباعة ملصقات QR، أداة التحقق من سلسلة التدقيق
 ```
 
-(المجلدات عدا `docs/` تُنشأ في Phase 0 بعد الموافقة.)
+(المجلدات عدا `docs/` تُنشأ في M0 من الـ Lean Pilot بعد الموافقة.)
