@@ -7,6 +7,7 @@ public sealed class AccessDbContext(DbContextOptions<AccessDbContext> options) :
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>();
+    public DbSet<Device> Devices => Set<Device>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +35,23 @@ public sealed class AccessDbContext(DbContextOptions<AccessDbContext> options) :
             b.Property(x => x.GrantReason).HasMaxLength(500).IsRequired();
             b.Property(x => x.RevokeReason).HasMaxLength(500);
             b.HasIndex(x => new { x.UserId, x.Role });
+        });
+
+        modelBuilder.Entity<Device>(b =>
+        {
+            b.ToTable("devices");
+            b.HasKey(x => x.Id);
+            b.Ignore(x => x.IsActive);
+            b.Property(x => x.Platform).HasMaxLength(20).IsRequired();
+            b.Property(x => x.Model).HasMaxLength(100).IsRequired();
+            b.Property(x => x.OsVersion).HasMaxLength(50).IsRequired();
+            b.Property(x => x.AppVersion).HasMaxLength(30).IsRequired();
+            b.Property(x => x.Status).HasMaxLength(20).IsRequired();
+            b.Property(x => x.DecisionReason).HasMaxLength(500);
+            b.Property(x => x.RevokeReason).HasMaxLength(500);
+            b.Property(x => x.Version).IsConcurrencyToken();
+            b.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            b.HasIndex(x => new { x.UserId, x.Status });
         });
     }
 }

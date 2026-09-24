@@ -64,6 +64,14 @@
       "roles": [
         "INSPECTOR"
       ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000009",
+      "username": "tech2",
+      "displayName": "فني تجريبي ٢",
+      "roles": [
+        "TECHNICIAN"
+      ]
     }
   ]
 }

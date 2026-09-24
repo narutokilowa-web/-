@@ -107,3 +107,123 @@ export interface HistoryEntry {
   reason: string | null;
   hash: string;
 }
+
+/** Mirrors Mfop.Access.Contracts.DeviceDto. */
+export interface Device {
+  id: string;
+  userId: string;
+  userDisplayName: string;
+  username: string;
+  platform: string;
+  model: string;
+  osVersion: string;
+  appVersion: string;
+  status: 'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED' | 'REVOKED';
+  requestedAt: string;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionReason: string | null;
+  revokedByName: string | null;
+  revokedAt: string | null;
+  revokeReason: string | null;
+  lastPullAt: string | null;
+  lastPushAt: string | null;
+  lastReportedPendingCommands: number | null;
+}
+
+export const FAULT_CATEGORIES = ['LIGHT_OFF', 'FLICKERING', 'DAY_BURNING', 'DAMAGED_POLE', 'EXPOSED_WIRES', 'MISSING_PARTS', 'OTHER'] as const;
+export const POWER_AT_INSPECTION = ['CONFIRMED_AVAILABLE', 'CONFIRMED_UNAVAILABLE', 'UNKNOWN'] as const;
+export const POWER_INFO_SOURCES = ['OBSERVED_ON_SITE', 'ELECTRICITY_AUTHORITY', 'SCHEDULE', 'RESIDENT', 'OTHER'] as const;
+export const DISMISS_REASONS = ['DUPLICATE', 'NOT_A_FAULT', 'POWER_UNAVAILABLE_AT_REPORT', 'OUT_OF_MUNICIPAL_RESPONSIBILITY', 'OTHER'] as const;
+export const PRIORITIES = ['P1', 'P2', 'P3', 'P4'] as const;
+
+export interface ReportFaultRequest {
+  assetId: string;
+  category: (typeof FAULT_CATEGORIES)[number];
+  powerAtInspection: (typeof POWER_AT_INSPECTION)[number];
+  powerInfoSource: (typeof POWER_INFO_SOURCES)[number] | null;
+  powerNote: string | null;
+  description: string | null;
+}
+
+export interface Fault {
+  id: string;
+  assetId: string;
+  assetCode: string | null;
+  assetAddress: string | null;
+  category: string;
+  source: string;
+  reportedBy: string;
+  reportedByName: string;
+  reportedAt: string;
+  powerAtInspection: string;
+  powerInfoSource: string | null;
+  powerNote: string | null;
+  reportedWithoutPower: boolean;
+  responsibleParty: string;
+  description: string | null;
+  state: 'OPEN' | 'IN_WORK_ORDER' | 'RESOLVED' | 'DISMISSED';
+  workOrderId: string | null;
+  dismissReason: string | null;
+  dismissNote: string | null;
+  dismissedByName: string | null;
+  dismissedAt: string | null;
+  confirmationCount: number;
+  confirmations: { id: string; confirmedByName: string; at: string; powerAtInspection: string; powerInfoSource: string | null; description: string | null }[];
+}
+
+export interface AssetSummary {
+  id: string;
+  assetCode: string | null;
+  lifecycleState: string;
+  operationalStatus: string | null;
+  powerSource: string;
+  responsibleParty: string;
+  responsibleEntityName: string | null;
+  addressText: string | null;
+  latitude: number;
+  longitude: number;
+}
+
+export interface WorkOrderListItem {
+  id: string;
+  code: string;
+  state: string;
+  priority: string;
+  assetId: string;
+  assetCode: string | null;
+  assetAddress: string | null;
+  faultCategory: string;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  createdAt: string;
+  slaDueAt: string | null;
+}
+
+export interface WorkOrder {
+  id: string;
+  code: string;
+  state: string;
+  priority: string;
+  slaDueAt: string | null;
+  note: string | null;
+  faultId: string;
+  faultCategory: string;
+  faultState: string;
+  asset: AssetSummary | null;
+  assigneeId: string | null;
+  assigneeName: string | null;
+  createdByName: string;
+  createdAt: string;
+  cancelReason: string | null;
+  cancelledAt: string | null;
+  assignments: { id: string; assigneeId: string; assigneeName: string; state: string; startedAt: string; startedByName: string; endedAt: string | null; endReason: string | null }[];
+  allowedCommands: string[];
+}
+
+export interface Technician {
+  userId: string;
+  displayName: string;
+  username: string;
+  hasActiveDevice: boolean;
+}

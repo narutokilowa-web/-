@@ -77,3 +77,17 @@ textarea { min-height: 70px; }
   .label-page { padding: 0; }
   .label { border: none; }
 }
+
+/* M2: triage panels, filters, device and work-order states */
+.panel { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-block: 12px; background: var(--card); display: flex; flex-direction: column; gap: 8px; }
+.panel h3 { margin: 0 0 4px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px 12px; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.row-actions input { min-width: 12rem; }
+button.danger { border-color: var(--danger); color: var(--danger); }
+.badge.warn { background: #fff4d6; color: #7a5300; }
+.badge.device-ACTIVE, .badge.wo-ASSIGNED, .badge.fault-IN_WORK_ORDER { background: #e3f3e6; color: #1b5e20; }
+.badge.device-PENDING_APPROVAL, .badge.wo-NEW, .badge.fault-OPEN { background: #fff4d6; color: #7a5300; }
+.badge.device-REVOKED, .badge.device-REJECTED, .badge.wo-CANCELLED, .badge.fault-DISMISSED { background: #f6e0e0; color: #8a1c1c; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; }

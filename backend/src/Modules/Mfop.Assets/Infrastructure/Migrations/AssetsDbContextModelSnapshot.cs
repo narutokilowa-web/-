@@ -25,6 +25,57 @@ namespace Mfop.Assets.Infrastructure.Migrations
 
             modelBuilder.HasSequence("street_light_code_seq");
 
+            modelBuilder.Entity("Mfop.Assets.Domain.AssetStatusEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<Guid>("CauseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cause_id");
+
+                    b.Property<string>("CauseType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("cause_type");
+
+                    b.Property<string>("FromStatus")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("from_status");
+
+                    b.Property<string>("ToStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("to_status");
+
+                    b.Property<string>("TransitionId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("transition_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_asset_status_events");
+
+                    b.HasIndex("AssetId", "At")
+                        .HasDatabaseName("ix_asset_status_events_asset_id_at");
+
+                    b.ToTable("asset_status_events", "assets");
+                });
+
             modelBuilder.Entity("Mfop.Assets.Domain.AssetVersion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -390,6 +441,16 @@ namespace Mfop.Assets.Infrastructure.Migrations
                         .HasDatabaseName("ix_tags_code");
 
                     b.ToTable("tags", "assets");
+                });
+
+            modelBuilder.Entity("Mfop.Assets.Domain.AssetStatusEvent", b =>
+                {
+                    b.HasOne("Mfop.Assets.Domain.StreetLight", null)
+                        .WithMany()
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_asset_status_events_street_lights_asset_id");
                 });
 
             modelBuilder.Entity("Mfop.Assets.Domain.AssetVersion", b =>

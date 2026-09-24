@@ -118,6 +118,11 @@ public sealed class UnitOfWork(
                 throw new InvalidOperationException($"DELETE_FORBIDDEN: {entry.Metadata.ClrType.Name} rows are never deleted.");
             }
 
+            if (entry.Entity is IAuditExempt)
+            {
+                continue; // technical receipt/telemetry row (see IAuditExempt); never business state
+            }
+
             if (entry.Entity is not IAuditable auditable)
             {
                 throw new AuditMissingException($"{entry.Metadata.ClrType.Name} is persisted but does not implement IAuditable.");

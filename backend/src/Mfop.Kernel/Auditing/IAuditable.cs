@@ -19,3 +19,10 @@ public interface IAuditTrail
     /// <param name="extra">Additional recorded facts (key → value). Values must be string, bool, integer or null.</param>
     void Record(IAuditable entity, string action, string? reason = null, IReadOnlyDictionary<string, object?>? extra = null);
 }
+
+/// <summary>
+/// Technical records that are NOT business state and therefore carry no audit event of their own:
+/// sync receipts (the applied command's own audit events carry its command_id) and device sync telemetry.
+/// Allowed only on the types listed in Mfop.Architecture.Tests (AuditExemptAllowList); everything else must be IAuditable.
+/// </summary>
+public interface IAuditExempt;

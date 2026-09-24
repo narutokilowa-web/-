@@ -8,7 +8,11 @@ terminal: [RESOLVED, DISMISSED]
 transitions:
   - {id: F1, from: [_start], command: ReportFault, to: OPEN, actor: SUPERVISOR,
      requires: [asset_active, category, power_observation], effects: [asset_status_faulty_if_power_not_unavailable]}
-  - {id: F2, from: [OPEN, IN_WORK_ORDER], command: ConfirmFault, to: OPEN, actor: SUPERVISOR,
+  # A duplicate report never changes the fault's state (it is recorded as a FaultConfirmation). M2 fix: F2 used to
+  # send IN_WORK_ORDER back to OPEN, which would have detached the fault from its work order; F7 keeps the state.
+  - {id: F2, from: [OPEN], command: ConfirmFault, to: OPEN, actor: SUPERVISOR,
+     requires: [same_asset_same_category_open_fault]}
+  - {id: F7, from: [IN_WORK_ORDER], command: ConfirmFault, to: IN_WORK_ORDER, actor: SUPERVISOR,
      requires: [same_asset_same_category_open_fault]}
   - {id: F3, from: [OPEN], command: DismissFault, to: DISMISSED, actor: SUPERVISOR, requires: [dismiss_reason]}
   - {id: F4, from: [OPEN], command: OnWorkOrderCreated, to: IN_WORK_ORDER, actor: system}

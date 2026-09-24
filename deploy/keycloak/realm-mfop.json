@@ -253,6 +253,23 @@
         }
       ],
       "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000009",
+      "username": "tech2",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "tech2@dev.mfop.invalid",
+      "firstName": "Technician",
+      "lastName": "Two",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
     }
   ]
 }

@@ -18,7 +18,14 @@ public class ModuleBoundaryTests
         typeof(Mfop.Evidence.EvidenceModule).Assembly,
         typeof(Mfop.Inventory.InventoryModule).Assembly,
         typeof(Mfop.Audit.AuditModule).Assembly,
+        typeof(Mfop.Sync.SyncModule).Assembly,
     ];
+
+    /// <summary>
+    /// The only persisted types allowed to skip the per-change audit event (Kernel.Auditing.IAuditExempt):
+    /// technical sync receipts and device sync telemetry. Business state must always be IAuditable.
+    /// </summary>
+    private static readonly string[] AuditExemptAllowList = ["Mfop.Sync.Domain.SyncCommand", "Mfop.Sync.Domain.DeviceSyncState"];
 
     public static TheoryData<string> ModuleNames()
     {
@@ -50,7 +57,7 @@ public class ModuleBoundaryTests
     {
         var result = Types.InAssembly(typeof(Mfop.Kernel.ModuleInfo).Assembly)
             .ShouldNot().HaveDependencyOnAny(
-                "Mfop.Access", "Mfop.Assets", "Mfop.Faults", "Mfop.WorkOrders", "Mfop.Evidence", "Mfop.Inventory", "Mfop.Audit",
+                "Mfop.Access", "Mfop.Assets", "Mfop.Faults", "Mfop.WorkOrders", "Mfop.Evidence", "Mfop.Inventory", "Mfop.Audit", "Mfop.Sync",
                 "Mfop.Infrastructure", "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
             .GetResult();
         Assert.True(result.IsSuccessful, Failing(result));
@@ -79,5 +86,15 @@ public class ModuleBoundaryTests
             .OfType<Mfop.Kernel.ModuleInfo>()
             .Single();
         Assert.Matches("^[a-z]+$", info.Schema);
+    }
+
+    [Fact]
+    public void Only_allow_listed_technical_records_are_exempt_from_audit()
+    {
+        var exempt = Modules.SelectMany(m => m.GetTypes())
+            .Where(t => typeof(Mfop.Kernel.Auditing.IAuditExempt).IsAssignableFrom(t) && t.IsClass)
+            .Select(t => t.FullName!)
+            .Order();
+        Assert.Equal(AuditExemptAllowList.Order(), exempt);
     }
 }

@@ -41,19 +41,27 @@
     "home": "الرئيسية",
     "registrations": "التسجيلات",
     "newRegistration": "تسجيل عمود",
-    "assets": "الأصول"
+    "assets": "الأصول",
+    "faults": "الأعطال",
+    "workOrders": "أوامر العمل",
+    "devices": "الأجهزة"
   },
   "home": {
     "register": "تسجيل عمود إنارة جديد",
     "myRegistrations": "تسجيلاتي",
     "approvalQueue": "طابور الاعتماد",
-    "assets": "أعمدة الإنارة المعتمدة"
+    "assets": "أعمدة الإنارة المعتمدة",
+    "openFaults": "أعطال بانتظار الفرز",
+    "unassignedWorkOrders": "أوامر عمل غير مُسندة",
+    "pendingDevices": "أجهزة بانتظار الموافقة",
+    "technicianUsesPhone": "مهامك تظهر في تطبيق الهاتف (مهامي)."
   },
   "common": {
     "notFound": "الصفحة غير موجودة",
     "all": "الكل",
     "empty": "لا توجد عناصر.",
-    "search": "بحث"
+    "search": "بحث",
+    "open": "فتح"
   },
   "field": {
     "reason": "سبب التسجيل",
@@ -80,7 +88,15 @@
     "solarControllerModel": "طراز منظم الشحن",
     "warrantyUntil": "الضمان حتى",
     "supplier": "المورد",
-    "solar": "حقول الطاقة الشمسية"
+    "solar": "حقول الطاقة الشمسية",
+    "category": "نوع العطل",
+    "powerAtInspection": "الكهرباء لحظة الإبلاغ",
+    "powerInfoSource": "مصدر معلومة الكهرباء",
+    "description": "الوصف",
+    "platform": "النظام",
+    "model": "الجهاز",
+    "osVersion": "إصدار النظام",
+    "appVersion": "إصدار التطبيق"
   },
   "reason": {
     "BASELINE_SURVEY": "جرد أساسي",
@@ -196,7 +212,26 @@
     "registration.rejected": "رفض التسجيل",
     "street_light.registration_rejected": "رفض سجل العمود",
     "registration.discarded": "إلغاء المسودة",
-    "street_light.registration_discarded": "إلغاء سجل العمود"
+    "street_light.registration_discarded": "إلغاء سجل العمود",
+    "device.registered": "تسجيل جهاز",
+    "device.superseded": "استبدال طلب جهاز",
+    "device.approved": "الموافقة على جهاز",
+    "device.rejected": "رفض جهاز",
+    "device.revoked": "إلغاء جهاز",
+    "fault.reported": "الإبلاغ عن عطل",
+    "fault.confirmed": "تأكيد عطل مفتوح",
+    "fault_confirmation.recorded": "تسجيل تأكيد",
+    "fault.dismissed": "إغلاق بلاغ دون عمل",
+    "fault.in_work_order": "ربط العطل بأمر عمل",
+    "fault.reopened_after_cancellation": "إعادة فتح العطل بعد إلغاء أمر العمل",
+    "street_light.operational_status_changed": "تغيّر الحالة التشغيلية",
+    "asset_status_event.recorded": "تسجيل حدث حالة",
+    "work_order.created": "إنشاء أمر عمل",
+    "work_order.assigned": "إسناد أمر العمل",
+    "work_order.reassigned": "إعادة إسناد أمر العمل",
+    "work_order.cancelled": "إلغاء أمر العمل",
+    "work_order_assignment.started": "بدء إسناد",
+    "work_order_assignment.ended": "انتهاء إسناد"
   },
   "error": {
     "SOD_VIOLATION": "لا يمكن لمن سجّل العمود أن يتخذ القرار بشأنه.",
@@ -209,6 +244,157 @@
     "ASSET_NOT_FOUND": "الأصل غير موجود.",
     "TAG_NOT_FOUND": "لا يوجد أصل فعّال لهذا الملصق.",
     "NOT_REGISTRAR": "فقط مسجّل هذا الطلب يستطيع ذلك.",
-    "CONCURRENCY_CONFLICT": "تغيّر السجل من شخص آخر. أعد التحميل وحاول مجددًا."
+    "CONCURRENCY_CONFLICT": "تغيّر السجل من شخص آخر. أعد التحميل وحاول مجددًا.",
+    "DEVICE_REQUIRED": "يلزم جهاز معتمد.",
+    "DEVICE_NOT_FOUND": "جهاز غير معروف.",
+    "DEVICE_NOT_APPROVED": "الجهاز بانتظار الموافقة.",
+    "DEVICE_REJECTED": "رُفض الجهاز.",
+    "DEVICE_REVOKED": "أُلغي الجهاز.",
+    "ASSET_NOT_ACTIVE": "النقطة غير معتمدة (ليست فعّالة).",
+    "ASSIGNEE_NO_ACTIVE_DEVICE": "لا يملك الفني جهازًا معتمدًا وفعّالًا.",
+    "ASSIGNEE_NOT_TECHNICIAN": "المستخدم ليس فنيًا.",
+    "ASSIGNEE_DISABLED": "المستخدم معطّل.",
+    "ASSIGNEE_NOT_FOUND": "مستخدم غير موجود.",
+    "WORK_ORDER_EXISTS": "لهذا العطل أمر عمل مفتوح.",
+    "INVALID_PRIORITY": "أولوية غير صالحة.",
+    "REASON_REQUIRED": "السبب إلزامي.",
+    "SAME_ASSIGNEE": "أمر العمل مُسند لهذا الفني أصلًا.",
+    "INVALID_DISMISS_REASON": "اختر سببًا من القائمة.",
+    "INVALID_FAULT": "بيانات البلاغ غير صالحة.",
+    "FAULT_NOT_FOUND": "العطل غير موجود.",
+    "WORK_ORDER_NOT_FOUND": "أمر العمل غير موجود.",
+    "NOT_ASSIGNEE": "أمر العمل غير مُسند إليك.",
+    "VALIDATION_FAILED": "بيانات غير صالحة."
+  },
+  "device": {
+    "title": "أجهزة الموظفين",
+    "byodHint": "الهواتف شخصية: الإلغاء يتم من الخادم فقط، ويُرفض الجهاز في طلبه التالي. لا يُحذف أو يُقرأ أي شيء على هاتف الموظف.",
+    "user": "الموظف",
+    "model": "الجهاز",
+    "status": "الحالة",
+    "requestedAt": "تاريخ الطلب",
+    "lastSync": "آخر مزامنة",
+    "decision": "القرار",
+    "pending": "{{count}} بانتظار الإرسال",
+    "revokedBy": "أُلغي بواسطة {{name}}",
+    "reason": "السبب (إلزامي للرفض والإلغاء)",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "revoke": "إلغاء الجهاز"
+  },
+  "deviceStatus": {
+    "PENDING_APPROVAL": "بانتظار الموافقة",
+    "ACTIVE": "فعّال",
+    "REJECTED": "مرفوض",
+    "REVOKED": "ملغى"
+  },
+  "deviceReason": {
+    "REPLACED": "استُبدل بجهاز جديد",
+    "SUPERSEDED_BY_NEW_REGISTRATION": "طلب أحدث من الموظف نفسه"
+  },
+  "fault": {
+    "reportTitle": "الإبلاغ عن عطل",
+    "category": "نوع العطل",
+    "powerQuestion": "هل كانت الكهرباء العامة متوفرة لحظة الإبلاغ؟",
+    "powerSource": "مصدر معلومة الكهرباء",
+    "description": "الوصف",
+    "report": "إرسال البلاغ",
+    "result": {
+      "CREATED": "سُجّل عطل جديد.",
+      "CONFIRMED_EXISTING": "يوجد عطل مفتوح من النوع نفسه: سُجّل البلاغ تأكيدًا له."
+    },
+    "state": "الحالة",
+    "power": "الكهرباء لحظة الإبلاغ",
+    "reportedBy": "المُبلِّغ",
+    "reportedAt": "وقت الإبلاغ",
+    "confirmations": "{{count}} تأكيد",
+    "noPowerBadge": "الكهرباء كانت مقطوعة عند الإبلاغ",
+    "listTitle": "الأعطال",
+    "detailTitle": "عطل",
+    "dismissReason": "سبب الإغلاق",
+    "confirmationsTitle": "التأكيدات",
+    "dismiss": "إغلاق البلاغ دون أمر عمل",
+    "dismissNote": "ملاحظة (إلزامية عند اختيار «أخرى»)",
+    "assetFaults": "أعطال هذه النقطة"
+  },
+  "faultCategory": {
+    "LIGHT_OFF": "لا تضيء",
+    "FLICKERING": "وميض متقطع",
+    "DAY_BURNING": "تضيء نهارًا",
+    "DAMAGED_POLE": "عمود متضرر",
+    "EXPOSED_WIRES": "أسلاك مكشوفة",
+    "MISSING_PARTS": "قطع مفقودة",
+    "OTHER": "أخرى"
+  },
+  "faultState": {
+    "OPEN": "مفتوح",
+    "IN_WORK_ORDER": "ضمن أمر عمل",
+    "RESOLVED": "مُعالَج",
+    "DISMISSED": "مُغلق دون عمل"
+  },
+  "power": {
+    "CONFIRMED_AVAILABLE": "متوفرة (مؤكد)",
+    "CONFIRMED_UNAVAILABLE": "مقطوعة (مؤكد)",
+    "UNKNOWN": "غير معروف"
+  },
+  "powerSourceInfo": {
+    "OBSERVED_ON_SITE": "مشاهدة في الموقع",
+    "ELECTRICITY_AUTHORITY": "جهة الكهرباء",
+    "SCHEDULE": "جدول التقنين",
+    "RESIDENT": "أحد السكان",
+    "OTHER": "أخرى"
+  },
+  "dismissReason": {
+    "DUPLICATE": "مكرر",
+    "NOT_A_FAULT": "ليس عطلًا",
+    "POWER_UNAVAILABLE_AT_REPORT": "الكهرباء كانت مقطوعة",
+    "OUT_OF_MUNICIPAL_RESPONSIBILITY": "خارج مسؤولية البلدية",
+    "OTHER": "أخرى"
+  },
+  "priority": {
+    "P1": "P1 عاجل جدًا",
+    "P2": "P2 عاجل",
+    "P3": "P3 عادي",
+    "P4": "P4 منخفض"
+  },
+  "workOrder": {
+    "title": "أمر العمل",
+    "create": "إنشاء أمر عمل",
+    "priority": "الأولوية",
+    "note": "ملاحظة",
+    "listTitle": "أوامر العمل",
+    "code": "الرقم",
+    "state": "الحالة",
+    "assignee": "الفني المُسند",
+    "createdAt": "تاريخ الإنشاء",
+    "sla": "موعد الإنجاز",
+    "noSla": "لم تُحدَّد مهل الإنجاز بعد (إعداد)",
+    "createdBy": "أنشأه",
+    "cancelReason": "سبب الإلغاء",
+    "technician": "الفني",
+    "noActiveDevice": "لا يوجد جهاز معتمد",
+    "reason": "السبب (إلزامي لإعادة الإسناد والإلغاء)",
+    "assign": "إسناد",
+    "reassign": "إعادة إسناد",
+    "cancel": "إلغاء أمر العمل",
+    "assignHint": "يُسند أمر العمل فقط لفني لديه جهاز معتمد وفعّال.",
+    "assignments": "الإسنادات",
+    "startedAt": "بدأ",
+    "endedAt": "انتهى",
+    "timeline": "السجل التاريخي"
+  },
+  "workOrderState": {
+    "NEW": "جديد",
+    "ASSIGNED": "مُسند",
+    "ON_SITE": "في الموقع",
+    "IN_PROGRESS": "قيد التنفيذ",
+    "PENDING_REVIEW": "بانتظار المراجعة",
+    "RETURNED": "مُعاد",
+    "CLOSED": "مغلق",
+    "CANCELLED": "ملغى"
+  },
+  "assignmentState": {
+    "ACTIVE": "فعّال",
+    "ENDED": "منتهٍ"
   }
 }

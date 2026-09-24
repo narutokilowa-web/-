@@ -13,6 +13,7 @@
     <ProjectReference Include="..\Modules\Mfop.Evidence\Mfop.Evidence.csproj" />
     <ProjectReference Include="..\Modules\Mfop.Inventory\Mfop.Inventory.csproj" />
     <ProjectReference Include="..\Modules\Mfop.Audit\Mfop.Audit.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Sync\Mfop.Sync.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />

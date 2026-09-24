@@ -9,6 +9,8 @@
     <PackageReference Include="coverlet.collector" />
     <ProjectReference Include="..\..\src\Modules\Mfop.Assets\Mfop.Assets.csproj" />
     <ProjectReference Include="..\..\src\Modules\Mfop.Access\Mfop.Access.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Mfop.Faults\Mfop.Faults.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Mfop.WorkOrders\Mfop.WorkOrders.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

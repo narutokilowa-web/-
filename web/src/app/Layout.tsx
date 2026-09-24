@@ -23,6 +23,9 @@ export function Layout({ environment, onLogout, children }: { environment: strin
             {hasRole(session, 'REGISTRAR', 'APPROVER', 'AUDITOR') && <NavLink to="/registrations" end>{t('nav.registrations')}</NavLink>}
             {hasRole(session, 'REGISTRAR') && <NavLink to="/registrations/new" data-testid="nav-new-registration">{t('nav.newRegistration')}</NavLink>}
             {hasRole(session, 'TECHNICIAN', 'INSPECTOR', 'SUPERVISOR', 'REGISTRAR', 'APPROVER', 'AUDITOR') && <NavLink to="/assets">{t('nav.assets')}</NavLink>}
+            {hasRole(session, 'SUPERVISOR', 'AUDITOR') && <NavLink to="/faults" data-testid="nav-faults">{t('nav.faults')}</NavLink>}
+            {hasRole(session, 'SUPERVISOR', 'AUDITOR') && <NavLink to="/work-orders" data-testid="nav-work-orders">{t('nav.workOrders')}</NavLink>}
+            {hasRole(session, 'SUPERVISOR', 'ADMIN') && <NavLink to="/devices" data-testid="nav-devices">{t('nav.devices')}</NavLink>}
           </nav>
         )}
         <div className="topbar-end">

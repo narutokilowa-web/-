@@ -1,4 +1,5 @@
 using Mfop.Assets.Application;
+using Mfop.Assets.Contracts;
 using Mfop.Assets.Domain;
 using Mfop.Assets.Infrastructure;
 using Mfop.Infrastructure;
@@ -22,6 +23,8 @@ public static class AssetsModule
         services.Configure<TagOptions>(configuration.GetSection("Tags"));
         services.AddScoped<RegistrationCommands>();
         services.AddScoped<AssetQueries>();
+        services.AddScoped<IAssetDirectory, AssetDirectory>();
+        services.AddScoped<IAssetStatusEvents, AssetStatusEvents>();
         return services;
     }
 }

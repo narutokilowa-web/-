@@ -1,6 +1,8 @@
 using Mfop.Access.Contracts;
 using Mfop.Access.Domain;
 using Mfop.Assets.Domain;
+using Mfop.Faults.Domain;
+using Mfop.WorkOrders.Domain;
 using Mfop.Kernel.StateMachines;
 
 namespace Mfop.SpecFiles.Tests;
@@ -11,13 +13,21 @@ namespace Mfop.SpecFiles.Tests;
 /// </summary>
 public class StateMachineConformanceTests
 {
-    public static TheoryData<string> Implemented() => new(["registration.yaml", "asset-lifecycle.yaml", "asset-operational-status.yaml"]);
+    public static TheoryData<string> Implemented() => new(
+    [
+        "registration.yaml", "asset-lifecycle.yaml", "asset-operational-status.yaml",
+        "device.yaml", "fault.yaml", "work-order.yaml", "assignment.yaml",
+    ]);
 
     private static StateMachine CodeFor(string file) => file switch
     {
         "registration.yaml" => AssetStateMachines.Registration,
         "asset-lifecycle.yaml" => AssetStateMachines.AssetLifecycle,
         "asset-operational-status.yaml" => AssetStateMachines.AssetOperationalStatus,
+        "device.yaml" => AccessStateMachines.Device,
+        "fault.yaml" => FaultStateMachines.Fault,
+        "work-order.yaml" => WorkOrderStateMachines.WorkOrder,
+        "assignment.yaml" => WorkOrderStateMachines.Assignment,
         _ => throw new ArgumentException(file),
     };
 
@@ -75,7 +85,11 @@ public class StateMachineConformanceTests
     [Fact]
     public void Terminal_states_accept_no_command()
     {
-        foreach (var code in new[] { AssetStateMachines.Registration, AssetStateMachines.AssetLifecycle })
+        foreach (var code in new[]
+                 {
+                     AssetStateMachines.Registration, AssetStateMachines.AssetLifecycle, AccessStateMachines.Device, FaultStateMachines.Fault,
+                     WorkOrderStateMachines.WorkOrder, WorkOrderStateMachines.Assignment,
+                 })
         {
             foreach (var terminal in code.Terminal)
             {

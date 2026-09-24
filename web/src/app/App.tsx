@@ -14,6 +14,11 @@ import { AssetListPage } from '../features/assets/AssetListPage';
 import { AssetPage } from '../features/assets/AssetPage';
 import { LabelPage } from '../features/assets/LabelPage';
 import { TagResolvePage } from '../features/assets/TagResolvePage';
+import { DevicesPage } from '../features/devices/DevicesPage';
+import { FaultListPage } from '../features/faults/FaultListPage';
+import { FaultDetailPage } from '../features/faults/FaultDetailPage';
+import { WorkOrderListPage } from '../features/workorders/WorkOrderListPage';
+import { WorkOrderDetailPage } from '../features/workorders/WorkOrderDetailPage';
 
 export const RETURN_PATH_KEY = 'mfop.returnPath';
 
@@ -86,6 +91,11 @@ export function App({ config }: { config: RuntimeConfig }) {
                   <Route path="/assets" element={<AssetListPage />} />
                   <Route path="/assets/:id" element={<AssetPage />} />
                   <Route path="/t/:token" element={<TagResolvePage />} />
+                  <Route path="/devices" element={<DevicesPage />} />
+                  <Route path="/faults" element={<FaultListPage />} />
+                  <Route path="/faults/:id" element={<FaultDetailPage />} />
+                  <Route path="/work-orders" element={<WorkOrderListPage />} />
+                  <Route path="/work-orders/:id" element={<WorkOrderDetailPage />} />
                   <Route path="*" element={<p>{t('common.notFound')}</p>} />
                 </Routes>
               </Layout>

@@ -10,7 +10,8 @@ using Microsoft.Extensions.Options;
 
 namespace Mfop.Assets.Application;
 
-public sealed class AssetQueries(AssetsDbContext db, IUserDirectory users, IAuditQueries auditQueries, IOptions<TagOptions> tagOptions)
+public sealed class AssetQueries(
+    AssetsDbContext db, IUserDirectory users, IAuditQueries auditQueries, IOptions<TagOptions> tagOptions, IEnumerable<IAssetRelatedHistory> relatedHistory)
 {
     public async Task<IReadOnlyList<RegistrationDto>> ListRegistrationsAsync(ActorContext actor, string? state, CancellationToken ct)
     {
@@ -82,7 +83,7 @@ public sealed class AssetQueries(AssetsDbContext db, IUserDirectory users, IAudi
 
     /// <summary>
     /// Timeline of everything recorded about the asset: the street light itself, its registration(s),
-    /// its tag(s) and its approved versions — straight from the audit log (old → new values, actor, time, reason, hash).
+    /// its tag(s), its approved versions, and entities of other modules about this asset (faults, work orders) — straight from the audit log (old → new values, actor, time, reason, hash).
     /// </summary>
     public async Task<Result<IReadOnlyList<HistoryEntry>>> HistoryAsync(Guid id, CancellationToken ct)
     {
@@ -95,6 +96,11 @@ public sealed class AssetQueries(AssetsDbContext db, IUserDirectory users, IAudi
         keys.AddRange((await db.Registrations.Where(r => r.AssetId == id).Select(r => r.Id).ToListAsync(ct)).Select(x => ("registration", x.ToString("D"))));
         keys.AddRange((await db.Tags.Where(t => t.BoundAssetId == id).Select(t => t.Id).ToListAsync(ct)).Select(x => ("tag", x.ToString("D"))));
         keys.AddRange((await db.AssetVersions.Where(v => v.AssetId == id).Select(v => v.Id).ToListAsync(ct)).Select(x => ("asset_version", x.ToString("D"))));
+        keys.AddRange((await db.AssetStatusEvents.Where(v => v.AssetId == id).Select(v => v.Id).ToListAsync(ct)).Select(x => ("asset_status_event", x.ToString("D"))));
+        foreach (var provider in relatedHistory)
+        {
+            keys.AddRange(await provider.RelatedAuditEntitiesAsync(id, ct));
+        }
 
         var events = await auditQueries.ForEntitiesAsync(keys, ct);
         var names = await users.DisplayNamesAsync(events.Where(e => e.ActorUserId is not null).Select(e => e.ActorUserId!.Value), ct);

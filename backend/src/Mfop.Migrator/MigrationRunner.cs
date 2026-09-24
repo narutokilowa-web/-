@@ -6,6 +6,12 @@ using Mfop.Assets;
 using Mfop.Assets.Infrastructure;
 using Mfop.Audit;
 using Mfop.Audit.Infrastructure;
+using Mfop.Faults;
+using Mfop.Faults.Infrastructure;
+using Mfop.Sync;
+using Mfop.Sync.Infrastructure;
+using Mfop.WorkOrders;
+using Mfop.WorkOrders.Infrastructure;
 using Mfop.Infrastructure;
 using Mfop.Infrastructure.Persistence;
 using Mfop.Kernel.Commands;
@@ -20,10 +26,17 @@ namespace Mfop.Migrator;
 /// </summary>
 public sealed class MigrationRunner(string ownerConnectionString, TextWriter log)
 {
-    private static readonly string[] ModuleSchemas = [AccessModule.Info.Schema, AuditModule.Info.Schema, AssetsModule.Info.Schema];
+    private static readonly string[] ModuleSchemas =
+    [
+        AccessModule.Info.Schema, AuditModule.Info.Schema, AssetsModule.Info.Schema, FaultsModule.Info.Schema,
+        WorkOrdersModule.Info.Schema, SyncModule.Info.Schema,
+    ];
 
     /// <summary>Tables whose rows are never updated. mfop_app gets no UPDATE and a trigger rejects UPDATE/DELETE.</summary>
-    public static readonly string[] AppendOnlyTables = ["audit.audit_events", "assets.asset_versions"];
+    public static readonly string[] AppendOnlyTables =
+    [
+        "audit.audit_events", "assets.asset_versions", "assets.asset_status_events", "faults.fault_confirmations", "sync.sync_commands",
+    ];
 
     public async Task MigrateAsync(CancellationToken ct)
     {
@@ -42,7 +55,22 @@ public sealed class MigrationRunner(string ownerConnectionString, TextWriter log
             await assets.Database.MigrateAsync(ct);
         }
 
-        log.WriteLine("migrations applied: access, audit, assets");
+        await using (var faults = new FaultsDbContext(Options<FaultsDbContext>(FaultsModule.Info.Schema)))
+        {
+            await faults.Database.MigrateAsync(ct);
+        }
+
+        await using (var workOrders = new WorkOrdersDbContext(Options<WorkOrdersDbContext>(WorkOrdersModule.Info.Schema)))
+        {
+            await workOrders.Database.MigrateAsync(ct);
+        }
+
+        await using (var sync = new SyncDbContext(Options<SyncDbContext>(SyncModule.Info.Schema)))
+        {
+            await sync.Database.MigrateAsync(ct);
+        }
+
+        log.WriteLine("migrations applied: access, audit, assets, faults, workorders, sync");
         await ApplyGrantsAsync(ct);
     }
 

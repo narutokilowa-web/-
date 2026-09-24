@@ -18,6 +18,9 @@ namespace Mfop.Api.Tests;
 public sealed class TestApp(DatabaseFixture db) : WebApplicationFactory<Program>
 {
     public const string SubHeader = "X-Test-Sub";
+
+    /// <summary>Plays the token's "azp" claim (which client the token was issued to), e.g. the field app "mfop-mobile".</summary>
+    public const string AzpHeader = "X-Test-Azp";
     public const string TagCheckKey = "test-tag-check-key";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -53,7 +56,13 @@ public sealed class TestApp(DatabaseFixture db) : WebApplicationFactory<Program>
                 return Task.FromResult(AuthenticateResult.NoResult());
             }
 
-            var identity = new ClaimsIdentity([new Claim("sub", sub!)], SchemeName);
+            var claims = new List<Claim> { new("sub", sub!) };
+            if (Request.Headers.TryGetValue(AzpHeader, out var azp) && !string.IsNullOrEmpty(azp))
+            {
+                claims.Add(new Claim("azp", azp!));
+            }
+
+            var identity = new ClaimsIdentity(claims, SchemeName);
             return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
         }
     }

@@ -55,11 +55,15 @@ actions:
   registration.read:          {roles: [REGISTRAR, APPROVER, AUDITOR], milestone: M1}                  # REGISTRAR sees own; APPROVER/AUDITOR see all
   audit.read:                 {roles: [AUDITOR], milestone: M3}           # audit search screen; asset history uses asset.history.read (M1)
 
-  device.register:            {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}
-  device.approve:             {roles: [ADMIN, SUPERVISOR], milestone: M2}
+  device.register:            {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # register + read own device status
+  device.read:                {roles: [ADMIN, SUPERVISOR], milestone: M2}   # Devices page
+  device.approve:             {roles: [ADMIN, SUPERVISOR], milestone: M2}   # approve / reject
   device.revoke:              {roles: [ADMIN, SUPERVISOR], milestone: M2}
+  sync.push:                  {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # transport only: every command inside is authorized by its own action
+  sync.pull:                  {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # transport only: returns only what the actor may see
   fault.report:               {roles: [SUPERVISOR], milestone: M2}        # mobile reporting by TECHNICIAN/INSPECTOR comes after DEMO 1
   fault.dismiss:              {roles: [SUPERVISOR], milestone: M2}
+  fault.read:                 {roles: [SUPERVISOR, AUDITOR], milestone: M2}
   workorder.create:           {roles: [SUPERVISOR], milestone: M2}
   workorder.assign:           {roles: [SUPERVISOR], milestone: M2}        # assign + reassign
   workorder.cancel:           {roles: [SUPERVISOR], milestone: M2}

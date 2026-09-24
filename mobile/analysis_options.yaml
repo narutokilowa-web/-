@@ -14,3 +14,6 @@ linter:
     - prefer_const_constructors
     - prefer_final_locals
     - require_trailing_commas
+
+formatter:
+  page_width: 140

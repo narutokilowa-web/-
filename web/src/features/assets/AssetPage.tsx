@@ -6,12 +6,19 @@ import { formatDateTime } from '../../shared/format';
 import { AttributesView } from './AttributesView';
 import { HistoryTimeline } from './HistoryTimeline';
 import { QrCode } from './QrCode';
+import { hasRole, useSession } from '../../app/MeContext';
+import type { Fault } from '../../shared/types';
+import { FaultTable } from '../faults/FaultTable';
+import { ReportFaultForm } from '../faults/ReportFaultForm';
 
 export function AssetPage() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
   const asset = useResource<Asset>(`/api/v1/assets/${id}`);
   const history = useResource<HistoryEntry[]>(`/api/v1/assets/${id}/history`);
+  const session = useSession();
+  const seesFaults = hasRole(session, 'SUPERVISOR', 'AUDITOR');
+  const faults = useResource<Fault[]>(seesFaults ? `/api/v1/faults?assetId=${id}` : null);
 
   if (!asset.result) return <p>{t('auth.loading')}</p>;
   if (!asset.result.ok) return <p role="alert">{t(`error.${asset.result.problem.code}`, { defaultValue: asset.result.problem.code })}</p>;
@@ -35,6 +42,16 @@ export function AssetPage() {
         )}
         <AttributesView attributes={a.attributes} />
       </div>
+
+      {seesFaults && (
+        <>
+          <h2>{t('fault.assetFaults')}</h2>
+          {faults.result?.ok && (faults.result.data.length === 0 ? <p>{t('common.empty')}</p> : <FaultTable faults={faults.result.data} showAsset={false} />)}
+          {hasRole(session, 'SUPERVISOR') && a.lifecycleState === 'ACTIVE' && (
+            <ReportFaultForm assetId={a.id} onReported={() => { asset.reload(); history.reload(); faults.reload(); }} />
+          )}
+        </>
+      )}
 
       <h2>{t('asset.versions')}</h2>
       <table className="table" data-testid="versions">

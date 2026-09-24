@@ -5,7 +5,13 @@ using Mfop.Api;
 using Mfop.Assets;
 using Mfop.Assets.Api;
 using Mfop.Audit;
+using Mfop.Faults;
+using Mfop.Faults.Api;
 using Mfop.Infrastructure;
+using Mfop.Sync;
+using Mfop.Sync.Api;
+using Mfop.WorkOrders;
+using Mfop.WorkOrders.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,8 +24,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddMfopAuthentication(builder.Configuration);
 builder.Services.AddMfopPersistence(connectionString);
 builder.Services.AddAuditModule();
-builder.Services.AddAccessModule();
+builder.Services.AddAccessModule(builder.Configuration);
 builder.Services.AddAssetsModule(builder.Configuration);
+builder.Services.AddFaultsModule();
+builder.Services.AddWorkOrdersModule(builder.Configuration);
+builder.Services.AddSyncModule();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AccessDbContext>("database", tags: ["ready"]);
@@ -42,6 +51,9 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c
 
 app.MapAccessEndpoints();
 app.MapAssetEndpoints();
+app.MapFaultEndpoints();
+app.MapWorkOrderEndpoints();
+app.MapSyncEndpoints();
 
 app.Run();
 

@@ -62,8 +62,7 @@ import 'app_localizations_en.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,8 +70,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,37 +82,21 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('ar'),
-    Locale('en'),
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('ar'), Locale('en')];
 
   /// No description provided for @appTitle.
   ///
   /// In ar, this message translates to:
   /// **'تطبيق العمليات الميدانية'**
   String get appTitle;
-
-  /// No description provided for @m0Title.
-  ///
-  /// In ar, this message translates to:
-  /// **'المرحلة M0 — هيكل التطبيق'**
-  String get m0Title;
-
-  /// No description provided for @m0Body.
-  ///
-  /// In ar, this message translates to:
-  /// **'هذا هيكل أولي. تسجيل الدخول ومسح رمز QR يُضافان في المرحلة M2.'**
-  String get m0Body;
 
   /// No description provided for @environmentLabel.
   ///
@@ -127,10 +109,435 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'English'**
   String get languageToggle;
+
+  /// No description provided for @privacyTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'قبل البدء: خصوصيتك'**
+  String get privacyTitle;
+
+  /// No description provided for @privacyBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا لمسح رمز QR على أعمدة الإنارة فقط، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.'**
+  String get privacyBody;
+
+  /// No description provided for @privacyAccept.
+  ///
+  /// In ar, this message translates to:
+  /// **'فهمت وأوافق'**
+  String get privacyAccept;
+
+  /// No description provided for @signInTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول'**
+  String get signInTitle;
+
+  /// No description provided for @signInBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'سيُفتح متصفح الهاتف لتسجيل الدخول بحسابك في البلدية.'**
+  String get signInBody;
+
+  /// No description provided for @signInButton.
+  ///
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول'**
+  String get signInButton;
+
+  /// No description provided for @offlineMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالخادم. تحقق من الشبكة ثم حاول مجددًا.'**
+  String get offlineMessage;
+
+  /// No description provided for @errorCode.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّر إكمال العملية ({code}).'**
+  String errorCode(String code);
+
+  /// No description provided for @waitingTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'بانتظار الموافقة على الجهاز'**
+  String get waitingTitle;
+
+  /// No description provided for @waitingBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'سُجّل هذا الهاتف. يجب أن يوافق عليه مشرف أو مدير النظام من لوحة الويب قبل استخدامه.'**
+  String get waitingBody;
+
+  /// No description provided for @checkAgain.
+  ///
+  /// In ar, this message translates to:
+  /// **'تحقق الآن'**
+  String get checkAgain;
+
+  /// No description provided for @deviceIdLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الجهاز: {id}'**
+  String deviceIdLabel(String id);
+
+  /// No description provided for @rejectedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'رُفض طلب الجهاز'**
+  String get rejectedTitle;
+
+  /// No description provided for @rejectedBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم تتم الموافقة على هذا الهاتف. تواصل مع مشرفك، ثم أرسل طلبًا جديدًا.'**
+  String get rejectedBody;
+
+  /// No description provided for @registerAgain.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال طلب جديد'**
+  String get registerAgain;
+
+  /// No description provided for @revokedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُلغي هذا الجهاز'**
+  String get revokedTitle;
+
+  /// No description provided for @revokedBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'ألغت البلدية صلاحية هذا الهاتف، فلم يعد الخادم يقبل منه أي عملية. حذف التطبيق بياناته الخاصة المخزّنة على الهاتف. لم يُلمس أي شيء آخر على هاتفك.'**
+  String get revokedBody;
+
+  /// No description provided for @startAgain.
+  ///
+  /// In ar, this message translates to:
+  /// **'البدء من جديد'**
+  String get startAgain;
+
+  /// No description provided for @pinSetupTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر رمز PIN للتطبيق'**
+  String get pinSetupTitle;
+
+  /// No description provided for @pinSetupBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'من 4 إلى 8 أرقام. يُطلب عند فتح التطبيق بعد {minutes} دقائق في الخلفية.'**
+  String pinSetupBody(int minutes);
+
+  /// No description provided for @pinLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز PIN'**
+  String get pinLabel;
+
+  /// No description provided for @pinConfirmLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'أعد إدخال الرمز'**
+  String get pinConfirmLabel;
+
+  /// No description provided for @pinMismatch.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرمزان غير متطابقين.'**
+  String get pinMismatch;
+
+  /// No description provided for @pinFormat.
+  ///
+  /// In ar, this message translates to:
+  /// **'استخدم من 4 إلى 8 أرقام.'**
+  String get pinFormat;
+
+  /// No description provided for @save.
+  ///
+  /// In ar, this message translates to:
+  /// **'حفظ'**
+  String get save;
+
+  /// No description provided for @lockTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'التطبيق مقفل'**
+  String get lockTitle;
+
+  /// No description provided for @unlock.
+  ///
+  /// In ar, this message translates to:
+  /// **'فتح'**
+  String get unlock;
+
+  /// No description provided for @pinWrong.
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز غير صحيح. المحاولات المتبقية: {left}'**
+  String pinWrong(int left);
+
+  /// No description provided for @tabTasks.
+  ///
+  /// In ar, this message translates to:
+  /// **'مهامي'**
+  String get tabTasks;
+
+  /// No description provided for @tabScan.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح'**
+  String get tabScan;
+
+  /// No description provided for @tabMe.
+  ///
+  /// In ar, this message translates to:
+  /// **'أنا'**
+  String get tabMe;
+
+  /// No description provided for @online.
+  ///
+  /// In ar, this message translates to:
+  /// **'متصل'**
+  String get online;
+
+  /// No description provided for @offline.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير متصل'**
+  String get offline;
+
+  /// No description provided for @waitingToSend.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} بانتظار الإرسال'**
+  String waitingToSend(int count);
+
+  /// No description provided for @lastSync.
+  ///
+  /// In ar, this message translates to:
+  /// **'آخر مزامنة: {time}'**
+  String lastSync(String time);
+
+  /// No description provided for @neverSynced.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم تتم المزامنة بعد'**
+  String get neverSynced;
+
+  /// No description provided for @noTasks.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد مهام مُسندة إليك الآن.'**
+  String get noTasks;
+
+  /// No description provided for @notTechnician.
+  ///
+  /// In ar, this message translates to:
+  /// **'قائمة المهام للفنيين. يمكنك مسح رموز الأعمدة من تبويب «مسح».'**
+  String get notTechnician;
+
+  /// No description provided for @taskTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'أمر العمل {code}'**
+  String taskTitle(String code);
+
+  /// No description provided for @faultLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'العطل'**
+  String get faultLabel;
+
+  /// No description provided for @noteLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملاحظة المشرف'**
+  String get noteLabel;
+
+  /// No description provided for @assignedAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُسند في {time}'**
+  String assignedAt(String time);
+
+  /// No description provided for @dueAt.
+  ///
+  /// In ar, this message translates to:
+  /// **'الموعد: {time}'**
+  String dueAt(String time);
+
+  /// No description provided for @taskNextSteps.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنفيذ العمل في الموقع (الوصول، الصور، التشخيص...) يُضاف في المرحلة التالية.'**
+  String get taskNextSteps;
+
+  /// No description provided for @scanHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'وجّه الكاميرا إلى رمز QR على العمود.'**
+  String get scanHint;
+
+  /// No description provided for @manualCodeLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'أو اكتب الرمز المطبوع (مثال: 7K3M92QX.4F)'**
+  String get manualCodeLabel;
+
+  /// No description provided for @resolve.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض'**
+  String get resolve;
+
+  /// No description provided for @invalidCode.
+  ///
+  /// In ar, this message translates to:
+  /// **'رمز غير صالح.'**
+  String get invalidCode;
+
+  /// No description provided for @tagNotFound.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد أصل فعّال بهذا الرمز.'**
+  String get tagNotFound;
+
+  /// No description provided for @cameraUnavailable.
+  ///
+  /// In ar, this message translates to:
+  /// **'الكاميرا غير متاحة. استخدم إدخال الرمز يدويًا.'**
+  String get cameraUnavailable;
+
+  /// No description provided for @assetTypeStreetLight.
+  ///
+  /// In ar, this message translates to:
+  /// **'نقطة إنارة'**
+  String get assetTypeStreetLight;
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحالة'**
+  String get statusLabel;
+
+  /// No description provided for @powerSourceLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'مصدر الطاقة'**
+  String get powerSourceLabel;
+
+  /// No description provided for @responsibleLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'المسؤولية'**
+  String get responsibleLabel;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'العنوان'**
+  String get addressLabel;
+
+  /// No description provided for @openFaultsLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'أعطال مفتوحة: {count}'**
+  String openFaultsLabel(int count);
+
+  /// No description provided for @myTaskOnAsset.
+  ///
+  /// In ar, this message translates to:
+  /// **'لديك مهمة على هذه النقطة'**
+  String get myTaskOnAsset;
+
+  /// No description provided for @openTask.
+  ///
+  /// In ar, this message translates to:
+  /// **'فتح المهمة'**
+  String get openTask;
+
+  /// No description provided for @recentEvents.
+  ///
+  /// In ar, this message translates to:
+  /// **'آخر الأحداث'**
+  String get recentEvents;
+
+  /// No description provided for @meTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'حسابي'**
+  String get meTitle;
+
+  /// No description provided for @rolesLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الأدوار: {roles}'**
+  String rolesLabel(String roles);
+
+  /// No description provided for @syncNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال ومزامنة الآن'**
+  String get syncNow;
+
+  /// No description provided for @signOut.
+  ///
+  /// In ar, this message translates to:
+  /// **'تسجيل الخروج'**
+  String get signOut;
+
+  /// No description provided for @outboxEmpty.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد ما ينتظر الإرسال.'**
+  String get outboxEmpty;
+
+  /// No description provided for @opStatus.
+  ///
+  /// In ar, this message translates to:
+  /// **'{status, select, OPERATIONAL{يعمل} FAULTY{معطّل} UNKNOWN{غير معروف} UNDER_MAINTENANCE{قيد الصيانة} other{{status}}}'**
+  String opStatus(String status);
+
+  /// No description provided for @powerSourceName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value, select, GRID{الشبكة} SOLAR{شمسية} HYBRID{هجينة} other{{value}}}'**
+  String powerSourceName(String value);
+
+  /// No description provided for @responsibleName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value, select, MUNICIPALITY{البلدية} ELECTRICITY_AUTHORITY{جهة الكهرباء} OTHER_PUBLIC_ENTITY{جهة عامة أخرى} SHARED{مشتركة} other{{value}}}'**
+  String responsibleName(String value);
+
+  /// No description provided for @faultCategoryName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value, select, LIGHT_OFF{لا تضيء} FLICKERING{وميض متقطع} DAY_BURNING{تضيء نهارًا} DAMAGED_POLE{عمود متضرر} EXPOSED_WIRES{أسلاك مكشوفة} MISSING_PARTS{قطع مفقودة} OTHER{أخرى} other{{value}}}'**
+  String faultCategoryName(String value);
+
+  /// No description provided for @powerAtInspectionName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value, select, CONFIRMED_AVAILABLE{الكهرباء متوفرة} CONFIRMED_UNAVAILABLE{الكهرباء مقطوعة} UNKNOWN{الكهرباء: غير معروف} other{{value}}}'**
+  String powerAtInspectionName(String value);
+
+  /// No description provided for @priorityName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value, select, P1{P1 عاجل جدًا} P2{P2 عاجل} P3{P3 عادي} P4{P4 منخفض} other{{value}}}'**
+  String priorityName(String value);
+
+  /// No description provided for @workOrderStateName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{value, select, ASSIGNED{مُسند} ON_SITE{في الموقع} IN_PROGRESS{قيد التنفيذ} PENDING_REVIEW{بانتظار المراجعة} RETURNED{مُعاد} other{{value}}}'**
+  String workOrderStateName(String value);
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -139,8 +546,7 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['ar', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['ar', 'en'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;

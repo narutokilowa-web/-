@@ -108,6 +108,27 @@ public sealed class StreetLight : IAuditable
         CurrentVersionNo = versionNo;
     }
 
+    /// <summary>
+    /// OS4–OS7: applies an operational-status event if the machine allows it from the current status;
+    /// otherwise the status is unchanged (e.g. a second fault on a light that is already FAULTY). Returns the transition applied.
+    /// </summary>
+    public Mfop.Kernel.StateMachines.Transition? ApplyStatusEvent(string command)
+    {
+        if (LifecycleState != LifecycleStates.Active || OperationalStatus is null)
+        {
+            return null;
+        }
+
+        var transition = AssetStateMachines.AssetOperationalStatus.Resolve(OperationalStatus, command);
+        if (!transition.IsSuccess)
+        {
+            return null;
+        }
+
+        OperationalStatus = transition.Value.To;
+        return transition.Value;
+    }
+
     /// <summary>AL3: the registration was rejected or discarded.</summary>
     public void RejectLifecycle()
     {

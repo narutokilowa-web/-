@@ -11,6 +11,7 @@ public sealed class AssetsDbContext(DbContextOptions<AssetsDbContext> options) :
     public DbSet<Registration> Registrations => Set<Registration>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<AssetVersion> AssetVersions => Set<AssetVersion>();
+    public DbSet<AssetStatusEvent> AssetStatusEvents => Set<AssetStatusEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,6 +87,18 @@ public sealed class AssetsDbContext(DbContextOptions<AssetsDbContext> options) :
             b.Property(x => x.Snapshot).HasColumnType("jsonb");
             b.Property(x => x.SnapshotHash).HasMaxLength(64).IsFixedLength();
             b.Property(x => x.Reason).HasMaxLength(100);
+            b.HasOne<StreetLight>().WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AssetStatusEvent>(b =>
+        {
+            b.ToTable("asset_status_events");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.TransitionId).HasMaxLength(10);
+            b.Property(x => x.FromStatus).HasMaxLength(30);
+            b.Property(x => x.ToStatus).HasMaxLength(30);
+            b.Property(x => x.CauseType).HasMaxLength(30);
+            b.HasIndex(x => new { x.AssetId, x.At });
             b.HasOne<StreetLight>().WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
         });
     }

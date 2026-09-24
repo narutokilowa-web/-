@@ -41,19 +41,27 @@
     "home": "Home",
     "registrations": "Registrations",
     "newRegistration": "Register light",
-    "assets": "Assets"
+    "assets": "Assets",
+    "faults": "Faults",
+    "workOrders": "Work orders",
+    "devices": "Devices"
   },
   "home": {
     "register": "Register a new street light",
     "myRegistrations": "My registrations",
     "approvalQueue": "Approval queue",
-    "assets": "Approved street lights"
+    "assets": "Approved street lights",
+    "openFaults": "Faults to triage",
+    "unassignedWorkOrders": "Unassigned work orders",
+    "pendingDevices": "Devices waiting for approval",
+    "technicianUsesPhone": "Your tasks appear in the phone app (My tasks)."
   },
   "common": {
     "notFound": "Page not found",
     "all": "All",
     "empty": "Nothing here.",
-    "search": "Search"
+    "search": "Search",
+    "open": "Open"
   },
   "field": {
     "reason": "Registration reason",
@@ -80,7 +88,15 @@
     "solarControllerModel": "Charge controller model",
     "warrantyUntil": "Warranty until",
     "supplier": "Supplier",
-    "solar": "Solar fields"
+    "solar": "Solar fields",
+    "category": "Category",
+    "powerAtInspection": "Power at inspection",
+    "powerInfoSource": "Power information source",
+    "description": "Description",
+    "platform": "Platform",
+    "model": "Model",
+    "osVersion": "OS version",
+    "appVersion": "App version"
   },
   "reason": {
     "BASELINE_SURVEY": "Baseline survey",
@@ -196,7 +212,26 @@
     "registration.rejected": "Registration rejected",
     "street_light.registration_rejected": "Street-light record rejected",
     "registration.discarded": "Draft discarded",
-    "street_light.registration_discarded": "Street-light record discarded"
+    "street_light.registration_discarded": "Street-light record discarded",
+    "device.registered": "Device registered",
+    "device.superseded": "Device request superseded",
+    "device.approved": "Device approved",
+    "device.rejected": "Device rejected",
+    "device.revoked": "Device revoked",
+    "fault.reported": "Fault reported",
+    "fault.confirmed": "Open fault confirmed",
+    "fault_confirmation.recorded": "Confirmation recorded",
+    "fault.dismissed": "Fault dismissed",
+    "fault.in_work_order": "Fault moved into a work order",
+    "fault.reopened_after_cancellation": "Fault reopened after cancellation",
+    "street_light.operational_status_changed": "Operational status changed",
+    "asset_status_event.recorded": "Status event recorded",
+    "work_order.created": "Work order created",
+    "work_order.assigned": "Work order assigned",
+    "work_order.reassigned": "Work order reassigned",
+    "work_order.cancelled": "Work order cancelled",
+    "work_order_assignment.started": "Assignment started",
+    "work_order_assignment.ended": "Assignment ended"
   },
   "error": {
     "SOD_VIOLATION": "The registrar cannot decide on their own registration.",
@@ -209,6 +244,157 @@
     "ASSET_NOT_FOUND": "Asset not found.",
     "TAG_NOT_FOUND": "No active asset for this tag.",
     "NOT_REGISTRAR": "Only the registrar of this registration can do that.",
-    "CONCURRENCY_CONFLICT": "Someone else changed this record. Reload and try again."
+    "CONCURRENCY_CONFLICT": "Someone else changed this record. Reload and try again.",
+    "DEVICE_REQUIRED": "An approved device is required.",
+    "DEVICE_NOT_FOUND": "Unknown device.",
+    "DEVICE_NOT_APPROVED": "The device is waiting for approval.",
+    "DEVICE_REJECTED": "The device was rejected.",
+    "DEVICE_REVOKED": "The device was revoked.",
+    "ASSET_NOT_ACTIVE": "The asset is not ACTIVE.",
+    "ASSIGNEE_NO_ACTIVE_DEVICE": "The technician has no approved, active device.",
+    "ASSIGNEE_NOT_TECHNICIAN": "This user is not a technician.",
+    "ASSIGNEE_DISABLED": "This user is disabled.",
+    "ASSIGNEE_NOT_FOUND": "User not found.",
+    "WORK_ORDER_EXISTS": "This fault already has an open work order.",
+    "INVALID_PRIORITY": "Invalid priority.",
+    "REASON_REQUIRED": "A reason is required.",
+    "SAME_ASSIGNEE": "Already assigned to this technician.",
+    "INVALID_DISMISS_REASON": "Choose a reason from the list.",
+    "INVALID_FAULT": "Invalid fault report.",
+    "FAULT_NOT_FOUND": "Fault not found.",
+    "WORK_ORDER_NOT_FOUND": "Work order not found.",
+    "NOT_ASSIGNEE": "This work order is not assigned to you.",
+    "VALIDATION_FAILED": "Invalid data."
+  },
+  "device": {
+    "title": "Staff devices",
+    "byodHint": "Phones are personal: revocation is server-side only and the device is rejected on its next request. Nothing on the employee's phone is read or deleted.",
+    "user": "Employee",
+    "model": "Device",
+    "status": "Status",
+    "requestedAt": "Requested",
+    "lastSync": "Last sync",
+    "decision": "Decision",
+    "pending": "{{count}} waiting to send",
+    "revokedBy": "Revoked by {{name}}",
+    "reason": "Reason (required to reject or revoke)",
+    "approve": "Approve",
+    "reject": "Reject",
+    "revoke": "Revoke"
+  },
+  "deviceStatus": {
+    "PENDING_APPROVAL": "Waiting for approval",
+    "ACTIVE": "Active",
+    "REJECTED": "Rejected",
+    "REVOKED": "Revoked"
+  },
+  "deviceReason": {
+    "REPLACED": "Replaced by a new device",
+    "SUPERSEDED_BY_NEW_REGISTRATION": "Superseded by a newer registration"
+  },
+  "fault": {
+    "reportTitle": "Report a fault",
+    "category": "Category",
+    "powerQuestion": "Was public power available at this moment?",
+    "powerSource": "Source of the power information",
+    "description": "Description",
+    "report": "Report",
+    "result": {
+      "CREATED": "A new fault was recorded.",
+      "CONFIRMED_EXISTING": "An open fault of the same kind exists: the report was recorded as a confirmation."
+    },
+    "state": "State",
+    "power": "Power at report time",
+    "reportedBy": "Reported by",
+    "reportedAt": "Reported at",
+    "confirmations": "{{count}} confirmation(s)",
+    "noPowerBadge": "Power was unavailable at report time",
+    "listTitle": "Faults",
+    "detailTitle": "Fault",
+    "dismissReason": "Dismiss reason",
+    "confirmationsTitle": "Confirmations",
+    "dismiss": "Dismiss",
+    "dismissNote": "Note (required for OTHER)",
+    "assetFaults": "Faults of this light"
+  },
+  "faultCategory": {
+    "LIGHT_OFF": "Light off",
+    "FLICKERING": "Flickering",
+    "DAY_BURNING": "Burning by day",
+    "DAMAGED_POLE": "Damaged pole",
+    "EXPOSED_WIRES": "Exposed wires",
+    "MISSING_PARTS": "Missing parts",
+    "OTHER": "Other"
+  },
+  "faultState": {
+    "OPEN": "Open",
+    "IN_WORK_ORDER": "In a work order",
+    "RESOLVED": "Resolved",
+    "DISMISSED": "Dismissed"
+  },
+  "power": {
+    "CONFIRMED_AVAILABLE": "Available (confirmed)",
+    "CONFIRMED_UNAVAILABLE": "Unavailable (confirmed)",
+    "UNKNOWN": "Unknown"
+  },
+  "powerSourceInfo": {
+    "OBSERVED_ON_SITE": "Observed on site",
+    "ELECTRICITY_AUTHORITY": "Electricity authority",
+    "SCHEDULE": "Schedule",
+    "RESIDENT": "Resident",
+    "OTHER": "Other"
+  },
+  "dismissReason": {
+    "DUPLICATE": "Duplicate",
+    "NOT_A_FAULT": "Not a fault",
+    "POWER_UNAVAILABLE_AT_REPORT": "Power unavailable at report",
+    "OUT_OF_MUNICIPAL_RESPONSIBILITY": "Outside municipal responsibility",
+    "OTHER": "Other"
+  },
+  "priority": {
+    "P1": "P1 critical",
+    "P2": "P2 high",
+    "P3": "P3 normal",
+    "P4": "P4 low"
+  },
+  "workOrder": {
+    "title": "Work order",
+    "create": "Create work order",
+    "priority": "Priority",
+    "note": "Note",
+    "listTitle": "Work orders",
+    "code": "Code",
+    "state": "State",
+    "assignee": "Assignee",
+    "createdAt": "Created",
+    "sla": "Due",
+    "noSla": "No SLA configured yet (configuration)",
+    "createdBy": "Created by",
+    "cancelReason": "Cancel reason",
+    "technician": "Technician",
+    "noActiveDevice": "no approved device",
+    "reason": "Reason (required to reassign or cancel)",
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "cancel": "Cancel work order",
+    "assignHint": "Work orders can only be assigned to a technician with an approved, active device.",
+    "assignments": "Assignments",
+    "startedAt": "Started",
+    "endedAt": "Ended",
+    "timeline": "Timeline"
+  },
+  "workOrderState": {
+    "NEW": "New",
+    "ASSIGNED": "Assigned",
+    "ON_SITE": "On site",
+    "IN_PROGRESS": "In progress",
+    "PENDING_REVIEW": "Pending review",
+    "RETURNED": "Returned",
+    "CLOSED": "Closed",
+    "CANCELLED": "Cancelled"
+  },
+  "assignmentState": {
+    "ACTIVE": "Active",
+    "ENDED": "Ended"
   }
 }

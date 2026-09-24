@@ -92,7 +92,7 @@ jobs:
           retention-days: 14
 
   e2e:
-    name: E2E (Docker Compose stack + sign-in for every seeded role)
+    name: "E2E (Docker Compose stack; every role signs in; M1 and M2 web flows)"
     runs-on: ubuntu-latest
     needs: [backend, web]
     steps:
@@ -109,6 +109,57 @@ jobs:
         run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
       - name: Sign in as every seeded user
         run: make e2e
+      - name: Compose logs on failure
+        if: failure()
+        run: docker compose -f deploy/compose/docker-compose.yml --env-file .env logs --no-color --tail=200
+      - name: Tear down
+        if: always()
+        run: docker compose -f deploy/compose/docker-compose.yml --env-file .env down -v
+
+  android:
+    name: "Android emulator (real app: sign-in, device approval, PIN, My tasks, QR, revocation)"
+    runs-on: ubuntu-latest
+    needs: [backend, web, mobile]
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable KVM for the Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.6
+          channel: stable
+          cache: true
+      - name: Start stack from a clean state (random secrets)
+        run: make up
+      - working-directory: mobile
+        run: flutter pub get
+      - name: "Field-app flow on an Android 14 emulator (the phone reaches the stack as localhost via adb reverse)"
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          # Each line runs in its own shell.
+          script: |
+            adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080
+            cd mobile && flutter drive --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
+      - name: Screenshots from the device
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-e2e-screenshots
+          path: mobile/build/android-e2e/
+          retention-days: 14
       - name: Compose logs on failure
         if: failure()
         run: docker compose -f deploy/compose/docker-compose.yml --env-file .env logs --no-color --tail=200

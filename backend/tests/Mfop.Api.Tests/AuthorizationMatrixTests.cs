@@ -15,7 +15,7 @@ namespace Mfop.Api.Tests;
 [Collection(nameof(DatabaseCollection))]
 public class AuthorizationMatrixTests(DatabaseFixture db)
 {
-    private const string CurrentMilestone = "M1";
+    private const string CurrentMilestone = "M2";
 
     private TestApp App { get; } = new(db);
 
@@ -38,7 +38,7 @@ public class AuthorizationMatrixTests(DatabaseFixture db)
     {
         var sources = App.Services.GetRequiredService<IEnumerable<EndpointDataSource>>();
         return sources.SelectMany(s => s.Endpoints).OfType<RouteEndpoint>()
-            .Where(e => e.RoutePattern.RawText!.StartsWith("/api/", StringComparison.Ordinal))
+            .Where(e => e.RoutePattern.RawText!.StartsWith("/api/", StringComparison.Ordinal) || e.RoutePattern.RawText!.StartsWith("/sync/", StringComparison.Ordinal))
             .Select(e => (e, e.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single(), e.Metadata.GetMetadata<RequiredPermission>()?.Action))
             .ToList();
     }
@@ -104,5 +104,5 @@ public class AuthorizationMatrixTests(DatabaseFixture db)
     private static object SampleBody(string url) =>
         url.EndsWith("/registrations", StringComparison.Ordinal) || url.EndsWith("/update", StringComparison.Ordinal)
             ? ApiHelpers.SampleRegistration()
-            : new { note = "matrix-test" };
+            : new { note = "matrix-test", reason = "matrix-test" };
 }

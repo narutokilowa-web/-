@@ -42,3 +42,9 @@ public static class ErrorCodesHttp
     public const string Forbidden = "FORBIDDEN";
     public const string UserDisabled = "USER_DISABLED";
 }
+
+/// <summary>
+/// Endpoint metadata: callable from the phone before its device is ACTIVE (device registration, own device status,
+/// own identity). Every other mobile request needs an ACTIVE device owned by the caller.
+/// </summary>
+public sealed record DeviceNotRequired;
