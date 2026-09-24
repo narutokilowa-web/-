@@ -123,6 +123,14 @@ jobs:
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
+      # The emulator needs ~7.5 GB for its userdata partition; the stack's images and the Android SDK leave too little
+      # on a standard runner. Remove preinstalled toolchains this job never uses (the backend is built inside Docker).
+      - name: Free disk space for the emulator
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost /usr/share/swift \
+            /usr/local/share/powershell /opt/hostedtoolcache/CodeQL /opt/microsoft
+          df -h /
       - name: Enable KVM for the Android emulator
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -138,7 +146,10 @@ jobs:
           channel: stable
           cache: true
       - name: Start stack from a clean state (random secrets)
-        run: make up
+        run: |
+          make up
+          docker builder prune -af   # build cache is not needed once the images exist
+          df -h /
       - working-directory: mobile
         run: flutter pub get
       - name: "Field-app flow on an Android 14 emulator (the phone reaches the stack as localhost via adb reverse)"
