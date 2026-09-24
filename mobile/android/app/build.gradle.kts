@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "local.mfop.mfop_field"
+    namespace = "com.reuxstudio.mfop.field"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "local.mfop.mfop_field"
+        applicationId = "com.reuxstudio.mfop.field"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 26 // Android 8.0 (docs/spec/17 §17.2)

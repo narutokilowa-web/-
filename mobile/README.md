@@ -7,6 +7,6 @@ make test-mobile   # flutter analyze + tests (local Flutter 3.41.6 or the pinned
 make apk           # debug APK → mobile/build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-- Application id `local.mfop.mfop_field` is a **placeholder** until the municipality chooses its own identifier.
+- Android application id: `com.reuxstudio.mfop.field` (owner decision, 2026-09-24). It cannot change after devices install the app without a reinstall.
 - `minSdk` 26 (Android 8.0).
 - UI text lives in `lib/l10n/app_ar.arb` (template) and `app_en.arb`. Never hard-code UI strings.

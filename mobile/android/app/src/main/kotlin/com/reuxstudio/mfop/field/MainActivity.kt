@@ -1,4 +1,4 @@
-package local.mfop.mfop_field
+package com.reuxstudio.mfop.field
 
 import io.flutter.embedding.android.FlutterActivity
 
