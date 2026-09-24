@@ -31,12 +31,12 @@ Scope followed: 11 §11.2 M2 (items 1–7). Nothing from M3 has been started: no
 
 | Step | Verified how | Result |
 |---|---|---|
-| 6 Scan the printed QR from Android | **Android emulator (Android 14, x86_64) in CI, real app build:** the label's QR payload is rendered as an image and decoded **on the device** by the app's scanner library (ML Kit via `mobile_scanner`); the decoded value goes through the Scan tab → asset card. Unit/widget tests: QR URL and typed-code parsing | see CI results |
-| 7 See the asset record | Emulator: asset card shows the asset code, "معطّل", and "You have a task on this light" | see CI results |
+| 6 Scan the printed QR from Android | **Android emulator (Android 14, x86_64) in CI, real app build:** the label's QR payload is rendered as an image and decoded **on the device** by the app's scanner library (ML Kit via `mobile_scanner`); the decoded value goes through the Scan tab → asset card. Unit/widget tests: QR URL and typed-code parsing | ✅ CI run 36026280425 |
+| 7 See the asset record | Emulator: asset card shows the asset code, "معطّل", and "You have a task on this light" | ✅ CI run 36026280425 |
 | 8 Create a fault | Web (Playwright, real Keycloak login): supervisor reports a fault on the asset page → light turns FAULTY; API tests (dedup, power unavailable, OTHER, dismiss) | ✅ |
 | 9 Create and assign a work order | Web (Playwright): fault → work order → assign to `tech2`, whose phone was approved on the Devices page; the task is in tech2's pull; then revoke → `DEVICE_REVOKED` | ✅ |
-| "the task appears on the technician's phone" | Emulator: after sync, **My tasks** lists the work order; opening it shows the asset | see CI results |
-| Device registration and revocation | Emulator: sign in → "waiting for approval" → admin approves → PIN → … → admin revokes → the app shows "device revoked" and has deleted its own tokens, device id, PIN and database key | see CI results |
+| "the task appears on the technician's phone" | Emulator: after sync, **My tasks** lists the work order; opening it shows the asset | ✅ CI run 36026280425 |
+| Device registration and revocation | Emulator: sign in → "waiting for approval" → admin approves → PIN → … → admin revokes → the app shows "device revoked" and has deleted its own tokens, device id, PIN and database key | ✅ CI run 36026280425 |
 
 **What was NOT verified by me, and why.** No physical phone is attached to this environment. Two things therefore still need a person with a real phone (`docs/runbooks/android-field-test.md`, 12-step checklist, about 15 minutes):
 1. **Keycloak login in the phone's browser.** The automated test performs the same Authorization Code + PKCE exchange with Keycloak over HTTP, because a test cannot type into the system browser. The tokens, audience and every server check are the real ones.
@@ -55,7 +55,7 @@ Scope followed: 11 §11.2 M2 (items 1–7). Nothing from M3 has been started: no
 | Mobile (`flutter test`, host): encrypted DB at rest (file not plaintext, wrong key fails, destroy deletes the file); controller flow (privacy → sign-in → registration → waiting → approval → PIN → tasks; rejected → re-register; background lock + PIN + lockout after 5; revoked → wipes only own data; offline keeps cached tasks); outbox order/idempotency/offline retry; PIN hashing; tag parsing; screens (My tasks → task detail, Scan typed code → asset card, Me) in Arabic RTL; 56 dp targets | 18 | ✅ |
 | `flutter analyze` | — | ✅ no issues |
 | E2E (Playwright vs. Compose): 9 role sign-ins (incl. new `tech2`), wrong password, M1 flow, **M2 flow** | 12 | ✅ |
-| Android emulator integration test (CI) | 1 flow, 8 screenshots | see CI results |
+| Android emulator integration test (CI) | 1 flow, 8 screenshots | ✅ CI run 36026280425 |
 | `make verify-audit` after all E2E | — | ✅ OK (42 events) |
 
 ### Deviations from the specification
@@ -99,7 +99,18 @@ Scope followed: 11 §11.2 M2 (items 1–7). Nothing from M3 has been started: no
 
 ### CI results
 
-Filled in after the push (see below).
+Run [36026280425](https://github.com/narutokilowa-web/-/actions/runs/36026280425) on code head `982052e`: **success**, all 6 jobs.
+
+| Job | Result |
+|---|---|
+| Secret scan (gitleaks CLI, full history) | ✅ |
+| Web (lint, typecheck, 21 unit tests, build, `npm audit`) | ✅ |
+| Backend (build `-warnaserror`, 242 tests incl. Testcontainers PostGIS, vulnerable-package check) | ✅ |
+| Mobile (analyze, 18 tests, **debug APK** → artifact `mfop-field-debug-apk`) | ✅ |
+| E2E (Compose on a clean runner: 9 role sign-ins, wrong password, M1 flow, **M2 flow**) | ✅ |
+| **Android emulator** (Android 14; real app build; stack via `adb reverse`): privacy notice → Keycloak PKCE sign-in as `tech1` → device registered (model/Android version seen by the server) → approved by `admin1` → app PIN → supervisor creates fault + work order and assigns it → **My tasks** shows it → task detail shows asset code and "معطّل" → the label QR decoded **on the device** by ML Kit equals the printed payload → asset card with "you have a task on this light" → `admin1` revokes → app shows "device revoked" with its refresh token, device id and PIN deleted | ✅ (screenshots: artifact `android-e2e-screenshots`, 8 images, kept until 2026-10-08) |
+
+Two CI-only problems were fixed on the way (no product change): the runner's disk was too small for the emulator's 7.4 GB data partition (unused preinstalled toolchains are now removed first), and the test's `pageBack()` helper did not find the AppBar back button (the test now pops the route directly).
 
 ---
 
