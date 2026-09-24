@@ -6,7 +6,7 @@
 
 1. **No change without an audit event.** The event is inserted **in the same DB transaction** as the change, via the `UnitOfWork`. A handler cannot commit without it: `UnitOfWork.Commit()` fails if entities changed but no audit event was staged. This is enforced by an integration test on every command handler.
 2. **Append-only.** Enforced by the database, not only by convention.
-3. **Tamper-evident.** Hash chain plus daily signed checkpoints in write-once storage.
+3. **Tamper-evident, not immutable.** A privileged DB administrator can change rows. The hash chain, seals and verifier **detect** such changes. Signed daily checkpoints in external write-once storage are added in M8 and are **mandatory before a real field pilot**, not for DEMO 1 (see 11). The interfaces `ICheckpointSink` and `IObjectStore` exist from M1/M3 so this is an addition, not a redesign.
 4. **Verifiable without trusting the application**, using the standalone `tools/audit-verify` CLI.
 
 ### Event record
@@ -49,7 +49,7 @@ CREATE TRIGGER no_truncate BEFORE TRUNCATE ON audit.audit_events
 
 The runtime connection string uses `mfop_app`. Migrations run as `mfop_owner` in a separate one-shot step, never at API startup in pilot configuration.
 
-### Checkpoints (external anchoring, lean version)
+### Checkpoints (external anchoring) — M8, mandatory before field pilot, not in DEMO 1
 
 - The worker runs daily and on demand. It writes `{to_seq, last_hash, event_count, created_at}`, signed with the **anchor key** (Ed25519), to:
   1. `audit_checkpoints` (DB);
@@ -135,7 +135,7 @@ SERVER
                               no  → HASH_MISMATCH + CRITICAL flag (bytes changed after capture, or corruption)
                               yes → exact duplicate of any existing VERIFIED evidence (same sha256)?
                                       yes → DUPLICATE + CRITICAL flag (photo reuse); not usable as evidence
-                                      no  → copy to `evidence` (Object Lock) → delete from incoming
+                                      no  → copy to `evidence` (Object Lock from M8; local store in DEMO 1) → delete from incoming
                                             → derive preview + thumbnail (re-encoded, EXIF stripped) → VERIFIED
   every state change    → audit event
 ```

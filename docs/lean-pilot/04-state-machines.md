@@ -1,5 +1,7 @@
 # 04 — Exact State Machines
 
+> **DEMO 1 implements a subset** of these machines (Asset/AssetVerification, Fault, WorkOrder, Assignment, Evidence, StockTransaction/MaterialUse, Approval/Closure, Audit). The exact subset is listed in [11 §11.1](11-milestones-and-dod.md). The rest stays specified here and is built in M4–M7.
+
 **Rules for every machine:**
 - A transition happens **only** through the named command. Any other (state, command) pair is rejected with `INVALID_TRANSITION` and nothing changes. The rejection itself is recorded in `sync_commands` or the request log, but is **not** an audit event because nothing changed.
 - Every applied transition writes: the entity change, a domain event, and an `AuditEvent`, all in **one transaction**.

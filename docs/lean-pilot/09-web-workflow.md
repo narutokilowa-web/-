@@ -4,7 +4,7 @@
 
 - Right-hand side navigation (RTL) that **only shows sections the user's roles allow**.
 - The home page for each role is **"What needs me now?"**: a queue, not charts.
-- A top bar shows the user, roles, environment badge (`DEV` / `PILOT`), and in dev-fs storage mode a red **NON-IMMUTABLE STORAGE** banner.
+- A top bar shows the user, roles, environment badge (`DEV` / `PILOT`), and in dev-fs storage mode a red **LOCAL STORAGE — NOT WORM** banner.
 
 ## 9.2 Screens by role
 
@@ -39,7 +39,7 @@
 
 The server records `opened_at` and `decided_at` for each review (a later rubber-stamping signal; stored only in the pilot).
 
-## 9.4 Key screen: asset page / immutable history (the demo ending)
+## 9.4 Key screen: asset page / tamper-evident history (the demo ending)
 
 ```
 SL-000042 — نقطة إنارة (شمسية)          State: ACTIVE · OPERATIONAL      Tag: T7K3M92QX

@@ -80,6 +80,8 @@ CommandEnvelope {command_id, type, payload, actor, device_id?, device_time?, ela
 
 ## 1.2 Docker Compose topology (item 9)
 
+> **DEMO 1 topology is smaller** (see 11 §11.2 M0): `db`, `keycloak`, `api` (with background work as an in-process hosted service), `web`, and a volume for the local object store. The phone connects through `adb reverse` to `localhost`, with no proxy or TLS. The full topology below (proxy, separate worker, S3 with Object Lock, tiles) is completed in M8 and is required before a real field pilot.
+
 | Service | Image (indicative) | Purpose | Exposed |
 |---|---|---|---|
 | `proxy` | `caddy` | TLS termination (internal CA for dev), routing, basic rate limit, request size limits | `443` (and `80` → redirect) |
@@ -101,7 +103,7 @@ CommandEnvelope {command_id, type, payload, actor, device_id?, device_time?, ela
 | `evidence-derived` | no | re-encoded thumbnails and previews without EXIF |
 | `audit-anchors` | **yes** | daily signed checkpoints |
 
-**Dev-mode fallback:** if Object Lock storage is unavailable on a developer machine, a `FileSystemEvidenceStore` adapter may be used with `STORAGE_MODE=dev-fs`. The web console shows a red "NON-IMMUTABLE STORAGE — DEV ONLY" banner, and pilot configuration refuses to start in this mode.
+**Local development and DEMO 1:** a `LocalFileSystemObjectStore` behind the same S3-compatible `IObjectStore` interface is the default (approved), selected with `STORAGE_MODE=local`. The production-compatible product is chosen later. The web console shows a red "LOCAL STORAGE — NOT WORM" banner in this mode, and **field-pilot configuration refuses to start in it**.
 
 **Networking for phones in development:**
 - USB: `adb reverse tcp:443 tcp:443`. The phone reaches the dev machine as `localhost`. This is the simplest option.

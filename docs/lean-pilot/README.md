@@ -1,6 +1,6 @@
 # Lean Pilot Specification — Street Light Vertical Slice
 
-**Status:** Draft v0.1, **awaiting approval**. No code until approved.
+**Status:** v0.2, **approved** (2026-09-24) with the DEMO 1 execution simplification: see [11](11-milestones-and-dod.md). No code until the revised milestones are approved.
 **Relationship to `docs/spec/`:** `docs/spec/` (files 01–17, Arabic) is the **long-term product specification** and remains authoritative for the full product. This folder defines the **smallest trustworthy system** that proves one vertical slice end-to-end. Where this document simplifies, the simplification is listed below with the reason; nothing here weakens the long-term design, it only defers parts of it.
 **Language:** English, because it is the implementation-facing spec that developers and AI coding agents work from, and code is written in English. UI text is Arabic-first.
 
@@ -9,7 +9,7 @@
 Get to the **first real demo** as early as it is safe to:
 
 ```
-scan QR → see street light → execute repair workflow → close it → inspect immutable history
+scan QR → see street light → execute repair workflow → close it → inspect tamper-evident history
 ```
 
 and then to a **pilot-ready slice**:
@@ -81,11 +81,15 @@ Street Light → Register → Verify → Assign QR → View/Scan → Create faul
 | 10 | [Test strategy](10-test-strategy.md) | 14. Test strategy |
 | 11 | [Milestones and Definition of Done](11-milestones-and-dod.md) | 15. Sequential milestones · 16. DoD for first runnable demo |
 
+## Honest integrity claim
+
+The system provides **reliable tamper detection**, not mathematical immutability. A privileged database administrator *can* modify data. The hash chain, work-order seals and the verifier make such a change **detectable**. Before a real field pilot, signed daily checkpoints stored outside the database (WORM) make it detectable even if the whole database is rewritten.
+
 ## Non-negotiables (carried over unchanged from the long-term spec)
 
 1. Every state change goes through a **server-side state machine command**. There is no generic update endpoint.
 2. Every change writes an **audit event in the same database transaction**. The audit table is append-only and hash-chained.
-3. Evidence is captured **in-app only**, hashed **on the device at capture**, and stored in write-once storage.
+3. Evidence is captured **in-app only** and hashed **on the device at capture**. The server verifies the hash. Write-once (WORM) storage is **mandatory before a real field pilot** (M8), not for DEMO 1.
 4. **Maker ≠ checker:** registrar ≠ approver, executor ≠ reviewer.
 5. **Nothing is deleted.** Corrections are new events.
 6. **Flags, not verdicts.** The system never labels a person.

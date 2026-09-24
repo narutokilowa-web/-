@@ -1,5 +1,7 @@
 # 05 — BYOD and Offline Security Design
 
+> **Build order:** device registration/approval and server-side rejection of revoked devices are in DEMO 1 (M2). Offline grants, trusted time, grant-window checks, device-key signing and the full offboarding flow are built in M4, **after DEMO 1 and before any real field pilot**.
+
 ## 5.1 Assumptions (explicit)
 
 - Field staff use their **own Android phones**. There is **no MDM and no Android Enterprise managed profile** in the pilot.

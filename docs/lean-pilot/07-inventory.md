@@ -7,6 +7,8 @@ warehouse stock → issue → technician acknowledgment (custody) → consumptio
                → unused return / failed-part (core) return
 ```
 
+> **DEMO 1 subset:** ledger with `RECEIPT`, one-step `ISSUE` to technician custody (performed by the warehouse user in the seed), `CONSUME` on the work order, and `REVERSAL`. Technician acknowledgment, returns and core returns follow in M5, before any field pilot.
+
 ## 7.1 Model recap
 
 - **Ledger:** `stock_movements` is append-only. A balance is always the sum of movements. `stock_balances` is maintained in the same transaction for speed and reconciled nightly by the verifier.
