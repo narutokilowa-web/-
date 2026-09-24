@@ -5,6 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Mfop.Kernel\Mfop.Kernel.csproj" />
     <ProjectReference Include="..\Mfop.Infrastructure\Mfop.Infrastructure.csproj" />
+    <ProjectReference Include="..\Mfop.Http\Mfop.Http.csproj" />
     <ProjectReference Include="..\Modules\Mfop.Access\Mfop.Access.csproj" />
     <ProjectReference Include="..\Modules\Mfop.Assets\Mfop.Assets.csproj" />
     <ProjectReference Include="..\Modules\Mfop.Faults\Mfop.Faults.csproj" />

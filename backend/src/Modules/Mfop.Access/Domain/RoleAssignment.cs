@@ -1,10 +1,12 @@
+using Mfop.Access.Contracts;
+using Mfop.Kernel.Auditing;
+
 namespace Mfop.Access.Domain;
 
 /// <summary>
 /// Grant of a role to a user. Revocation sets <see cref="RevokedAt"/>; rows are never deleted.
-/// Role management commands (with audit and separation-of-duties checks) arrive in M1.
 /// </summary>
-public sealed class RoleAssignment
+public sealed class RoleAssignment : IAuditable
 {
     private RoleAssignment() { }
 
@@ -22,6 +24,8 @@ public sealed class RoleAssignment
         GrantReason = grantReason;
         GrantedAt = grantedAt;
     }
+
+    public string AuditEntityType => "role_assignment";
 
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }

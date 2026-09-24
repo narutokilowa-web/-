@@ -8,6 +8,8 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="YamlDotNet" />
+    <ProjectReference Include="..\..\src\Modules\Mfop.Assets\Mfop.Assets.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Mfop.Access\Mfop.Access.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

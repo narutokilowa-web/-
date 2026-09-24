@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Modules\Mfop.Access\Mfop.Access.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Audit\Mfop.Audit.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Assets\Mfop.Assets.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

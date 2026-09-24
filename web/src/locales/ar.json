@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "منصة عمليات البلدية الميدانية",
-    "subtitle": "المرحلة M0 — صفحة تحقق من الهوية والأدوار"
+    "subtitle": "المرحلة M1"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -14,7 +14,7 @@
     "username": "اسم المستخدم",
     "roles": "الأدوار",
     "rolesSource": "مصدر الأدوار: قاعدة بيانات المنصة (وليس رمز الدخول)",
-    "noRoles": "لا توجد أدوار فعّالة",
+    "noRoles": "لا توجد أدوار فعّالة لهذا الحساب بعد.",
     "USER_NOT_PROVISIONED": "هذا الحساب غير مسجّل في المنصة.",
     "USER_DISABLED": "هذا الحساب معطّل.",
     "loadError": "تعذّر جلب بيانات المستخدم (رمز {{status}})"
@@ -27,8 +27,188 @@
     "APPROVER": "معتمد أصول",
     "WAREHOUSE": "أمين مخزن",
     "AUDITOR": "مدقق",
-    "ADMIN": "مدير النظام"
+    "ADMIN": "مدير النظام",
+    "SYSTEM": "النظام"
   },
-  "language": { "switch": "English" },
-  "env": { "banner": "بيئة: {{env}}" }
+  "language": {
+    "switch": "English"
+  },
+  "env": {
+    "banner": "بيئة: {{env}}",
+    "localStorage": "تخزين محلي — ليس تخزينًا غير قابل للكتابة (WORM)"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "registrations": "التسجيلات",
+    "newRegistration": "تسجيل عمود",
+    "assets": "الأصول"
+  },
+  "home": {
+    "register": "تسجيل عمود إنارة جديد",
+    "myRegistrations": "تسجيلاتي",
+    "approvalQueue": "طابور الاعتماد",
+    "assets": "أعمدة الإنارة المعتمدة"
+  },
+  "common": {
+    "notFound": "الصفحة غير موجودة",
+    "all": "الكل",
+    "empty": "لا توجد عناصر.",
+    "search": "بحث"
+  },
+  "field": {
+    "reason": "سبب التسجيل",
+    "projectRef": "مرجع المشروع",
+    "latitude": "خط العرض",
+    "longitude": "خط الطول",
+    "addressText": "العنوان",
+    "circuitRef": "مرجع الدائرة الكهربائية",
+    "powerSource": "مصدر الطاقة",
+    "responsibleParty": "الجهة المسؤولة",
+    "responsibleEntityName": "اسم الجهة (اختياري)",
+    "installedOnPrecision": "دقة تاريخ التركيب",
+    "installedOn": "تاريخ/سنة التركيب",
+    "observedStatus": "الحالة عند التسجيل",
+    "poleMaterial": "مادة العمود",
+    "poleHeightM": "ارتفاع العمود (م)",
+    "luminaireMake": "الشركة المصنعة للكشاف",
+    "luminaireModel": "طراز الكشاف",
+    "luminaireWattageW": "القدرة (واط)",
+    "luminaireSerial": "الرقم التسلسلي للكشاف",
+    "solarPanelW": "قدرة اللوح الشمسي (واط)",
+    "solarBatteryType": "نوع البطارية",
+    "solarBatteryAh": "سعة البطارية (أمبير ساعة)",
+    "solarControllerModel": "طراز منظم الشحن",
+    "warrantyUntil": "الضمان حتى",
+    "supplier": "المورد",
+    "solar": "حقول الطاقة الشمسية"
+  },
+  "reason": {
+    "BASELINE_SURVEY": "جرد أساسي",
+    "NEW_INSTALLATION": "تركيب جديد",
+    "MISSED_IN_SURVEY": "فائت في الجرد"
+  },
+  "responsibleParty": {
+    "MUNICIPALITY": "البلدية",
+    "ELECTRICITY_AUTHORITY": "جهة الكهرباء",
+    "OTHER_PUBLIC_ENTITY": "جهة عامة أخرى",
+    "SHARED": "مسؤولية مشتركة"
+  },
+  "powerSource": {
+    "GRID": "الشبكة",
+    "SOLAR": "شمسي",
+    "HYBRID": "هجين"
+  },
+  "status": {
+    "OPERATIONAL": "يعمل",
+    "FAULTY": "معطّل",
+    "UNKNOWN": "غير معروف",
+    "UNDER_MAINTENANCE": "قيد الصيانة"
+  },
+  "precision": {
+    "EXACT": "تاريخ دقيق",
+    "YEAR": "السنة فقط",
+    "UNKNOWN": "غير معروف"
+  },
+  "lifecycle": {
+    "PENDING": "بانتظار الاعتماد",
+    "ACTIVE": "معتمد",
+    "REJECTED": "مرفوض"
+  },
+  "registrationState": {
+    "DRAFT": "مسودة",
+    "SUBMITTED": "مقدَّم للاعتماد",
+    "RETURNED": "مُعاد للتصحيح",
+    "APPROVED": "معتمد",
+    "REJECTED": "مرفوض",
+    "DISCARDED": "ملغى"
+  },
+  "registration": {
+    "newTitle": "تسجيل عمود إنارة",
+    "editTitle": "تصحيح التسجيل",
+    "syntheticHint": "بيانات تجريبية فقط — البلدية التجريبية لم تُحدد بعد.",
+    "fillSynthetic": "تعبئة بيانات تجريبية",
+    "sectionRegistration": "التسجيل",
+    "sectionLocation": "الموقع",
+    "sectionOwnership": "المسؤولية",
+    "sectionEquipment": "المعدات",
+    "sectionInstallation": "التركيب والضمان",
+    "saveDraft": "حفظ كمسودة",
+    "queueTitle": "طابور الاعتماد",
+    "listTitle": "التسجيلات",
+    "filterState": "الحالة",
+    "state": "الحالة",
+    "registrar": "المسجّل",
+    "createdAt": "تاريخ الإنشاء",
+    "detailTitle": "تسجيل عمود إنارة",
+    "captureChannel": "قناة الإدخال",
+    "submittedAt": "تاريخ التقديم",
+    "decidedBy": "القرار من",
+    "decisionNote": "ملاحظة القرار",
+    "edit": "تصحيح",
+    "submit": "تقديم للاعتماد",
+    "discard": "إلغاء المسودة",
+    "note": "ملاحظة (إلزامية للإرجاع والرفض)",
+    "command": {
+      "ApproveRegistration": "اعتماد",
+      "ReturnRegistration": "إرجاع للتصحيح",
+      "RejectRegistration": "رفض"
+    },
+    "makerChecker": "لا يمكن لمن سجّل العمود أن يعتمده (فصل المهام)."
+  },
+  "asset": {
+    "code": "رمز الأصل",
+    "listTitle": "أعمدة الإنارة المعتمدة",
+    "searchPlaceholder": "ابحث بالرمز أو العنوان",
+    "operationalStatus": "الحالة التشغيلية",
+    "noCode": "بدون رمز",
+    "printLabel": "طباعة الملصق",
+    "versions": "النسخ المعتمدة",
+    "approvedBy": "اعتمدها",
+    "approvedAt": "تاريخ الاعتماد",
+    "snapshotHash": "بصمة النسخة",
+    "viewRegistration": "عرض التسجيل",
+    "history": "السجل التاريخي",
+    "historyHint": "كل تغيير مسجّل في سجل تدقيق متسلسل: من، متى، ماذا (القيمة القديمة ← الجديدة)، ولماذا. التعديل المباشر على قاعدة البيانات يُكتشف بأداة التحقق.",
+    "noTag": "لا يوجد ملصق لهذا الأصل.",
+    "printNow": "طباعة",
+    "printHint": "حجم A6 (105×148 مم).",
+    "backToAsset": "العودة إلى صفحة الأصل",
+    "labelFooter": "امسح الرمز للإبلاغ أو عرض سجل العمود"
+  },
+  "history": {
+    "reason": "السبب",
+    "field": "الحقل",
+    "old": "القيمة السابقة",
+    "new": "القيمة الجديدة",
+    "hashTitle": "بصمة الحدث في سلسلة التدقيق"
+  },
+  "action": {
+    "registration.drafted": "إنشاء مسودة التسجيل",
+    "street_light.created": "إنشاء سجل العمود",
+    "registration.updated": "تصحيح التسجيل",
+    "street_light.attributes_updated": "تعديل بيانات العمود",
+    "registration.submitted": "تقديم للاعتماد",
+    "registration.returned": "إرجاع للتصحيح",
+    "registration.approved": "اعتماد التسجيل",
+    "street_light.activated": "تفعيل العمود",
+    "tag.generated_and_bound": "إنشاء الملصق وربطه",
+    "asset_version.created": "إنشاء نسخة معتمدة",
+    "registration.rejected": "رفض التسجيل",
+    "street_light.registration_rejected": "رفض سجل العمود",
+    "registration.discarded": "إلغاء المسودة",
+    "street_light.registration_discarded": "إلغاء سجل العمود"
+  },
+  "error": {
+    "SOD_VIOLATION": "لا يمكن لمن سجّل العمود أن يتخذ القرار بشأنه.",
+    "INVALID_TRANSITION": "هذا الإجراء غير مسموح في الحالة الحالية.",
+    "FORBIDDEN": "دورك لا يسمح بهذا الإجراء.",
+    "NOTE_REQUIRED": "الملاحظة إلزامية.",
+    "INVALID_ATTRIBUTES": "بعض البيانات غير صحيحة:",
+    "PROJECT_REF_REQUIRED": "مرجع المشروع إلزامي للتركيب الجديد.",
+    "REGISTRATION_NOT_FOUND": "التسجيل غير موجود.",
+    "ASSET_NOT_FOUND": "الأصل غير موجود.",
+    "TAG_NOT_FOUND": "لا يوجد أصل فعّال لهذا الملصق.",
+    "NOT_REGISTRAR": "فقط مسجّل هذا الطلب يستطيع ذلك.",
+    "CONCURRENCY_CONFLICT": "تغيّر السجل من شخص آخر. أعد التحميل وحاول مجددًا."
+  }
 }

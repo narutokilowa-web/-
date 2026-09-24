@@ -81,6 +81,8 @@ services:
       Auth__MetadataAddress: http://keycloak:8080/realms/mfop/.well-known/openid-configuration
       Auth__Audience: mfop-api
       Auth__RequireHttpsMetadata: "false"
+      Tags__BaseUrl: http://localhost:${WEB_PORT:-5173}/t
+      Tags__CheckKey: ${MFOP_TAG_CHECK_KEY:?run make env (new variable in M1)}
     ports:
       - "${API_PORT:-5080}:8080"
     depends_on:

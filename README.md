@@ -7,7 +7,7 @@
 
 ## الحالة
 
-**المرحلة الحالية: M0 (Foundations) مكتملة — بانتظار الموافقة قبل M1.**
+**المرحلة الحالية: M1 (سجل التدقيق + تسجيل واعتماد عمود الإنارة + QR) مكتملة — بانتظار الموافقة قبل M2.**
 التفاصيل: [docs/status/IMPLEMENTATION_STATUS.md](docs/status/IMPLEMENTATION_STATUS.md)
 
 - 📄 [المواصفات طويلة المدى](docs/spec/README.md) — معتمدة
@@ -19,7 +19,8 @@
 
 ```bash
 make up      # يولّد .env بأسرار عشوائية، يبني ويشغّل: db, keycloak, migrate, api, web
-make e2e     # يسجّل دخول كل مستخدم تجريبي ويتحقق من دوره
+make e2e     # دخول كل مستخدم تجريبي + تسجيل عمود واعتماده وطباعة QR
+make verify-audit  # التحقق المستقل من سلسلة التدقيق (tamper-evident)
 make test    # اختبارات backend + web + mobile
 ```
 

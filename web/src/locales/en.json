@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Municipal Field Operations Platform",
-    "subtitle": "M0 — identity and roles check page"
+    "subtitle": "Milestone M1"
   },
   "auth": {
     "login": "Sign in",
@@ -14,7 +14,7 @@
     "username": "Username",
     "roles": "Roles",
     "rolesSource": "Roles source: platform database (not the login token)",
-    "noRoles": "No active roles",
+    "noRoles": "This account has no active roles yet.",
     "USER_NOT_PROVISIONED": "This account is not registered in the platform.",
     "USER_DISABLED": "This account is disabled.",
     "loadError": "Could not load user data (status {{status}})"
@@ -27,8 +27,188 @@
     "APPROVER": "Asset Approver",
     "WAREHOUSE": "Warehouse Officer",
     "AUDITOR": "Auditor",
-    "ADMIN": "System Administrator"
+    "ADMIN": "System Administrator",
+    "SYSTEM": "System"
   },
-  "language": { "switch": "العربية" },
-  "env": { "banner": "Environment: {{env}}" }
+  "language": {
+    "switch": "العربية"
+  },
+  "env": {
+    "banner": "Environment: {{env}}",
+    "localStorage": "local storage — not WORM"
+  },
+  "nav": {
+    "home": "Home",
+    "registrations": "Registrations",
+    "newRegistration": "Register light",
+    "assets": "Assets"
+  },
+  "home": {
+    "register": "Register a new street light",
+    "myRegistrations": "My registrations",
+    "approvalQueue": "Approval queue",
+    "assets": "Approved street lights"
+  },
+  "common": {
+    "notFound": "Page not found",
+    "all": "All",
+    "empty": "Nothing here.",
+    "search": "Search"
+  },
+  "field": {
+    "reason": "Registration reason",
+    "projectRef": "Project reference",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "addressText": "Address",
+    "circuitRef": "Circuit reference",
+    "powerSource": "Power source",
+    "responsibleParty": "Responsible party",
+    "responsibleEntityName": "Entity name (optional)",
+    "installedOnPrecision": "Install date precision",
+    "installedOn": "Install date/year",
+    "observedStatus": "Status at registration",
+    "poleMaterial": "Pole material",
+    "poleHeightM": "Pole height (m)",
+    "luminaireMake": "Luminaire make",
+    "luminaireModel": "Luminaire model",
+    "luminaireWattageW": "Wattage (W)",
+    "luminaireSerial": "Luminaire serial",
+    "solarPanelW": "Solar panel (W)",
+    "solarBatteryType": "Battery type",
+    "solarBatteryAh": "Battery capacity (Ah)",
+    "solarControllerModel": "Charge controller model",
+    "warrantyUntil": "Warranty until",
+    "supplier": "Supplier",
+    "solar": "Solar fields"
+  },
+  "reason": {
+    "BASELINE_SURVEY": "Baseline survey",
+    "NEW_INSTALLATION": "New installation",
+    "MISSED_IN_SURVEY": "Missed in survey"
+  },
+  "responsibleParty": {
+    "MUNICIPALITY": "Municipality",
+    "ELECTRICITY_AUTHORITY": "Electricity authority",
+    "OTHER_PUBLIC_ENTITY": "Other public entity",
+    "SHARED": "Shared responsibility"
+  },
+  "powerSource": {
+    "GRID": "Grid",
+    "SOLAR": "Solar",
+    "HYBRID": "Hybrid"
+  },
+  "status": {
+    "OPERATIONAL": "Operational",
+    "FAULTY": "Faulty",
+    "UNKNOWN": "Unknown",
+    "UNDER_MAINTENANCE": "Under maintenance"
+  },
+  "precision": {
+    "EXACT": "Exact date",
+    "YEAR": "Year only",
+    "UNKNOWN": "Unknown"
+  },
+  "lifecycle": {
+    "PENDING": "Pending approval",
+    "ACTIVE": "Active",
+    "REJECTED": "Rejected"
+  },
+  "registrationState": {
+    "DRAFT": "Draft",
+    "SUBMITTED": "Submitted",
+    "RETURNED": "Returned",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "DISCARDED": "Discarded"
+  },
+  "registration": {
+    "newTitle": "Register a street light",
+    "editTitle": "Correct registration",
+    "syntheticHint": "Synthetic data only — the pilot municipality is not decided yet.",
+    "fillSynthetic": "Fill synthetic data",
+    "sectionRegistration": "Registration",
+    "sectionLocation": "Location",
+    "sectionOwnership": "Responsibility",
+    "sectionEquipment": "Equipment",
+    "sectionInstallation": "Installation and warranty",
+    "saveDraft": "Save draft",
+    "queueTitle": "Approval queue",
+    "listTitle": "Registrations",
+    "filterState": "State",
+    "state": "State",
+    "registrar": "Registrar",
+    "createdAt": "Created",
+    "detailTitle": "Street-light registration",
+    "captureChannel": "Capture channel",
+    "submittedAt": "Submitted",
+    "decidedBy": "Decided by",
+    "decisionNote": "Decision note",
+    "edit": "Correct",
+    "submit": "Submit for approval",
+    "discard": "Discard draft",
+    "note": "Note (required to return or reject)",
+    "command": {
+      "ApproveRegistration": "Approve",
+      "ReturnRegistration": "Return for correction",
+      "RejectRegistration": "Reject"
+    },
+    "makerChecker": "The registrar of a light cannot approve it (separation of duties)."
+  },
+  "asset": {
+    "code": "Asset code",
+    "listTitle": "Approved street lights",
+    "searchPlaceholder": "Search by code or address",
+    "operationalStatus": "Operational status",
+    "noCode": "No code",
+    "printLabel": "Print label",
+    "versions": "Approved versions",
+    "approvedBy": "Approved by",
+    "approvedAt": "Approved at",
+    "snapshotHash": "Snapshot hash",
+    "viewRegistration": "View registration",
+    "history": "History",
+    "historyHint": "Every change is recorded in a hash-chained audit log: who, when, what (old → new) and why. Direct database edits are detected by the verifier.",
+    "noTag": "This asset has no tag.",
+    "printNow": "Print",
+    "printHint": "A6 size (105×148 mm).",
+    "backToAsset": "Back to the asset page",
+    "labelFooter": "Scan to report or view this light's record"
+  },
+  "history": {
+    "reason": "Reason",
+    "field": "Field",
+    "old": "Old value",
+    "new": "New value",
+    "hashTitle": "Event hash in the audit chain"
+  },
+  "action": {
+    "registration.drafted": "Registration drafted",
+    "street_light.created": "Street-light record created",
+    "registration.updated": "Registration corrected",
+    "street_light.attributes_updated": "Street-light data changed",
+    "registration.submitted": "Submitted for approval",
+    "registration.returned": "Returned for correction",
+    "registration.approved": "Registration approved",
+    "street_light.activated": "Street light activated",
+    "tag.generated_and_bound": "Tag generated and bound",
+    "asset_version.created": "Approved version created",
+    "registration.rejected": "Registration rejected",
+    "street_light.registration_rejected": "Street-light record rejected",
+    "registration.discarded": "Draft discarded",
+    "street_light.registration_discarded": "Street-light record discarded"
+  },
+  "error": {
+    "SOD_VIOLATION": "The registrar cannot decide on their own registration.",
+    "INVALID_TRANSITION": "This action is not allowed in the current state.",
+    "FORBIDDEN": "Your role does not allow this action.",
+    "NOTE_REQUIRED": "A note is required.",
+    "INVALID_ATTRIBUTES": "Some data is invalid:",
+    "PROJECT_REF_REQUIRED": "A project reference is required for a new installation.",
+    "REGISTRATION_NOT_FOUND": "Registration not found.",
+    "ASSET_NOT_FOUND": "Asset not found.",
+    "TAG_NOT_FOUND": "No active asset for this tag.",
+    "NOT_REGISTRAR": "Only the registrar of this registration can do that.",
+    "CONCURRENCY_CONFLICT": "Someone else changed this record. Reload and try again."
+  }
 }

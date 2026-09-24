@@ -3,6 +3,8 @@ export interface RuntimeConfig {
   oidcAuthority: string;
   oidcClientId: string;
   environment: string;
+  /** Printed on QR labels. Configuration, not code: the pilot municipality is not decided yet. */
+  organizationNameAr: string;
 }
 
 export async function loadConfig(): Promise<RuntimeConfig> {

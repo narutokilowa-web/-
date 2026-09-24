@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../shared/i18n';
 
 const authState = vi.hoisted(() => ({
@@ -10,20 +10,23 @@ vi.mock('react-oidc-context', () => ({ useAuth: () => authState.value }));
 
 import { App } from './App';
 
+const config = { oidcAuthority: 'http://kc/realms/mfop', oidcClientId: 'mfop-web', environment: 'DEV', organizationNameAr: 'بلدية تجريبية' };
+
 describe('App', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('ar');
     authState.value = { ...authState.value, isAuthenticated: false, user: null };
   });
 
-  it('shows the Arabic sign-in button when not authenticated', () => {
-    render(<App environment="DEV" />);
+  it('shows the Arabic sign-in button and the environment/storage banner when not authenticated', () => {
+    render(<App config={config} />);
     expect(screen.getByTestId('login')).toHaveTextContent('تسجيل الدخول');
     expect(screen.getByTestId('env-banner')).toHaveTextContent('DEV');
+    expect(screen.getByTestId('env-banner')).toHaveTextContent('ليس تخزينًا غير قابل للكتابة');
   });
 
   it('uses right-to-left layout for Arabic and left-to-right for English', async () => {
-    render(<App environment="DEV" />);
+    render(<App config={config} />);
     expect(document.documentElement.dir).toBe('rtl');
     await i18n.changeLanguage('en');
     expect(document.documentElement.dir).toBe('ltr');

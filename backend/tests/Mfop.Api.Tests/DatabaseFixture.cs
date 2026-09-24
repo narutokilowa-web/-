@@ -48,6 +48,16 @@ public sealed class DatabaseFixture : IAsyncLifetime
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task<T> ScalarAsOwnerAsync<T>(string sql)
+    {
+        await using var conn = new NpgsqlConnection(OwnerConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand(sql, conn);
+        return (T)(await cmd.ExecuteScalarAsync())!;
+    }
+
+    public string ReadOnlyConnectionString => Connection("mfop_readonly", "test-ro-pw");
+
     private string Connection(string user, string password) =>
         new NpgsqlConnectionStringBuilder
         {

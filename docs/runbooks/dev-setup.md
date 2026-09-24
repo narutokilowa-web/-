@@ -1,4 +1,4 @@
-# Developer setup (M0)
+# Developer setup (M1)
 
 ## Prerequisites
 
@@ -29,12 +29,32 @@ make up        # creates .env with random secrets (first time), builds images, s
 
 ```bash
 make test          # backend + web + mobile tests (no running stack needed; backend tests use Docker)
-make e2e           # browser test: every dev user signs in and sees their role (needs `make up`)
+make e2e           # browser tests (needs `make up`): every dev user signs in; registrar → approver → QR → label → history
+make verify-audit  # independent audit verifier against the running DB (as mfop_readonly); exit 0 = OK, 1 = findings, 2 = error
 make seed          # re-apply the dev bootstrap (idempotent)
 make demo-reset    # wipe volumes, start from scratch
 make down          # stop
 make apk           # Android debug APK → mobile/build/app/outputs/flutter-apk/app-debug.apk
 ```
+
+## Configuration added in M1
+
+`make env` (run by `make up`) creates `.env` on the first run. Later it only **appends** variables that are new in `.env.example`, so existing secrets are kept.
+
+| Variable | Purpose |
+|---|---|
+| `MFOP_TAG_CHECK_KEY` | Key for the 2-character check code of tag human codes (`XXXXXXXX.CC`). **Changing it makes every printed label unresolvable.** Keep it stable and back it up with the database. |
+
+The QR on a label contains `Tags__BaseUrl/<human code>` (Compose: `http://localhost:5173/t/<code>`). Opening it in the web console resolves to the asset.
+
+## Audit verification
+
+`make verify-audit` runs `tools/audit-verify` with the read-only role. It checks:
+- sequence continuity, each event's content hash, and the `prev_hash` chain;
+- asset-version snapshot hashes against the audited `snapshot_hash`;
+- that every ACTIVE street light still equals its latest approved snapshot.
+
+The first finding is printed with its `seq` and entity. The verifier cannot detect deletion of the newest events until signed checkpoints arrive (M8). The database is **tamper-evident**, not immutable.
 
 ## Restricted networks (TLS-inspecting proxy, blocked registries)
 
@@ -56,7 +76,7 @@ services:
 | Role | Used by | Rights |
 |---|---|---|
 | `mfop_owner` | migrator only | owns schemas and tables |
-| `mfop_app` | the API at runtime | SELECT, INSERT, UPDATE. **No DELETE** (nothing operational is deleted) |
-| `mfop_readonly` | auditor tooling (`audit-verify`, from M1) | SELECT |
+| `mfop_app` | the API at runtime | SELECT, INSERT, UPDATE. **No DELETE** (nothing operational is deleted). Append-only tables (`audit.audit_events`, `assets.asset_versions`): SELECT, INSERT only, plus a trigger rejecting UPDATE/DELETE/TRUNCATE (a guard against accidents and bugs, not against a privileged DBA) |
+| `mfop_readonly` | auditor tooling (`audit-verify`) | SELECT |
 
 Migrations run as a one-shot `migrate` service before the API starts. The API never migrates.

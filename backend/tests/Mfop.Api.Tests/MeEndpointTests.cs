@@ -62,13 +62,31 @@ public class MeEndpointTests(DatabaseFixture db) : IClassFixture<DatabaseFixture
     }
 
     [Fact]
-    public async Task Unknown_identity_is_forbidden_with_stable_code()
+    public async Task Unknown_identity_is_provisioned_on_first_login_with_no_roles_and_audited()
+    {
+        var sub = Guid.NewGuid().ToString();
+        using var client = Client(sub);
+        var me = await client.GetFromJsonAsync<JsonElement>("/api/v1/me");
+        Assert.Empty(me.GetProperty("roles").EnumerateArray());
+        Assert.Equal(sub, me.GetProperty("userId").GetString());
+
+        // Second call links to the same record (no duplicate).
+        var again = await client.GetFromJsonAsync<JsonElement>("/api/v1/me");
+        Assert.Equal(sub, again.GetProperty("userId").GetString());
+
+        Assert.Equal(1L, await db.ScalarAsOwnerAsync<long>($"SELECT count(*) FROM access.users WHERE idp_subject = '{sub}'"));
+        Assert.Equal(1L, await db.ScalarAsOwnerAsync<long>(
+            $"SELECT count(*) FROM audit.audit_events WHERE action = 'user.provisioned' AND entity_id = '{sub}' AND actor_user_id = '{sub}'"));
+    }
+
+    [Fact]
+    public async Task Provisioned_user_without_roles_cannot_use_role_gated_endpoints()
     {
         using var client = Client(Guid.NewGuid().ToString());
-        var response = await client.GetAsync("/api/v1/me");
+        var response = await client.GetAsync("/api/v1/assets");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("USER_NOT_PROVISIONED", problem.GetProperty("code").GetString());
+        Assert.Equal("FORBIDDEN", problem.GetProperty("code").GetString());
     }
 
     [Fact]
@@ -124,9 +142,12 @@ public class MeEndpointTests(DatabaseFixture db) : IClassFixture<DatabaseFixture
         await conn.OpenAsync();
         await using var cmd = new NpgsqlCommand(
             "SELECT count(*) FROM access.role_assignments WHERE grant_reason = 'BOOTSTRAP_DEV_SEED'", conn);
+        await using var auditCmd = new NpgsqlCommand(
+            "SELECT count(*) FROM audit.audit_events WHERE action = 'role.granted' AND reason = 'BOOTSTRAP_DEV_SEED'", conn);
         var count = (long)(await cmd.ExecuteScalarAsync())!;
         using var doc = JsonDocument.Parse(File.ReadAllText(DatabaseFixture.DevUsersPath));
         var expected = doc.RootElement.GetProperty("users").EnumerateArray().Sum(u => u.GetProperty("roles").GetArrayLength());
         Assert.Equal(expected, count);
+        Assert.Equal(expected, (long)(await auditCmd.ExecuteScalarAsync())!); // bootstrap is audited exactly once
     }
 }

@@ -6,7 +6,7 @@ export function RoleList({ roles }: { roles: string[] }) {
     return <p data-testid="no-roles">{t('me.noRoles')}</p>;
   }
   return (
-    <ul data-testid="roles">
+    <ul data-testid="roles" className="roles">
       {roles.map((role) => (
         <li key={role} data-role={role}>
           {t(`roles.${role}`, { defaultValue: role })} <code>{role}</code>

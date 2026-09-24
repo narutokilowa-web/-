@@ -19,3 +19,8 @@ transitions:
      effects: [asset_lifecycle_active, asset_code_issued, asset_version_1_snapshot, tag_generated_and_bound]}
   - {id: R6, from: [SUBMITTED], command: RejectRegistration, to: REJECTED, actor: APPROVER,
      policies: [approver_not_registrar], requires: [reason], effects: [asset_lifecycle_rejected]}
+  # Corrections by the registrar before submission / after a return (attribute changes are audited old → new).
+  - {id: R7, from: [DRAFT], command: UpdateRegistrationDraft, to: DRAFT, actor: registrar,
+     requires: [location, required_attributes_valid]}
+  - {id: R8, from: [RETURNED], command: UpdateRegistrationDraft, to: RETURNED, actor: registrar,
+     requires: [location, required_attributes_valid]}

@@ -1,0 +1,79 @@
+:root {
+  --bg: #f7f7f5; --fg: #1d2a24; --muted: #5b6b63; --line: #d7ddd9; --card: #ffffff;
+  --accent: #1b5e20; --accent-fg: #ffffff; --warn-bg: #fde68a; --danger: #b42318;
+  font-family: system-ui, "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  color: var(--fg); background: var(--bg);
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: var(--accent); }
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.env-banner { background: var(--warn-bg); padding: 4px 16px; font-size: 0.85rem; }
+.topbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 16px; background: var(--card); border-block-end: 1px solid var(--line); }
+.nav { display: flex; gap: 12px; flex-wrap: wrap; }
+.nav a { text-decoration: none; padding: 4px 8px; border-radius: 6px; }
+.nav a.active { background: #e8f2ea; }
+.topbar-end { margin-inline-start: auto; display: flex; gap: 8px; align-items: center; }
+.page { padding: 16px; max-width: 1100px; width: 100%; margin: 0 auto; flex: 1; }
+.footer { border-block-start: 1px solid var(--line); padding: 8px 16px; font-size: 0.85rem; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+.roles { display: inline-flex; gap: 12px; margin: 0; padding: 0; list-style: none; }
+button, .button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); cursor: pointer; text-decoration: none; color: inherit; display: inline-block; min-height: 40px; }
+button.primary, .button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; list-style: none; padding: 0; }
+.cards li a { display: block; padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; }
+.form fieldset { border: 1px solid var(--line); border-radius: 10px; margin-block: 12px; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; background: var(--card); }
+.form legend { font-weight: 600; padding-inline: 6px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+label.inline, form.inline { flex-direction: row; align-items: center; gap: 8px; margin-block: 8px; display: flex; }
+input, select, textarea { font: inherit; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+textarea { min-height: 70px; }
+.hint { color: var(--muted); font-size: 0.85rem; }
+.problem { border: 1px solid var(--danger); color: var(--danger); background: #fff5f4; padding: 10px; border-radius: 8px; margin-block: 10px; }
+.table { width: 100%; border-collapse: collapse; background: var(--card); }
+.table th, .table td { text-align: start; padding: 8px; border-block-end: 1px solid var(--line); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; background: #eef1ef; }
+.state-APPROVED, .state-ACTIVE, .status-OPERATIONAL { background: #dcf3e1; }
+.state-SUBMITTED, .state-PENDING { background: #e6effa; }
+.state-RETURNED, .status-UNKNOWN { background: #fdf1d8; }
+.state-REJECTED, .state-DISCARDED, .status-FAULTY { background: #fbe1df; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; }
+.facts.attributes { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.facts .fact { display: contents; }
+.facts.attributes .fact { display: block; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-block: 12px; }
+.decision { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-block: 12px; }
+.asset-top { display: grid; grid-template-columns: max-content 1fr; gap: 16px; align-items: start; }
+@media (max-width: 700px) { .asset-top { grid-template-columns: 1fr; } }
+.tag-box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; }
+.human-code { font-family: ui-monospace, monospace; font-size: 1.2rem; letter-spacing: 1px; direction: ltr; }
+.qr svg { width: 100%; height: 100%; }
+.timeline { list-style: none; padding: 0; border-inline-start: 3px solid var(--line); }
+.timeline li { background: var(--card); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 10px 0; margin-inline-start: 12px; padding: 10px; }
+.timeline-head { display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+.changes { width: 100%; table-layout: fixed; border-collapse: collapse; margin-block: 6px; font-size: 0.85rem; }
+.changes th:first-child { width: 11rem; }
+@media (max-width: 600px) { .changes th:first-child { width: 6.5rem; } .changes { font-size: 0.78rem; } }
+/* Long values (e.g. the version snapshot JSON, hashes) wrap instead of widening the page. */
+.changes td, .facts-line { overflow-wrap: anywhere; word-break: break-word; }
+.timeline, .timeline li { min-width: 0; }
+.changes th, .changes td { text-align: start; padding: 4px 6px; border-block-end: 1px solid var(--line); }
+.changes .old { color: var(--danger); }
+.changes .new { color: var(--accent); }
+.hash, .facts-line { color: var(--muted); font-size: 0.8rem; margin: 4px 0 0; direction: ltr; text-align: end; }
+.reason { margin: 4px 0; }
+/* A6 print label */
+.label-page { padding: 16px; }
+.label { width: 105mm; height: 148mm; border: 1px dashed var(--line); background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8mm; text-align: center; }
+.label header { font-weight: 700; font-size: 14pt; }
+.label-asset { font-size: 22pt; font-weight: 800; margin: 0; direction: ltr; }
+.label-code { font-family: ui-monospace, monospace; font-size: 14pt; letter-spacing: 1px; margin: 0; direction: ltr; }
+.label footer { font-size: 9pt; }
+@page { size: A6 portrait; margin: 0; }
+@media print {
+  .no-print, .env-banner { display: none !important; }
+  .label-page { padding: 0; }
+  .label { border: none; }
+}

@@ -9,8 +9,10 @@
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="YamlDotNet" />
     <ProjectReference Include="..\..\src\Mfop.Api\Mfop.Api.csproj" />
     <ProjectReference Include="..\..\src\Mfop.Migrator\Mfop.Migrator.csproj" />
+    <ProjectReference Include="..\..\..\tools\audit-verify\Mfop.AuditVerify.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

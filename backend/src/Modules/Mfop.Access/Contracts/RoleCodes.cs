@@ -1,4 +1,4 @@
-namespace Mfop.Access.Domain;
+namespace Mfop.Access.Contracts;
 
 /// <summary>Role codes. Must match docs/lean-pilot/permissions.yaml (checked by SpecFiles tests).</summary>
 public static class RoleCodes

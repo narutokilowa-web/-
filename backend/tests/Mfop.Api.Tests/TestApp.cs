@@ -18,6 +18,7 @@ namespace Mfop.Api.Tests;
 public sealed class TestApp(DatabaseFixture db) : WebApplicationFactory<Program>
 {
     public const string SubHeader = "X-Test-Sub";
+    public const string TagCheckKey = "test-tag-check-key";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -25,6 +26,8 @@ public sealed class TestApp(DatabaseFixture db) : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:App", db.AppConnectionString);
         builder.UseSetting("Auth:Issuer", "http://issuer.test/realms/mfop");
         builder.UseSetting("Auth:MetadataAddress", "http://issuer.test/realms/mfop/.well-known/openid-configuration");
+        builder.UseSetting("Tags:CheckKey", TagCheckKey);
+        builder.UseSetting("Tags:BaseUrl", "http://web.test/t");
         builder.ConfigureTestServices(services =>
         {
             services.AddAuthentication(TestAuthHandler.SchemeName)

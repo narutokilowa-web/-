@@ -52,7 +52,8 @@ actions:
   registration.submit:        {roles: [REGISTRAR], policies: [own_records_only], milestone: M1}
   registration.discard:       {roles: [REGISTRAR], policies: [own_records_only], milestone: M1}
   registration.decide:        {roles: [APPROVER], policies: [approver_not_registrar], milestone: M1}   # approve / return / reject
-  audit.read:                 {roles: [AUDITOR], milestone: M1}
+  registration.read:          {roles: [REGISTRAR, APPROVER, AUDITOR], milestone: M1}                  # REGISTRAR sees own; APPROVER/AUDITOR see all
+  audit.read:                 {roles: [AUDITOR], milestone: M3}           # audit search screen; asset history uses asset.history.read (M1)
 
   device.register:            {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}
   device.approve:             {roles: [ADMIN, SUPERVISOR], milestone: M2}
@@ -78,6 +79,6 @@ actions:
   recommendation.read:        {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M3}
   policy.settings.change:     {roles: [ADMIN], milestone: M3}             # includes rule_settings (repeated-failure threshold/window)
 
-  user.manage:                {roles: [ADMIN], policies: [no_self_grant], milestone: M1}
+  user.manage:                {roles: [ADMIN], policies: [no_self_grant], milestone: M4}   # M1 only provisions/links users on first login; management UI comes with offboarding (M4)
 
 # Nobody may delete operational or audit records. There is no action for it.

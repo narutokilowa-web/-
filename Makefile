@@ -34,8 +34,8 @@ migrate: env ## apply DB migrations (owner role, one-shot)
 seed: env ## load dev seed data (M0: bootstrap users/roles; from M2: synthetic demo data)
 	$(COMPOSE) run --rm migrate migrate --seed-dev /seed/dev-users.json
 
-verify-audit: ## run the audit chain verifier (implemented in M1)
-	dotnet run --project tools/audit-verify
+verify-audit: env ## verify the audit chain, approved snapshots and active assets (read-only DB role)
+	set -a && source .env && set +a && dotnet run --project tools/audit-verify -- --db "Host=localhost;Port=$${DB_PORT:-5432};Database=mfop;Username=mfop_readonly;Password=$${MFOP_READONLY_PASSWORD}"
 
 demo-reset: env ## wipe dev volumes and start again from scratch
 	$(COMPOSE) down -v
