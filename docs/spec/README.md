@@ -1,7 +1,7 @@
 # Municipal Field Operations & Asset Integrity Platform
 # منصة إدارة أصول وعمليات البلدية الميدانية
 
-**وثيقة Product + Architecture Specification — الإصدار 0.1 (مسودة للمراجعة)**
+**وثيقة Product + Architecture Specification — الإصدار 0.2 (معتمدة)**
 
 > الحالة: **معتمدة (2026-09-24)** مع القرارات في [17](17-decisions-and-syria-context.md). لا يوجد كود بعد.
 > أي بند هنا قابل للنقاش، لكن التعديل يجب أن يمر عبر ADR (Architecture Decision Record) وليس تعديلًا صامتًا — نطبق على الوثيقة نفس فلسفة النظام.
