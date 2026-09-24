@@ -58,6 +58,12 @@ void main() {
       await binding.takeScreenshot(name);
     }
 
+    // Leaves a pushed screen the way the system back gesture does (independent of the AppBar's back-button widget type).
+    Future<void> back(Finder onScreen) async {
+      Navigator.of(tester.element(onScreen)).pop();
+      await tester.pumpAndSettle();
+    }
+
     Future<void> until(Finder finder, {Duration timeout = const Duration(seconds: 40)}) async {
       final end = DateTime.now().add(timeout);
       while (finder.evaluate().isEmpty) {
@@ -127,8 +133,7 @@ void main() {
     expect(find.text(assetCode), findsWidgets);
     expect(find.text('معطّل'), findsOneWidget);
     await shot('06-task-detail');
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    await back(find.byKey(const Key('task-state')));
 
     // Step 6: the printed label's QR, decoded on the phone by the same scanner library as the Scan tab (ML Kit).
     final qrPayload = (asset['tag'] as Map<String, dynamic>)['qrPayload'] as String;
@@ -143,8 +148,7 @@ void main() {
     await until(find.byKey(Key('card-task-$code')));
     expect(find.text(assetCode), findsWidgets);
     await shot('07-asset-card-from-qr');
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    await back(find.byKey(const Key('open-faults')));
 
     // Revocation (server-side only): the phone is refused on its next request and deletes only the app's own data.
     await office.call('admin1', 'POST', '/api/v1/devices/$deviceId/revoke', {'reason': 'نهاية اختبار أندرويد'});
