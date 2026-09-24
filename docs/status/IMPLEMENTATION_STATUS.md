@@ -107,7 +107,17 @@ Walkthrough on the live stack at desktop width (1280 px) and phone width (390 px
 
 ### CI results
 
-Filled in after the push (see below).
+Run [36012229581](https://github.com/narutokilowa-web/-/actions/runs/36012229581) on code head `f801ca3`: **success**, all 5 jobs.
+
+| Job | Result |
+|---|---|
+| Secret scan (gitleaks CLI 8.28.0, full git history) | ✅ success |
+| Web (lint, typecheck, 19 unit tests, production build, `npm audit`) | ✅ success |
+| Backend (.NET build `-warnaserror`, 194 tests incl. Testcontainers PostGIS, vulnerable-package check) | ✅ success |
+| Mobile (analyze, 3 widget tests, **debug APK with application id `com.reuxstudio.mfop.field`** → artifact `mfop-field-debug-apk`, 69.1 MB, available until 2026-10-08) | ✅ success |
+| E2E (`make up` on a clean runner with random secrets, including the new `MFOP_TAG_CHECK_KEY`; 8 role sign-ins + wrong password + full M1 flow) | ✅ success |
+
+The only commit after `f801ca3` changes this document (no code). CI runs on it as well.
 
 ---
 
