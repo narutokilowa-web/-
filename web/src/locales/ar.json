@@ -381,7 +381,8 @@
     "assignments": "الإسنادات",
     "startedAt": "بدأ",
     "endedAt": "انتهى",
-    "timeline": "السجل التاريخي"
+    "timeline": "السجل التاريخي",
+    "endReason": "سبب الانتهاء"
   },
   "workOrderState": {
     "NEW": "جديد",

@@ -92,7 +92,7 @@ export function WorkOrderDetailPage() {
       <h2>{t('workOrder.assignments')}</h2>
       {w.assignments.length === 0 ? <p>{t('common.empty')}</p> : (
         <table className="table" data-testid="assignments">
-          <thead><tr><th>{t('workOrder.technician')}</th><th>{t('workOrder.state')}</th><th>{t('workOrder.startedAt')}</th><th>{t('workOrder.endedAt')}</th><th>{t('workOrder.reason')}</th></tr></thead>
+          <thead><tr><th>{t('workOrder.technician')}</th><th>{t('workOrder.state')}</th><th>{t('workOrder.startedAt')}</th><th>{t('workOrder.endedAt')}</th><th>{t('workOrder.endReason')}</th></tr></thead>
           <tbody>
             {w.assignments.map((a) => (
               <tr key={a.id}>

@@ -7,7 +7,7 @@ FLUTTER_DOCKER_ARGS ?=
 # Use a local Flutter SDK if present, otherwise the pinned Docker image (includes the Android SDK).
 FLUTTER := $(shell command -v flutter >/dev/null 2>&1 && echo flutter || echo docker run --rm $(FLUTTER_DOCKER_ARGS) -v $(CURDIR)/mobile:/app -v mfop-flutter-pub-cache:/root/.pub-cache -v mfop-gradle-cache:/root/.gradle -w /app $(FLUTTER_IMAGE) flutter)
 
-.PHONY: help env up down ps logs migrate seed verify-audit demo-reset test test-backend test-web test-mobile e2e apk clean
+.PHONY: help env up down ps logs migrate seed verify-audit demo-reset test test-backend test-web test-mobile e2e android-e2e apk clean
 
 help:
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -54,6 +54,12 @@ test-mobile: ## flutter analyze + unit/widget tests
 
 e2e: ## browser E2E against the running stack (make up first)
 	cd web && set -a && source ../.env && set +a && npx playwright test
+
+android-e2e: ## field-app flow on a connected Android phone/emulator (make up first; needs a local Flutter SDK and adb)
+	adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080
+	set -a && source .env && set +a && cd mobile && flutter drive --driver=test_driver/integration_test.dart \
+	  --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$$MFOP_DEV_USER_PASSWORD"
+	@echo "Screenshots: mobile/build/android-e2e/"
 
 apk: ## build the Android debug APK
 	$(FLUTTER) pub get && $(FLUTTER) build apk --debug

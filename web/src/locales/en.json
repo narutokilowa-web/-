@@ -381,7 +381,8 @@
     "assignments": "Assignments",
     "startedAt": "Started",
     "endedAt": "Ended",
-    "timeline": "Timeline"
+    "timeline": "Timeline",
+    "endReason": "End reason"
   },
   "workOrderState": {
     "NEW": "New",

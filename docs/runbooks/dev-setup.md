@@ -1,4 +1,4 @@
-# Developer setup (M1)
+# Developer setup (M2)
 
 ## Prerequisites
 
@@ -29,7 +29,8 @@ make up        # creates .env with random secrets (first time), builds images, s
 
 ```bash
 make test          # backend + web + mobile tests (no running stack needed; backend tests use Docker)
-make e2e           # browser tests (needs `make up`): every dev user signs in; registrar → approver → QR → label → history
+make e2e           # browser tests (needs `make up`): every dev user signs in; M1 registration flow; M2 device/fault/work-order flow
+make android-e2e   # field app on a connected Android phone/emulator (needs `make up`, local Flutter + adb)
 make verify-audit  # independent audit verifier against the running DB (as mfop_readonly); exit 0 = OK, 1 = findings, 2 = error
 make seed          # re-apply the dev bootstrap (idempotent)
 make demo-reset    # wipe volumes, start from scratch
@@ -46,6 +47,19 @@ make apk           # Android debug APK → mobile/build/app/outputs/flutter-apk/
 | `MFOP_TAG_CHECK_KEY` | Key for the 2-character check code of tag human codes (`XXXXXXXX.CC`). **Changing it makes every printed label unresolvable.** Keep it stable and back it up with the database. |
 
 The QR on a label contains `Tags__BaseUrl/<human code>` (Compose: `http://localhost:5173/t/<code>`). Opening it in the web console resolves to the asset.
+
+## Phones (M2)
+
+- The field app talks to the API (`:5080`) and Keycloak (`:8080`) as `localhost` through USB: `adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080`.
+- A phone must be **approved** before it can do anything: web → **Devices** (supervisor or admin). Nobody approves their own device. Approving a new phone revokes the user's previous one.
+- Work orders can only be assigned to a technician whose phone is approved. `tech1` and `tech2` are the dev technicians.
+- Manual checklist for a real phone (browser login and live camera scan): `docs/runbooks/android-field-test.md`. CI runs the rest on an Android emulator and uploads screenshots.
+
+| Setting | Where | Default |
+|---|---|---|
+| `WorkOrders:SlaHoursByPriority` (e.g. `{"P1": 4}`) | API configuration | **empty**: no SLA until the municipality defines it |
+| `WorkOrders:TimeZone` | API configuration | `Asia/Damascus` (year in `WO-<year>-<n>`) |
+| `Auth:MobileClientId` | API configuration | `mfop-mobile` (tokens of this client always need an ACTIVE device) |
 
 ## Audit verification
 
@@ -76,7 +90,7 @@ services:
 | Role | Used by | Rights |
 |---|---|---|
 | `mfop_owner` | migrator only | owns schemas and tables |
-| `mfop_app` | the API at runtime | SELECT, INSERT, UPDATE. **No DELETE** (nothing operational is deleted). Append-only tables (`audit.audit_events`, `assets.asset_versions`): SELECT, INSERT only, plus a trigger rejecting UPDATE/DELETE/TRUNCATE (a guard against accidents and bugs, not against a privileged DBA) |
+| `mfop_app` | the API at runtime | SELECT, INSERT, UPDATE. **No DELETE** (nothing operational is deleted). Append-only tables (`audit.audit_events`, `assets.asset_versions`, `assets.asset_status_events`, `faults.fault_confirmations`, `sync.sync_commands`): SELECT, INSERT only, plus a trigger rejecting UPDATE/DELETE/TRUNCATE (a guard against accidents and bugs, not against a privileged DBA) |
 | `mfop_readonly` | auditor tooling (`audit-verify`) | SELECT |
 
 Migrations run as a one-shot `migrate` service before the API starts. The API never migrates.

@@ -7,7 +7,7 @@
 
 ## الحالة
 
-**المرحلة الحالية: M1 (سجل التدقيق + تسجيل واعتماد عمود الإنارة + QR) مكتملة — بانتظار الموافقة قبل M2.**
+**المرحلة الحالية: M2 (تطبيق أندرويد: المسح ومهامي + الأعطال وأوامر العمل + اعتماد الأجهزة) مكتملة — بانتظار الموافقة قبل M3.**
 التفاصيل: [docs/status/IMPLEMENTATION_STATUS.md](docs/status/IMPLEMENTATION_STATUS.md)
 
 - 📄 [المواصفات طويلة المدى](docs/spec/README.md) — معتمدة
@@ -21,6 +21,7 @@
 make up      # يولّد .env بأسرار عشوائية، يبني ويشغّل: db, keycloak, migrate, api, web
 make e2e     # دخول كل مستخدم تجريبي + تسجيل عمود واعتماده وطباعة QR
 make verify-audit  # التحقق المستقل من سلسلة التدقيق (tamper-evident)
+make android-e2e   # تطبيق الهاتف على جهاز أندرويد موصول (adb reverse)
 make test    # اختبارات backend + web + mobile
 ```
 

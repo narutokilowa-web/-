@@ -3,11 +3,103 @@
 | Milestone | Status | Date |
 |---|---|---|
 | M0 — Foundations | ✅ **approved by the owner** | 2026-09-24 |
-| M1 — Audit core + register / approve / QR (web) | ✅ **PASS — awaiting owner approval before M2** | 2026-09-24 |
-| M2 — Android scan + faults + work-order creation | — | — |
+| M1 — Audit core + register / approve / QR (web) | ✅ **approved by the owner** | 2026-09-24 |
+| M2 — Android scan + faults + work-order creation | ✅ **PASS — awaiting owner approval before M3** | 2026-09-24 |
 | M3 — Field execution + review + dashboard → DEMO 1 | — | — |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
+
+---
+
+## M2 — Android scan + faults + work-order creation
+
+Scope followed: 11 §11.2 M2 (items 1–7). Nothing from M3 has been started: no evidence, arrival, diagnosis, materials, checklist, review, dashboard or seal.
+
+### Deliverables vs. specification
+
+| # | Deliverable | Status | Where |
+|---|---|---|---|
+| 1 | **Flutter app:** Keycloak login (system browser, PKCE) through `adb reverse`; device registers itself (`PENDING_APPROVAL`); admin/supervisor approves on the web **Devices** page; revoked devices rejected by the API **on every request**; app PIN; encrypted local DB | ✅ | `mobile/lib/`, `Modules/Mfop.Access`, `web/src/features/devices` |
+| 2 | **Scan → asset record:** camera QR scan + manual code entry → `GET /sync/v1/tags/{code}` → asset card (code, type, power source, operational status, responsible party, open faults, my open task, last events) | ✅ | `mobile/lib/features/scan`, `Modules/Mfop.Sync` |
+| 3 | **Single write path:** `POST /sync/v1/push` (same command pipeline, idempotent by `command_id`, per-command results); mobile persisted command queue with retry. No conflict resolution, no grants | ✅ | `Modules/Mfop.Sync`, `mobile/lib/core/outbox.dart`, `sync_engine.dart` |
+| 4 | **Faults (web, supervisor):** "Report fault" on the asset page (category, power at inspection + optional source, description); duplicate → confirmation; dismiss with a reason; light → `FAULTY` per 04 §4.6 | ✅ | `Modules/Mfop.Faults`, `web/src/features/faults` |
+| 5 | **Work orders (web, supervisor):** create from a fault (fault → `IN_WORK_ORDER`), assign / reassign **only to a technician with an ACTIVE device**, cancel before evidence; work-order page with timeline | ✅ | `Modules/Mfop.WorkOrders`, `web/src/features/workorders` |
+| 6 | **Mobile "My tasks":** assigned work orders (pull), open a task and see the asset | ✅ | `mobile/lib/features/tasks` |
+| 7 | **Tests:** YAML tests for Fault, WorkOrder (W1–W4 implemented; whole DEMO 1 table conformance-tested) and Assignment; matrix tests for M2 endpoints; **N5**, **N15** (and **N8**, planned for later, already covered) | ✅ | see below |
+
+### Acceptance: "DEMO 1 steps 6–9 work on a real Android phone"
+
+| Step | Verified how | Result |
+|---|---|---|
+| 6 Scan the printed QR from Android | **Android emulator (Android 14, x86_64) in CI, real app build:** the label's QR payload is rendered as an image and decoded **on the device** by the app's scanner library (ML Kit via `mobile_scanner`); the decoded value goes through the Scan tab → asset card. Unit/widget tests: QR URL and typed-code parsing | see CI results |
+| 7 See the asset record | Emulator: asset card shows the asset code, "معطّل", and "You have a task on this light" | see CI results |
+| 8 Create a fault | Web (Playwright, real Keycloak login): supervisor reports a fault on the asset page → light turns FAULTY; API tests (dedup, power unavailable, OTHER, dismiss) | ✅ |
+| 9 Create and assign a work order | Web (Playwright): fault → work order → assign to `tech2`, whose phone was approved on the Devices page; the task is in tech2's pull; then revoke → `DEVICE_REVOKED` | ✅ |
+| "the task appears on the technician's phone" | Emulator: after sync, **My tasks** lists the work order; opening it shows the asset | see CI results |
+| Device registration and revocation | Emulator: sign in → "waiting for approval" → admin approves → PIN → … → admin revokes → the app shows "device revoked" and has deleted its own tokens, device id, PIN and database key | see CI results |
+
+**What was NOT verified by me, and why.** No physical phone is attached to this environment. Two things therefore still need a person with a real phone (`docs/runbooks/android-field-test.md`, 12-step checklist, about 15 minutes):
+1. **Keycloak login in the phone's browser.** The automated test performs the same Authorization Code + PKCE exchange with Keycloak over HTTP, because a test cannot type into the system browser. The tokens, audience and every server check are the real ones.
+2. **Live camera scan of a printed label.** The automated test decodes the label QR from an image with the same on-device scanner. Lighting, focus, dirt and distance are untested.
+
+### Tests run
+
+| Suite | Tests | Result |
+|---|---|---|
+| `Mfop.SpecFiles.Tests`: + Device, Fault, WorkOrder, Assignment machines == YAML; every unlisted (state, command) pair rejected; terminal states accept nothing | 100 | ✅ |
+| `Mfop.Domain.Tests`: + device D1–D4 and effects, fault confirmation/dismissal, power observation list, work-order W2–W4, operational status OS4 | 29 | ✅ |
+| `Mfop.Architecture.Tests`: + Sync module boundaries; **only allow-listed technical records may be audit-exempt** | 34 | ✅ |
+| `Mfop.Api.Tests` (real PostGIS): devices (register, supersede, approve, own-device SoD, reject, revoke → next request refused on every endpoint, field-app token without device refused, borrowed device refused); faults (OS4 + status event in history, dedup → confirmation, power unavailable / OTHER leave status unchanged, ASSET_NOT_ACTIVE, dismiss rules); work orders (W1 + fault F4, code format, no invented SLA, duplicate WO refused, **N15**, W2 guards incl. ASSIGNEE_NO_ACTIVE_DEVICE, reassign with reason, **N5**, cancel → fault reopened + assignment ended, terminal, F7); sync (applied once, DUPLICATE on resend, COMMAND_ID_CONFLICT, per-command results in order, rejected commands recorded without audit events, per-command permission, **N8** revoked push applies nothing, telemetry, receipts append-only); audit actions per command; authorization matrix now covers `/sync/*` and all M2 actions | 79 | ✅ |
+| Web (Vitest): + fault form | 21 | ✅ |
+| Web lint + typecheck + build | — | ✅ |
+| Mobile (`flutter test`, host): encrypted DB at rest (file not plaintext, wrong key fails, destroy deletes the file); controller flow (privacy → sign-in → registration → waiting → approval → PIN → tasks; rejected → re-register; background lock + PIN + lockout after 5; revoked → wipes only own data; offline keeps cached tasks); outbox order/idempotency/offline retry; PIN hashing; tag parsing; screens (My tasks → task detail, Scan typed code → asset card, Me) in Arabic RTL; 56 dp targets | 18 | ✅ |
+| `flutter analyze` | — | ✅ no issues |
+| E2E (Playwright vs. Compose): 9 role sign-ins (incl. new `tech2`), wrong password, M1 flow, **M2 flow** | 12 | ✅ |
+| Android emulator integration test (CI) | 1 flow, 8 screenshots | see CI results |
+| `make verify-audit` after all E2E | — | ✅ OK (42 events) |
+
+### Deviations from the specification
+
+| Deviation | Why |
+|---|---|
+| **`fault.yaml` corrected** (F2 split into F2 OPEN→OPEN and F7 IN_WORK_ORDER→IN_WORK_ORDER) | The spec's F2 sent a fault that is in a work order back to `OPEN` on a duplicate report, detaching it from its work order. 04 §4.7 says a duplicate is only a confirmation. |
+| `wo_events` table deferred to M3; work-order timeline from the audit log | No technician events exist before M3; the M3 seal needs them. Same approach as the M1 asset history ("history is a view"). |
+| Checklist-template pinning and `rework_of_id` (W1 effects) deferred to M3 | Templates and closed work orders only exist from M3. |
+| **No SLA values**: `sla_due_at` stays empty until `WorkOrders:SlaHoursByPriority` is configured | The specification defines no hours; inventing them would be inventing municipality policy. |
+| Work-order code `WO-<year>-<n>`: `<n>` is one sequence for all years | A per-year counter needs a counter table; the year prefix is from the organization time zone (`Asia/Damascus`, configurable). Gaps possible, as with asset codes. |
+| `permissions.yaml` + `device.read`, `fault.read`, `sync.push`, `sync.pull` | Needed by the Devices page, the fault lists and the sync transport. Every pushed command is still authorized by its own action. |
+| `GET /sync/v1/devices/current` and `GET /sync/v1/work-orders/{id}` added | The phone needs its own status while waiting, and a fresh copy of a task (also the N5 check). |
+| Sync receipts and device-sync telemetry are **audit-exempt** technical records | A receipt is not business state; the applied command's audit events carry the same `command_id`. Allow-list enforced by an architecture test. |
+| Only `ReportFault` can be pushed in M2 (SUPERVISOR-only in DEMO 1) | The first technician commands (arrival, evidence…) are M3. The phone's outbox is complete and tested but carries no command in the M2 phone UI. |
+| A user cannot approve or reject **their own** device | Not stated in 04 §4.1; follows the "no self-grant" rule of 03. |
+| Field-app tokens (`azp = mfop-mobile`) are refused without an ACTIVE device, on **all** endpoints | Otherwise a revoked phone could fall back to the web API with its token. |
+| Local DB: SQLite3 Multiple Ciphers with the **SQLCipher v4 scheme** (bundled by the `sqlite3` Dart package), raw 256-bit key in Keystore-backed `flutter_secure_storage` | Same file format/security as SQLCipher; no separate native SQLCipher build to maintain. |
+| Keycloak session logout on revocation, offline grants, trusted time, device signatures | M4/M6 by plan. Our API already blocks a revoked device on every request. |
+| `FLAG_SECURE` (no screenshots of sensitive screens) deferred to M3 | It matters for evidence screens (M3). |
+| New dev user **`tech2`** (Keycloak realm + seed) | Reassignment needs a second technician. |
+| Sign-out on the phone forgets the app's tokens; it does not end the Keycloak browser session | Ending the browser session needs another browser round trip; revisit in M4 (offboarding). |
+
+### Warnings and known limitations
+
+| # | What | Status |
+|---|---|---|
+| 1 | Real-phone checks not done by me (browser login UI, live camera). | Owner checklist `docs/runbooks/android-field-test.md`. |
+| 2 | The CI emulator job needs Google/GitHub downloads (system image, Gradle, ML Kit, SQLite3MC binaries). It takes ~15–25 min. | Accepted; it is the only automated Android check. |
+| 3 | `sqlite3` Dart package pinned to **3.5.2**: 3.6 needs a newer `meta` than Flutter 3.41.6 ships. | Revisit when Flutter is upgraded. |
+| 4 | The phone polls for approval every 10 s while on the waiting screen, and syncs every 15 min in the foreground. There is no push notification (no Google services assumed). | By design (05 §5.1). |
+| 5 | App PIN: after 5 wrong entries the app forgets its session (sign-in with password needed). No time-based back-off. | Reasonable for the pilot; review in M9. |
+| 6 | The Android integration test contains the dev password only in its CI-built test APK (`--dart-define`), never in the repository or the published APK artifact. | Accepted. |
+| 7 | Harmless warnings from M0/M1 remain (Kerberos probe, DataProtection). | Unchanged. |
+
+### Decisions needed from the owner
+
+1. **Approve M2** so M3 can start.
+2. **Run the real-phone checklist** (`docs/runbooks/android-field-test.md`, ~15 min) or tell me to accept the emulator result for DEMO 1 steps 6–9.
+3. **SLA hours per priority** (P1–P4), or confirm that work orders stay without due times for now.
+
+### CI results
+
+Filled in after the push (see below).
 
 ---
 
