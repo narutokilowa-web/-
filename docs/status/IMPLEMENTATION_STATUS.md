@@ -2,7 +2,7 @@
 
 | Milestone | Status | Date |
 |---|---|---|
-| M0 — Foundations | ✅ **Complete — awaiting owner approval before M1** | 2026-09-24 |
+| M0 — Foundations | ✅ **PASS — awaiting owner approval before M1** | 2026-09-24 |
 | M1 — Audit core + register / approve / QR (web) | ⏸ not started (blocked on M0 approval) | — |
 | M2 — Android scan + faults + work-order creation | — | — |
 | M3 — Field execution + review + dashboard → DEMO 1 | — | — |
@@ -31,7 +31,7 @@ Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
 | `make up` from a clean clone, all services healthy, ≤ 15 min | ✅ **70 s** (base images already cached; a first-ever pull adds ~3.5 GB of images) | fresh `git clone` → `make up` → db, keycloak, api, web healthy; migrate exited 0 |
 | Every seeded user can log in to the web and sees their role, **read from our DB** | ✅ 8/8 users + wrong-password rejection | `make e2e` (Playwright, real Keycloak PKCE login): 9/9 passed |
 | Flutter debug APK builds | ✅ **in CI** (69.1 MB artifact `mfop-field-debug-apk`). Not buildable in this sandbox: the network policy blocks `dl.google.com` | `flutter analyze` clean and widget tests pass locally; CI `mobile` job green |
-| CI green | ✅ all 5 jobs green on head `bb0a372` | run 36004341994 |
+| CI green | ✅ all 5 jobs green on code head `16c86a7` | run 36005311260 (also green on `bb0a372`, run 36004341994) |
 
 ### Tests run (local)
 
@@ -99,12 +99,14 @@ Extra runtime checks on the fresh-clone stack:
 
 ### CI results
 
-Run [36004341994](https://github.com/narutokilowa-web/-/actions/runs/36004341994) on head `bb0a372`: **success**.
+Final verification run [36005311260](https://github.com/narutokilowa-web/-/actions/runs/36005311260) on head `16c86a7`: **success** (the previous head `bb0a372`, run 36004341994, was also fully green).
 
 | Job | Result |
 |---|---|
-| Backend (.NET build `-warnaserror`, 121 tests incl. Testcontainers PostGIS, vulnerable-package check) | ✅ |
-| Web (lint, typecheck, 9 unit tests, build, `npm audit`) | ✅ |
-| Mobile (analyze, 3 widget tests, **debug APK**, uploaded as artifact `mfop-field-debug-apk`, 69.1 MB, kept 14 days) | ✅ |
-| E2E (`make up` from a clean runner with random secrets; Playwright sign-in for all 8 seeded users + bad password) | ✅ |
-| Secret scan (gitleaks CLI, full git history) | ✅ |
+| Secret scan (gitleaks CLI 8.28.0, full git history) | ✅ success |
+| Web (lint, typecheck, 9 unit tests, production build, `npm audit`) | ✅ success |
+| Backend (.NET build `-warnaserror`, 121 tests incl. Testcontainers PostGIS, vulnerable-package check) | ✅ success |
+| Mobile (analyze, 3 widget tests, **debug APK** → artifact `mfop-field-debug-apk`, 69.1 MB, available until 2026-10-08) | ✅ success |
+| E2E (`make up` on a clean runner with random secrets; Playwright sign-in for all 8 seeded users + wrong-password rejection) | ✅ success |
+
+The only commit after `16c86a7` changes this document (no code); CI runs on it as well.
