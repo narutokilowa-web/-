@@ -30,8 +30,8 @@ Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
 |---|---|---|
 | `make up` from a clean clone, all services healthy, ≤ 15 min | ✅ **70 s** (base images already cached; a first-ever pull adds ~3.5 GB of images) | fresh `git clone` → `make up` → db, keycloak, api, web healthy; migrate exited 0 |
 | Every seeded user can log in to the web and sees their role, **read from our DB** | ✅ 8/8 users + wrong-password rejection | `make e2e` (Playwright, real Keycloak PKCE login): 9/9 passed |
-| Flutter debug APK builds | ⚠️ **not buildable in this sandbox** (network policy blocks `dl.google.com`); delegated to CI | `flutter analyze` clean and widget tests pass locally; the CI `mobile` job builds the APK |
-| CI green | see the CI section at the end | |
+| Flutter debug APK builds | ✅ **in CI** (69.1 MB artifact `mfop-field-debug-apk`). Not buildable in this sandbox: the network policy blocks `dl.google.com` | `flutter analyze` clean and widget tests pass locally; CI `mobile` job green |
+| CI green | ✅ all 5 jobs green on head `bb0a372` | run 36004341994 |
 
 ### Tests run (local)
 
@@ -82,6 +82,8 @@ Extra runtime checks on the fresh-clone stack:
 | 10 | Build errors during scaffolding (duplicate `Program` type, NetArchTest API name, xUnit analyzer, obsolete Testcontainers ctor) | fixed; the build is warning-free with `-warnaserror` |
 | 11 | typescript-eslint does not support TypeScript 7 yet | pinned TypeScript 6.0.3 |
 | 12 | Migrator prints `libgssapi_krb5.so.2: cannot open shared object file` | **harmless** Npgsql/.NET Kerberos probe (no Kerberos used); migration succeeds. Not fixed: installing the library needs the Debian mirror, which is blocked here. Can be silenced later |
+| 14 | CI `gitleaks-action` failed on PR events (403: it needs pull-request API access; the workflow token is read-only) | replaced with the pinned gitleaks CLI scanning full history; green |
+| 15 | CI warning: `actions/*@v4` target deprecated Node 20 (runner forces Node 24) | harmless; bump action majors in a later maintenance PR |
 | 13 | ASP.NET Core DataProtection warnings (keys not persisted) in API logs | harmless in M0 (no cookies or protected payloads). Address when a feature needs DataProtection |
 
 ### Sandbox-only artefacts (git-ignored, not part of the product)
@@ -97,4 +99,12 @@ Extra runtime checks on the fresh-clone stack:
 
 ### CI results
 
-(Updated after the first CI run on the pushed commit; see below.)
+Run [36004341994](https://github.com/narutokilowa-web/-/actions/runs/36004341994) on head `bb0a372`: **success**.
+
+| Job | Result |
+|---|---|
+| Backend (.NET build `-warnaserror`, 121 tests incl. Testcontainers PostGIS, vulnerable-package check) | ✅ |
+| Web (lint, typecheck, 9 unit tests, build, `npm audit`) | ✅ |
+| Mobile (analyze, 3 widget tests, **debug APK**, uploaded as artifact `mfop-field-debug-apk`, 69.1 MB, kept 14 days) | ✅ |
+| E2E (`make up` from a clean runner with random secrets; Playwright sign-in for all 8 seeded users + bad password) | ✅ |
+| Secret scan (gitleaks CLI, full git history) | ✅ |
