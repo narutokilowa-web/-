@@ -1,0 +1,8 @@
+{
+  "@@locale": "en",
+  "appTitle": "Field Operations App",
+  "m0Title": "M0 — application skeleton",
+  "m0Body": "Initial skeleton. Sign-in and QR scanning arrive in M2.",
+  "environmentLabel": "Environment: {env}",
+  "languageToggle": "العربية"
+}

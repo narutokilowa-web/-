@@ -1,0 +1,15 @@
+machine: Evidence
+scope: demo1
+spec_ref: docs/lean-pilot/06-audit-and-evidence.md#62-evidence-design-item-7
+states: [ANNOUNCED, UPLOADED, VERIFIED, HASH_MISMATCH, DUPLICATE]
+initial: ANNOUNCED
+terminal: [VERIFIED, HASH_MISMATCH, DUPLICATE]
+transitions:
+  - {id: E1, from: [_start], command: AddEvidence, to: ANNOUNCED, actor: assignee,
+     requires: [owner_state_allows_evidence, sha256_device, capture_metadata]}
+  - {id: E2, from: [ANNOUNCED], command: UploadContent, to: UPLOADED, actor: assignee,
+     requires: [jpeg_magic_bytes, size_within_limit]}
+  - {id: E3, from: [UPLOADED], command: VerifyHashMatchAndUnique, to: VERIFIED, actor: system,
+     effects: [stored_in_object_store, preview_generated_without_exif]}
+  - {id: E4, from: [UPLOADED], command: VerifyHashMismatch, to: HASH_MISMATCH, actor: system}
+  - {id: E5, from: [UPLOADED], command: VerifyDuplicate, to: DUPLICATE, actor: system}

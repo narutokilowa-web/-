@@ -1,0 +1,17 @@
+machine: AssetOperationalStatus
+scope: demo1
+spec_ref: docs/lean-pilot/04-state-machines.md#46-asset-operational-status-derived-from-events-only-no-manual-edit
+# Derived from events only; there is no manual edit command. OUT_OF_SERVICE_EXTERNAL paths are deferred (M6).
+states: [UNKNOWN, OPERATIONAL, FAULTY, UNDER_MAINTENANCE]
+initial: UNKNOWN
+terminal: []
+transitions:
+  - {id: OS1, from: [_start], command: OnRegistrationApproved, to: UNKNOWN, actor: system,
+     requires: [observed_state_unknown]}
+  - {id: OS2, from: [_start], command: OnRegistrationApprovedObservedOperational, to: OPERATIONAL, actor: system}
+  - {id: OS3, from: [_start], command: OnRegistrationApprovedObservedFaulty, to: FAULTY, actor: system}
+  - {id: OS4, from: [OPERATIONAL, UNKNOWN], command: OnFaultReported, to: FAULTY, actor: system,
+     requires: [power_not_confirmed_unavailable]}
+  - {id: OS5, from: [OPERATIONAL, UNKNOWN, FAULTY], command: OnWorkStarted, to: UNDER_MAINTENANCE, actor: system}
+  - {id: OS6, from: [UNDER_MAINTENANCE], command: OnWorkOrderClosedTestPassed, to: OPERATIONAL, actor: system}
+  - {id: OS7, from: [UNDER_MAINTENANCE], command: OnWorkOrderClosedNotTested, to: UNKNOWN, actor: system}

@@ -1,0 +1,34 @@
+{
+  "app": {
+    "title": "Municipal Field Operations Platform",
+    "subtitle": "M0 — identity and roles check page"
+  },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "loading": "Loading…",
+    "error": "Sign-in failed"
+  },
+  "me": {
+    "welcome": "Welcome, {{name}}",
+    "username": "Username",
+    "roles": "Roles",
+    "rolesSource": "Roles source: platform database (not the login token)",
+    "noRoles": "No active roles",
+    "USER_NOT_PROVISIONED": "This account is not registered in the platform.",
+    "USER_DISABLED": "This account is disabled.",
+    "loadError": "Could not load user data (status {{status}})"
+  },
+  "roles": {
+    "TECHNICIAN": "Field Technician",
+    "INSPECTOR": "Field Inspector",
+    "SUPERVISOR": "Supervisor",
+    "REGISTRAR": "Asset Registrar",
+    "APPROVER": "Asset Approver",
+    "WAREHOUSE": "Warehouse Officer",
+    "AUDITOR": "Auditor",
+    "ADMIN": "System Administrator"
+  },
+  "language": { "switch": "العربية" },
+  "env": { "banner": "Environment: {{env}}" }
+}

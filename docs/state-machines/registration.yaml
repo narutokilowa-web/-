@@ -1,0 +1,21 @@
+machine: Registration
+scope: demo1
+spec_ref: docs/lean-pilot/04-state-machines.md#44-registration-makerchecker
+# DEMO 1: registration is entered on the web (capture_channel = WEB). Field check is deferred (M7).
+states: [DRAFT, SUBMITTED, RETURNED, APPROVED, REJECTED, DISCARDED]
+initial: DRAFT
+terminal: [APPROVED, REJECTED, DISCARDED]
+transitions:
+  - {id: R1, from: [_start], command: RegisterAssetDraft, to: DRAFT, actor: REGISTRAR,
+     effects: [asset_lifecycle_pending]}
+  - {id: R2, from: [DRAFT], command: DiscardDraft, to: DISCARDED, actor: registrar,
+     effects: [asset_lifecycle_rejected]}
+  - {id: R3, from: [DRAFT, RETURNED], command: SubmitRegistration, to: SUBMITTED, actor: registrar,
+     requires: [location, required_attributes_valid, reason]}
+  - {id: R4, from: [SUBMITTED], command: ReturnRegistration, to: RETURNED, actor: APPROVER,
+     policies: [approver_not_registrar], requires: [reasons]}
+  - {id: R5, from: [SUBMITTED], command: ApproveRegistration, to: APPROVED, actor: APPROVER,
+     policies: [approver_not_registrar], requires: [all_evidence_verified],
+     effects: [asset_lifecycle_active, asset_code_issued, asset_version_1_snapshot, tag_generated_and_bound]}
+  - {id: R6, from: [SUBMITTED], command: RejectRegistration, to: REJECTED, actor: APPROVER,
+     policies: [approver_not_registrar], requires: [reason], effects: [asset_lifecycle_rejected]}

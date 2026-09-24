@@ -7,20 +7,31 @@
 
 ## الحالة
 
-**المرحلة الحالية: مواصفات Lean Pilot — بانتظار الموافقة قبل كتابة أي كود.**
+**المرحلة الحالية: M0 (Foundations) مكتملة — بانتظار الموافقة قبل M1.**
+التفاصيل: [docs/status/IMPLEMENTATION_STATUS.md](docs/status/IMPLEMENTATION_STATUS.md)
 
-- 📄 [المواصفات طويلة المدى (Product + Architecture Specification)](docs/spec/README.md) — معتمدة
-- 🧪 [Lean Pilot Specification — Street Light Vertical Slice](docs/lean-pilot/README.md) — بانتظار الموافقة
+- 📄 [المواصفات طويلة المدى](docs/spec/README.md) — معتمدة
+- 🧪 [Lean Pilot Specification](docs/lean-pilot/README.md) — معتمدة (DEMO 1 في [11](docs/lean-pilot/11-milestones-and-dod.md))
+- 🧭 [قرارات المعمارية (ADRs)](docs/adr/)
+- 🤖 [قواعد العمل للمطورين ووكلاء الذكاء الاصطناعي](AGENTS.md)
 
-## البنية المخططة للمستودع
+## التشغيل السريع
+
+```bash
+make up      # يولّد .env بأسرار عشوائية، يبني ويشغّل: db, keycloak, migrate, api, web
+make e2e     # يسجّل دخول كل مستخدم تجريبي ويتحقق من دوره
+make test    # اختبارات backend + web + mobile
+```
+
+الواجهة: http://localhost:5173 — التفاصيل في [docs/runbooks/dev-setup.md](docs/runbooks/dev-setup.md).
+
+## بنية المستودع
 
 ```
-docs/      المواصفات، قرارات المعمارية (ADRs)، أدلة التشغيل
-backend/   ASP.NET Core — Modular Monolith
-web/       React + TypeScript — لوحة الإدارة (RTL)
-mobile/    Flutter — التطبيق الميداني (Offline-first)
-deploy/    Docker Compose، إعدادات البنية
-tools/     البذور، طباعة ملصقات QR، أداة التحقق من سلسلة التدقيق
+docs/      المواصفات، ADRs، آلات الحالات (YAML)، أدلة التشغيل، حالة التنفيذ
+backend/   ASP.NET Core (.NET 10) — Modular Monolith + اختبارات
+web/       React + TypeScript — لوحة الإدارة (عربي، RTL)
+mobile/    Flutter — التطبيق الميداني (Android)
+deploy/    Docker Compose، Keycloak realm، تهيئة PostgreSQL، بيانات المستخدمين التجريبيين
+tools/     audit-verify (أداة التحقق من سلسلة التدقيق)، أدوات التطوير
 ```
-
-(المجلدات عدا `docs/` تُنشأ في M0 من الـ Lean Pilot بعد الموافقة.)

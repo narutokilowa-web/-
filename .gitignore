@@ -1,0 +1,40 @@
+# secrets / local config
+.env
+*.local.env
+deploy/certs/*.crt
+deploy/certs/*.pem
+docker-compose.override.yml
+compose.override.yml
+
+# .NET
+**/bin/
+**/obj/
+*.user
+TestResults/
+
+# Node / web
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+web/blob-report/
+
+# Flutter / Android
+mobile/.dart_tool/
+mobile/build/
+mobile/android/build/
+mobile/android/.kotlin/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/debug/
+mobile/android/app/release/
+*.jks
+*.keystore
+key.properties
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

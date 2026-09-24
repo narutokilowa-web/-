@@ -1,0 +1,11 @@
+machine: Assignment
+scope: demo1
+spec_ref: docs/lean-pilot/04-state-machines.md#48-work-order
+# One ACTIVE assignment per work order at a time. Driven by WorkOrder W2/W3 and terminal WO states.
+states: [ACTIVE, ENDED]
+initial: ACTIVE
+terminal: [ENDED]
+transitions:
+  - {id: A1, from: [_start], command: OnAssigned, to: ACTIVE, actor: system}
+  - {id: A2, from: [ACTIVE], command: OnReassigned, to: ENDED, actor: system, requires: [reason]}
+  - {id: A3, from: [ACTIVE], command: OnWorkOrderTerminal, to: ENDED, actor: system}

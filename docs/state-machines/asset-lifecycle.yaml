@@ -1,0 +1,14 @@
+machine: AssetLifecycle
+scope: demo1
+spec_ref: docs/lean-pilot/04-state-machines.md#45-asset-lifecycle
+# Transitions are driven by the Registration machine (actor: system). UNDER_INVESTIGATION is deferred (M7).
+states: [PENDING, ACTIVE, REJECTED]
+initial: PENDING
+terminal: [REJECTED]
+# States with no exit in this scope because their exits are deferred (not terminal in the long-term spec).
+deferred_exits:
+  ACTIVE: "UNDER_INVESTIGATION (M7) and decommissioning (post-pilot) — docs/lean-pilot/04 §4.5"
+transitions:
+  - {id: AL1, from: [_start], command: RegisterAssetDraft, to: PENDING, actor: system}
+  - {id: AL2, from: [PENDING], command: OnRegistrationApproved, to: ACTIVE, actor: system}
+  - {id: AL3, from: [PENDING], command: OnRegistrationRejectedOrDiscarded, to: REJECTED, actor: system}

@@ -174,7 +174,7 @@ The score is shown to the reviewer **with its breakdown**. It is never used as a
 | `GRANT_*`, `CLOCK_SKEW` | WARNING / INFO | see 05 |
 | `REPEATED_FAILURE` | INFO (+ recommendation) | see below |
 
-### Repeated-failure rule (the one analytics rule)
+### Repeated-failure rule (the one analytics rule — minimal version is in DEMO 1, see 11 §11.2 M3 item 10)
 
 ```
 on WorkOrder CLOSED with outcome REPAIRED and diagnosis.counts_as_failure = true:

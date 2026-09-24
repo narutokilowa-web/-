@@ -1,0 +1,19 @@
+machine: StockLedger
+scope: demo1
+spec_ref: docs/lean-pilot/07-inventory.md
+# Not a per-entity state machine: the allowed movement types of the append-only ledger.
+# A "state" here is a stock location kind; each transition is one movement type.
+# DEMO 1: one-step ISSUE (no IN_TRANSIT/acknowledgment), no returns/core returns (M5).
+states: [SUPPLIER, WAREHOUSE, CUSTODY, CONSUMED]
+initial: SUPPLIER
+terminal: [CONSUMED]
+transitions:
+  - {id: S0, from: [_start], command: DefineSupplierLocation, to: SUPPLIER, actor: system}
+  - {id: S1, from: [SUPPLIER], command: RecordReceipt, to: WAREHOUSE, actor: WAREHOUSE,
+     requires: [serials_for_tracked_items]}
+  - {id: S2, from: [WAREHOUSE], command: IssueStock, to: CUSTODY, actor: WAREHOUSE,
+     requires: [warehouse_balance_sufficient, serials_for_tracked_items], policies: [issuer_not_receiver]}
+  - {id: S3, from: [CUSTODY], command: ConsumeMaterial, to: CONSUMED, actor: assignee,
+     requires: [work_order_in_progress_or_returned], effects: [linked_to_work_order_and_asset, flag_if_exceeds_custody]}
+  - {id: S4, from: [WAREHOUSE], command: ReverseReceipt, to: SUPPLIER, actor: WAREHOUSE, requires: [reversal_of, reason]}
+  - {id: S5, from: [CUSTODY], command: ReverseIssue, to: WAREHOUSE, actor: WAREHOUSE, requires: [reversal_of, reason]}

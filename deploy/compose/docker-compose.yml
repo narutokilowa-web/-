@@ -1,0 +1,111 @@
+# DEMO 1 topology (docs/lean-pilot/11 §11.2 M0): db, keycloak, migrate (one-shot), api, web.
+# Local development only. No TLS proxy, no WORM storage (those arrive in M8; required before any field pilot).
+name: mfop
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?run make env}
+      POSTGRES_DB: postgres
+      MFOP_OWNER_PASSWORD: ${MFOP_OWNER_PASSWORD:?}
+      MFOP_APP_PASSWORD: ${MFOP_APP_PASSWORD:?}
+      MFOP_READONLY_PASSWORD: ${MFOP_READONLY_PASSWORD:?}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"   # dev convenience; localhost only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mfop"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?}
+      KC_BOOTSTRAP_ADMIN_USERNAME: kcadmin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?}
+      # Public URL used by browsers and phones (issuer). The API reaches Keycloak on the internal network (backchannel).
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Substituted into the realm import; never committed.
+      MFOP_DEV_USER_PASSWORD: ${MFOP_DEV_USER_PASSWORD:?}
+    volumes:
+      - ../keycloak/realm-mfop.json:/opt/keycloak/data/import/realm-mfop.json:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      target: migrator
+    image: mfop/migrator:dev
+    command: ["migrate", "--seed-dev", "/seed/dev-users.json"]
+    environment:
+      ConnectionStrings__Owner: Host=db;Database=mfop;Username=mfop_owner;Password=${MFOP_OWNER_PASSWORD:?}
+    volumes:
+      - ../seed:/seed:ro
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      target: api
+    image: mfop/api:dev
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__App: Host=db;Database=mfop;Username=mfop_app;Password=${MFOP_APP_PASSWORD:?}
+      Auth__Issuer: http://localhost:8080/realms/mfop
+      Auth__MetadataAddress: http://keycloak:8080/realms/mfop/.well-known/openid-configuration
+      Auth__Audience: mfop-api
+      Auth__RequireHttpsMetadata: "false"
+    ports:
+      - "${API_PORT:-5080}:8080"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      keycloak: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '200 OK' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  web:
+    build:
+      context: ../..
+      dockerfile: web/Dockerfile
+    image: mfop/web:dev
+    ports:
+      - "${WEB_PORT:-5173}:8080"
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/config.json"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  db-data:

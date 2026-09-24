@@ -1,0 +1,83 @@
+# Machine-readable permission matrix — DEMO 1 subset of docs/lean-pilot/03-roles-permissions.md
+# Loaded by tests (M0: consistency; M1+: generated authorization tests per endpoint).
+# Changing access rules means changing this file in the same PR.
+
+version: 1
+
+roles:
+  TECHNICIAN: {name_ar: فني ميداني, name_en: Field Technician}
+  INSPECTOR:  {name_ar: مفتش ميداني, name_en: Field Inspector}
+  SUPERVISOR: {name_ar: مشرف, name_en: Supervisor}
+  REGISTRAR:  {name_ar: مسجّل أصول, name_en: Asset Registrar}
+  APPROVER:   {name_ar: معتمد أصول, name_en: Asset Approver}
+  WAREHOUSE:  {name_ar: أمين مخزن, name_en: Warehouse Officer}
+  AUDITOR:    {name_ar: مدقق, name_en: Auditor}
+  ADMIN:      {name_ar: مدير النظام, name_en: System Administrator}
+
+# Static separation of duties: the same user may not hold both roles.
+static_sod:
+  - [REGISTRAR, APPROVER]
+  - [WAREHOUSE, TECHNICIAN]
+  - [AUDITOR, TECHNICIAN]
+  - [AUDITOR, INSPECTOR]
+  - [AUDITOR, SUPERVISOR]
+  - [AUDITOR, REGISTRAR]
+  - [AUDITOR, APPROVER]
+  - [AUDITOR, WAREHOUSE]
+  - [AUDITOR, ADMIN]
+  - [ADMIN, TECHNICIAN]
+  - [ADMIN, INSPECTOR]
+  - [ADMIN, SUPERVISOR]
+  - [ADMIN, REGISTRAR]
+  - [ADMIN, APPROVER]
+  - [ADMIN, WAREHOUSE]
+
+# Record-level policies referenced below (implemented in the backend authorization layer).
+policies:
+  approver_not_registrar: The approver of a registration is not its registrar.
+  reviewer_not_executor: The reviewer of a work order is not its assignee or any evidence author.
+  issuer_not_receiver: The warehouse officer issuing stock is not the receiving technician.
+  assignee_only: Only the current assignee of the work order may act.
+  own_records_only: Only records the actor created or is assigned to.
+  no_self_grant: A user cannot grant or change their own roles.
+
+# action -> allowed roles (+ policies). milestone = when the endpoint first exists.
+actions:
+  me.read:                    {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR, ADMIN], milestone: M0}
+
+  asset.read:                 {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M1}
+  asset.history.read:         {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M1}
+  tag.resolve:                {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M1}
+  registration.draft:         {roles: [REGISTRAR], milestone: M1}
+  registration.submit:        {roles: [REGISTRAR], policies: [own_records_only], milestone: M1}
+  registration.discard:       {roles: [REGISTRAR], policies: [own_records_only], milestone: M1}
+  registration.decide:        {roles: [APPROVER], policies: [approver_not_registrar], milestone: M1}   # approve / return / reject
+  audit.read:                 {roles: [AUDITOR], milestone: M1}
+
+  device.register:            {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}
+  device.approve:             {roles: [ADMIN, SUPERVISOR], milestone: M2}
+  device.revoke:              {roles: [ADMIN, SUPERVISOR], milestone: M2}
+  fault.report:               {roles: [SUPERVISOR], milestone: M2}        # mobile reporting by TECHNICIAN/INSPECTOR comes after DEMO 1
+  fault.dismiss:              {roles: [SUPERVISOR], milestone: M2}
+  workorder.create:           {roles: [SUPERVISOR], milestone: M2}
+  workorder.assign:           {roles: [SUPERVISOR], milestone: M2}        # assign + reassign
+  workorder.cancel:           {roles: [SUPERVISOR], milestone: M2}
+  workorder.read_assigned:    {roles: [TECHNICIAN], policies: [assignee_only], milestone: M2}
+  workorder.read:             {roles: [SUPERVISOR, AUDITOR], milestone: M2}
+
+  workorder.execute:          {roles: [TECHNICIAN], policies: [assignee_only], milestone: M3}   # arrive, evidence, diagnosis, start, checklist, submit, resubmit
+  material.consume:           {roles: [TECHNICIAN], policies: [assignee_only], milestone: M3}
+  workorder.review:           {roles: [SUPERVISOR], policies: [reviewer_not_executor], milestone: M3}   # approve / return
+  evidence.preview:           {roles: [SUPERVISOR, APPROVER, AUDITOR, TECHNICIAN], policies: [own_records_only], milestone: M3}
+  evidence.original:          {roles: [AUDITOR], milestone: M3}
+  stock.receipt:              {roles: [WAREHOUSE], milestone: M3}
+  stock.issue:                {roles: [WAREHOUSE], policies: [issuer_not_receiver], milestone: M3}
+  stock.balances.read:        {roles: [WAREHOUSE, SUPERVISOR, AUDITOR], milestone: M3}
+  stock.custody.read_own:     {roles: [TECHNICIAN], milestone: M3}
+  dashboard.read:             {roles: [SUPERVISOR, AUDITOR], milestone: M3}
+  recommendation.read:        {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M3}
+  policy.settings.change:     {roles: [ADMIN], milestone: M3}             # includes rule_settings (repeated-failure threshold/window)
+
+  user.manage:                {roles: [ADMIN], policies: [no_self_grant], milestone: M1}
+
+# Nobody may delete operational or audit records. There is no action for it.

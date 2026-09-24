@@ -1,0 +1,17 @@
+machine: Fault
+scope: demo1
+spec_ref: docs/lean-pilot/04-state-machines.md#47-fault
+# DEMO 1: faults are created on the web by the supervisor. TRANSFERRED and theft/vandalism paths are deferred (M6).
+states: [OPEN, IN_WORK_ORDER, RESOLVED, DISMISSED]
+initial: OPEN
+terminal: [RESOLVED, DISMISSED]
+transitions:
+  - {id: F1, from: [_start], command: ReportFault, to: OPEN, actor: SUPERVISOR,
+     requires: [asset_active, category, power_observation], effects: [asset_status_faulty_if_power_not_unavailable]}
+  - {id: F2, from: [OPEN, IN_WORK_ORDER], command: ConfirmFault, to: OPEN, actor: SUPERVISOR,
+     requires: [same_asset_same_category_open_fault]}
+  - {id: F3, from: [OPEN], command: DismissFault, to: DISMISSED, actor: SUPERVISOR, requires: [dismiss_reason]}
+  - {id: F4, from: [OPEN], command: OnWorkOrderCreated, to: IN_WORK_ORDER, actor: system}
+  - {id: F5, from: [IN_WORK_ORDER], command: OnWorkOrderCancelled, to: OPEN, actor: system}
+  - {id: F6, from: [IN_WORK_ORDER], command: OnWorkOrderClosed, to: RESOLVED, actor: system,
+     effects: [evaluate_repeated_failure_rule]}

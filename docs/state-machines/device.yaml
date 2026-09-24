@@ -1,0 +1,13 @@
+machine: Device
+scope: demo1
+spec_ref: docs/lean-pilot/04-state-machines.md#41-device
+states: [PENDING_APPROVAL, ACTIVE, REJECTED, REVOKED]
+initial: PENDING_APPROVAL
+terminal: [REJECTED, REVOKED]
+transitions:
+  - {id: D1, from: [_start], command: RegisterDevice, to: PENDING_APPROVAL, actor: system,
+     effects: [previous_pending_device_of_user_rejected]}
+  - {id: D2, from: [PENDING_APPROVAL], command: ApproveDevice, to: ACTIVE, actor: [ADMIN, SUPERVISOR],
+     effects: [other_active_device_of_user_revoked_replaced]}
+  - {id: D3, from: [PENDING_APPROVAL], command: RejectDevice, to: REJECTED, actor: [ADMIN, SUPERVISOR], requires: [reason]}
+  - {id: D4, from: [ACTIVE], command: RevokeDevice, to: REVOKED, actor: [ADMIN, SUPERVISOR], requires: [reason]}

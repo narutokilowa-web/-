@@ -1,0 +1,12 @@
+.git
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.dart_tool
+**/build
+mobile
+docs
+**/*.md
+!deploy/certs/README.md
+.env

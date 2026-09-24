@@ -1,0 +1,258 @@
+{
+  "realm": "mfop",
+  "displayName": "MFOP (dev)",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "failureFactor": 10,
+  "permanentLockout": false,
+  "passwordPolicy": "length(12)",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "ar",
+    "en"
+  ],
+  "defaultLocale": "ar",
+  "clients": [
+    {
+      "clientId": "mfop-web",
+      "name": "MFOP Web Console",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "protocolMappers": [
+        {
+          "name": "mfop-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "mfop-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "mfop-mobile",
+      "name": "MFOP Field App",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "mfop://oauth-callback"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "mfop://oauth-callback"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "protocolMappers": [
+        {
+          "name": "mfop-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "mfop-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "0197c000-0000-7000-8000-000000000001",
+      "username": "registrar1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "registrar1@dev.mfop.invalid",
+      "firstName": "Registrar",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000002",
+      "username": "approver1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "approver1@dev.mfop.invalid",
+      "firstName": "Approver",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000003",
+      "username": "supervisor1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "supervisor1@dev.mfop.invalid",
+      "firstName": "Supervisor",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000004",
+      "username": "tech1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "tech1@dev.mfop.invalid",
+      "firstName": "Technician",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000005",
+      "username": "warehouse1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "warehouse1@dev.mfop.invalid",
+      "firstName": "Warehouse",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000006",
+      "username": "auditor1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "auditor1@dev.mfop.invalid",
+      "firstName": "Auditor",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000007",
+      "username": "admin1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin1@dev.mfop.invalid",
+      "firstName": "Admin",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000008",
+      "username": "inspector1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "inspector1@dev.mfop.invalid",
+      "firstName": "Inspector",
+      "lastName": "One",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${MFOP_DEV_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "requiredActions": []
+    }
+  ]
+}

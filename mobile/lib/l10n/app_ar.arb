@@ -1,0 +1,9 @@
+{
+  "@@locale": "ar",
+  "appTitle": "تطبيق العمليات الميدانية",
+  "m0Title": "المرحلة M0 — هيكل التطبيق",
+  "m0Body": "هذا هيكل أولي. تسجيل الدخول ومسح رمز QR يُضافان في المرحلة M2.",
+  "environmentLabel": "البيئة: {env}",
+  "@environmentLabel": { "placeholders": { "env": { "type": "String" } } },
+  "languageToggle": "English"
+}

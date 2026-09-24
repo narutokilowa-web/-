@@ -1,5 +1,6 @@
 # 11 — Milestones and Definition of Done (revised around DEMO 1)
 
+**Revision 3 (2026-09-24):** a minimal repeated-failure rule was moved into M3 / DEMO 1 (step 17a, M3 item 10).
 **Revision 2 (2026-09-24).** Milestones are now organized around **DEMO 1**: the earliest runnable demo that proves the street-light lifecycle end to end on one machine. Stronger pilot controls come **after** DEMO 1, incrementally, and every one of them is **mandatory before a real field pilot**. The long-term spec (`docs/spec/`) and the rest of this Lean Pilot spec stay unchanged as the target. This file only changes the **order** in which things are built.
 
 **Team assumption:** 1–2 people with AI-assisted development (Claude Code / Codex for implementation and review), and a human owner who accepts each milestone.
@@ -29,13 +30,14 @@
 | 15 | Add after evidence | phone |
 | 16 | Submit | phone |
 | 17 | Supervisor approves and closes | web |
+| 17a | For the seeded light with earlier closed faults, the asset page (and phone asset card) shows **Recurrent Failure — Recommendation: Full inspection recommended** | web / phone |
 | 18 | Web dashboard shows the completed work order | web |
 | 19 | Audit history shows every important change | web |
 | 20 | Manually tamper with a DB record; the verifier detects it | terminal |
 
 ### What DEMO 1 does **not** require (added after DEMO 1, before any field pilot)
 
-Advanced analytics (including the repeated-failure rule) · random audits · true WORM / Object Lock storage · signed daily checkpoints · advanced GIS / map · full offline conflict resolution · offline grants and grant-window enforcement · device-key signing · complete inventory (issue acknowledgment, returns, core returns) · mobile registration and field check · pre-printed tag batches as controlled stock · TLS reverse proxy · backups.
+Advanced analytics (beyond the single minimal repeated-failure rule, which **is** in DEMO 1) · random audits · true WORM / Object Lock storage · signed daily checkpoints · advanced GIS / map · full offline conflict resolution · offline grants and grant-window enforcement · device-key signing · complete inventory (issue acknowledgment, returns, core returns) · mobile registration and field check · pre-printed tag batches as controlled stock · TLS reverse proxy · backups.
 
 ### State machines implemented for DEMO 1 (all others stay specified in 04, deferred)
 
@@ -189,6 +191,15 @@ Supporting (not a business state machine, minimal): **device record** `PENDING_A
    - `Mfop.GoldenPath.Tests` runs DEMO 1 steps 2–19 through the public API
    - `docs/runbooks/demo-1.md` gives the exact click-by-click script, including the tamper step (for example `UPDATE inventory.stock_movements SET quantity = 3 …` as `mfop_owner`), then `make verify-audit` showing the seal mismatch for that work order
 9. **Tests:** YAML tests for the WorkOrder (DEMO 1 subset), Evidence and StockTransaction machines; N2–N4, N6, N7, N9, N10, N13, N14.
+10. **Minimal repeated-failure rule** (one transparent rule; not an analytics system):
+    - evaluated when a fault becomes `RESOLVED`
+    - counts the asset's `RESOLVED` faults whose resolving work order has a diagnosis with `counts_as_failure = true`, within the window
+    - `NO_FAULT_FOUND`, `GRID_SUPPLY_OFF`, theft and vandalism do not count
+    - if the count ≥ threshold, the asset shows **"Recurrent Failure — Recommendation: Full inspection recommended"** (Arabic text in the UI), with the list of the counted faults and the configured threshold and window
+    - `threshold` (default 3) and `window_days` (default 180) are read from the `rule_settings` table (seeded data, changeable by admin through the policy settings, audited); nothing is hard-coded in the business logic
+    - `make seed` creates a light with 2 earlier resolved faults inside the window, so the DEMO 1 repair produces the recommendation
+    - tests: at threshold − 1 no recommendation, at threshold a recommendation, a fault outside the window is ignored, excluded diagnoses are ignored, a changed setting takes effect without a code change
+    - **no** scoring, prediction or other rules
 
 **Accepted when:** the **DEMO 1 Definition of Done (11.3)** is met.
 
@@ -210,6 +221,7 @@ Supporting (not a business state machine, minimal): **device record** `PENDING_A
 - [ ] Every command in the slice writes an audit event in the same transaction, with actor, device (for mobile), time, reason where required, and old/new values.
 - [ ] The hash chain verifies on the untouched demo DB (`make verify-audit` → exit 0).
 - [ ] After step 20, the verifier exits non-zero and names the tampered entity (a broken chain at `seq`, or a seal or balance mismatch for the named work order).
+- [ ] Step 17a: the recurrent-failure recommendation appears for the seeded light, with the counted faults, threshold and window visible, and the threshold and window come from `rule_settings`.
 - [ ] Maker ≠ checker is enforced: the registrar cannot approve their own registration, and the executing technician cannot close their own work order (tests N1, N2).
 - [ ] Documentation and UI text say **"tamper-evident / verifiable"** and never "immutable". A privileged DB administrator *can* change data; the system's guarantee is that such a change is **detected** by the verifier.
 
@@ -235,7 +247,7 @@ Each milestone below is **required before a real field pilot**. Order may change
 |---|---|---|---|
 | **M4** | Offline and BYOD hardening | offline grants with configurable grace (05 §5.5), trusted time, server grant-window checks, quarantine + supervisor resolution, full sync scenario suite, resumable uploads, device-key signing, offboarding flow (disable → Keycloak logout-all → grants revoked → reassignment queue), locked states on the phone, min app version | 1.5–2 |
 | **M5** | Inventory completion | `IN_TRANSIT` + technician acknowledgment/dispute, unused returns, core returns with serial matching, inventory flags (04 §4.9–4.11, 07) | 1 |
-| **M6** | Integrity and analytics basics | **repeated-failure rule + recommendation**, integrity flags (mock location, weak presence, hash mismatch/duplicate surfaced as flags), presence score, risk tier, `ON_HOLD` and `ResolveNoWork` (incl. `GRID_SUPPLY_OFF`, theft), auditor flag workflow | 1–1.5 |
+| **M6** | Integrity and analytics basics | repeated-failure rule extended to auditor flags and dashboard (the minimal rule is already in DEMO 1), integrity flags (mock location, weak presence, hash mismatch/duplicate surfaced as flags), presence score, risk tier, `ON_HOLD` and `ResolveNoWork` (incl. `GRID_SUPPLY_OFF`, theft), auditor flag workflow | 1–1.5 |
 | **M7** | Field registration and controlled tags | mobile registration with in-app photos, pre-printed tag batches as controlled stock, field check, proximity flag, `UNDER_INVESTIGATION` | 1–1.5 |
 | **M8** | Pilot-grade infrastructure | S3-compatible storage with **Object Lock / WORM** (product chosen after licence check), **signed daily checkpoints** to external/WORM storage with auditor-held public key, separate worker container, Caddy TLS proxy, backup/restore runbook tested (verifier run on the restored copy), basic map | 1–1.5 |
 | **M9** | Pilot-readiness and handover | security pass (ASVS L2 subset, ZAP baseline), low-end phone performance, Arabic terminology review with technicians, `docs/handover/` (Arabic + English), `make demo-reset` | 1–1.5 |

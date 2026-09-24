@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>audit-verify</AssemblyName>
+  </PropertyGroup>
+  <!-- Deliberately does NOT reference the API or modules: the verifier must not trust the application (ADR-0007). -->
+</Project>
