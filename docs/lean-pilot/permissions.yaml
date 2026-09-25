@@ -41,6 +41,8 @@ policies:
   own_records_only: Only records the actor created or is assigned to.
   no_self_grant: A user cannot grant or change their own roles (nor disable or enable their own account).
   resolver_not_author: A quarantined command is decided by someone other than the user who made it.
+  receiver_not_returner: The warehouse officer who receives or rejects returned material (unused or failed part) is not the technician who returns it.
+  waiver_not_technician: A core return is waived by a supervisor other than the technician concerned (03 note 8); always an INFO flag.
 
 # action -> allowed roles (+ policies). milestone = when the endpoint first exists.
 actions:
@@ -80,9 +82,14 @@ actions:
   evidence.preview:           {roles: [SUPERVISOR, APPROVER, AUDITOR, TECHNICIAN], policies: [own_records_only], milestone: M3}
   evidence.original:          {roles: [AUDITOR], milestone: M3}
   stock.receipt:              {roles: [WAREHOUSE], milestone: M3}
-  stock.issue:                {roles: [WAREHOUSE], policies: [issuer_not_receiver], milestone: M3}
-  stock.balances.read:        {roles: [WAREHOUSE, SUPERVISOR, AUDITOR], milestone: M3}
+  stock.issue:                {roles: [WAREHOUSE], policies: [issuer_not_receiver], milestone: M3}   # M5: issue to IN_TRANSIT, cancel an unacknowledged/disputed issue
+  stock.balances.read:        {roles: [WAREHOUSE, SUPERVISOR, AUDITOR], milestone: M3}   # M5: also issues, returns, core returns, reconciliation, history
   stock.custody.read_own:     {roles: [TECHNICIAN], milestone: M3}
+  stock.issue.respond:        {roles: [TECHNICIAN], policies: [own_records_only], milestone: M5}   # acknowledge / dispute an issue addressed to me (phone)
+  stock.return.declare:       {roles: [TECHNICIAN], policies: [own_records_only], milestone: M5}   # declare unused material returned from my custody (phone)
+  core_return.declare:        {roles: [TECHNICIAN], policies: [assignee_only], milestone: M5}      # declare the failed part of my consumption (phone)
+  stock.return.receive:       {roles: [WAREHOUSE], policies: [receiver_not_returner], milestone: M5}   # receive / reject returns, receive core parts, offboarding returns
+  core_return.waive:          {roles: [SUPERVISOR], policies: [waiver_not_technician], milestone: M5}
   dashboard.read:             {roles: [SUPERVISOR, AUDITOR], milestone: M3}
   recommendation.read:        {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M3}
   policy.settings.change:     {roles: [ADMIN], milestone: M3}             # includes rule_settings (repeated-failure threshold/window)

@@ -7,4 +7,6 @@ These YAML files are the **single source of truth** for allowed transitions. The
 
 M4 added `user.yaml` (offboarding: disable / enable) and `sync-quarantine.yaml` (held commands: apply / discard / apply failed), with `scope: m4`.
 
+M5 added `stock-issue.yaml`, `stock-return.yaml` and `core-return.yaml` (material accountability, 04 §4.9–4.11) and extended `stock-ledger.yaml` (IN_TRANSIT, returns, CORE_BIN), with `scope: m5`.
+
 Schema (see `_schema.md`): `machine`, `scope`, `states`, `initial`, `terminal`, `transitions[]` with `id`, `from[]`, `command`, `to`, `actor`, optional `policies[]`, `requires[]`, `effects[]`. `from: [_start]` means creation.

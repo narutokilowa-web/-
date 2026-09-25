@@ -368,6 +368,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'RecordChecklist': 'قائمة الفحص',
       'SubmitWorkOrder': 'التقديم',
       'Resubmit': 'إعادة التقديم',
+      'AcknowledgeStockIssue': 'تأكيد استلام مواد',
+      'DisputeStockIssue': 'اعتراض على مواد',
+      'DeclareStockReturn': 'إرجاع مواد',
+      'DeclareCoreReturn': 'تصريح قطعة تالفة',
       'other': '$type',
     });
     return '$_temp0';
@@ -535,6 +539,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'QUARANTINE_DISCARDED': 'رفضه المشرف بعد المراجعة',
       'NOT_ASSIGNEE': 'أمر العمل ليس مسندًا إليك',
       'INVALID_TRANSITION': 'لم تعد هذه الخطوة ممكنة في حالة أمر العمل الحالية',
+      'CORE_RETURN_NOT_DECLARED': 'صرّح بالقطعة التالفة لكل قطعة استبدلتها قبل التقديم',
+      'SERIALS_NOT_CONFIRMED': 'أكّد الأرقام التي استلمتها بالضبط، أو أبلغ عن مشكلة',
+      'INSUFFICIENT_CUSTODY': 'الكمية أكبر مما في عهدتك',
+      'SERIAL_NOT_IN_CUSTODY': 'هذا الرقم ليس في عهدتك',
+      'NOT_RECEIVER': 'هذا الصرف ليس لك',
       'other': 'تعذّرت العملية ($code)',
     });
     return '$_temp0';
@@ -584,4 +593,111 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get grantNone => 'لا يوجد تصريح للعمل دون اتصال بعد: اتصل بالإنترنت';
+
+  @override
+  String get tabStock => 'المواد';
+
+  @override
+  String stepCoreReturn(int count) {
+    return 'القطع التالفة: $count بحاجة إلى تصريح';
+  }
+
+  @override
+  String get stepCoreReturnDone => 'القطع التالفة: صُرِّح بها';
+
+  @override
+  String get declareCoreAction => 'صرّح بالقطعة التالفة';
+
+  @override
+  String get coreReturnTitle => 'القطعة التالفة';
+
+  @override
+  String coreReturnHint(String part) {
+    return 'استبدلت $part. أحضر القطعة التالفة إلى المستودع، أو اذكر لماذا لا يمكن إحضارها. الصورة مطلوبة في الحالتين.';
+  }
+
+  @override
+  String coreExpectedSerial(String serial) {
+    return 'الرقم المعروف على العمود: $serial';
+  }
+
+  @override
+  String coreInstalledSerial(String serial) {
+    return 'القطعة الجديدة المركّبة: $serial';
+  }
+
+  @override
+  String get coreWithPart => 'القطعة التالفة معي';
+
+  @override
+  String get coreUnrecoverable => 'لا يمكن إحضارها';
+
+  @override
+  String get coreSerialLabel => 'الرقم التسلسلي على القطعة التالفة';
+
+  @override
+  String get coreReasonLabel => 'لماذا لا يمكن إحضارها؟';
+
+  @override
+  String get corePhotoAction => 'صوّر القطعة التالفة';
+
+  @override
+  String get corePhotoReady => 'الصورة جاهزة';
+
+  @override
+  String coreStateName(String state) {
+    String _temp0 = intl.Intl.selectLogic(state, {
+      'OPEN': 'بحاجة إلى تصريح',
+      'DECLARED_WITH_PART': 'أحضرها إلى المستودع',
+      'DECLARED_UNRECOVERABLE': 'غير قابلة للاسترداد: ينتظر قرار المشرف',
+      'RECEIVED': 'استلمها المستودع',
+      'WAIVED': 'أُعفيت',
+      'other': '$state',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get issuesToConfirmTitle => 'مواد بانتظار تأكيد استلامك';
+
+  @override
+  String issueFrom(String code, String name) {
+    return '$code · صرفها $name';
+  }
+
+  @override
+  String get tickSerials => 'أشِّر على كل رقم تسلسلي استلمته فعلًا';
+
+  @override
+  String get confirmReceipt => 'تأكيد الاستلام';
+
+  @override
+  String get reportProblem => 'الإبلاغ عن مشكلة';
+
+  @override
+  String get disputeReasonLabel => 'ما المشكلة؟ (مثلًا: وصلت قطعة واحدة فقط)';
+
+  @override
+  String get send => 'إرسال';
+
+  @override
+  String get myCustodyTitle => 'عهدتي';
+
+  @override
+  String get returnUnused => 'إرجاع مواد غير مستخدمة';
+
+  @override
+  String get returnNoteLabel => 'ملاحظة (اختياري)';
+
+  @override
+  String get returnsWaitingTitle => 'مرتجعات بانتظار استلام المستودع';
+
+  @override
+  String get coresTitle => 'القطع التالفة';
+
+  @override
+  String get nothingWaiting => 'لا شيء بانتظارك.';
+
+  @override
+  String get stockHint => 'المواد المصروفة لك لا تدخل عهدتك إلا بعد تأكيد استلامها. الإرجاع يبقى «قيد التسليم» حتى يستلمه المستودع.';
 }

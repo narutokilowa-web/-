@@ -67,3 +67,27 @@ export class E2EPhone {
     return (r.json!.results as Record<string, unknown>[])[0]!;
   }
 }
+
+export const API = process.env.E2E_API_URL ?? 'http://localhost:5080';
+
+export type Json = Record<string, unknown>;
+
+/** The signed-in browser session's access token (for playing the phone through the API). */
+export async function accessToken(page: Page): Promise<string> {
+  const token = await page.evaluate(() => {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i)!;
+      if (key.startsWith('oidc.user:')) return (JSON.parse(sessionStorage.getItem(key)!) as { access_token: string }).access_token;
+    }
+    return null;
+  });
+  expect(token, 'signed-in session has an access token').toBeTruthy();
+  return token!;
+}
+
+export async function apiCall(request: APIRequestContext, token: string, method: 'GET' | 'POST', path: string, body?: unknown, deviceId?: string) {
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}`, 'Idempotency-Key': randomUUID() };
+  if (deviceId) headers['X-Device-Id'] = deviceId;
+  const response = method === 'GET' ? await request.get(`${API}${path}`, { headers }) : await request.post(`${API}${path}`, { headers, data: body ?? {} });
+  return { status: response.status(), json: (await response.json().catch(() => null)) as Json | null };
+}

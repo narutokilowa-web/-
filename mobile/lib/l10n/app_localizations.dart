@@ -581,7 +581,7 @@ abstract class AppLocalizations {
   /// No description provided for @commandName.
   ///
   /// In ar, this message translates to:
-  /// **'{type, select, ArriveOnSite{الوصول} AddEvidence{صورة} RecordDiagnosis{التشخيص} StartWork{بدء العمل} ConsumeMaterial{مادة} RecordChecklist{قائمة الفحص} SubmitWorkOrder{التقديم} Resubmit{إعادة التقديم} other{{type}}}'**
+  /// **'{type, select, ArriveOnSite{الوصول} AddEvidence{صورة} RecordDiagnosis{التشخيص} StartWork{بدء العمل} ConsumeMaterial{مادة} RecordChecklist{قائمة الفحص} SubmitWorkOrder{التقديم} Resubmit{إعادة التقديم} AcknowledgeStockIssue{تأكيد استلام مواد} DisputeStockIssue{اعتراض على مواد} DeclareStockReturn{إرجاع مواد} DeclareCoreReturn{تصريح قطعة تالفة} other{{type}}}'**
   String commandName(String type);
 
   /// No description provided for @photosWaiting.
@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @refusalReason.
   ///
   /// In ar, this message translates to:
-  /// **'{code, select, WORK_ORDER_CHANGED{تغيّر أمر العمل على الخادم بعد آخر تحديث للهاتف؛ حدّث المهمة وتحقق قبل إعادة الخطوة} WORK_ORDER_REASSIGNED{أُعيد إسناد أمر العمل لفني آخر؛ صورك وموادك محفوظة لكن هذه الخطوة لم تُطبّق} WORK_ORDER_CANCELLED{أُلغي أمر العمل؛ ينتظر العمل قرار المشرف} WORK_ORDER_CLOSED{أُغلق أمر العمل؛ ينتظر العمل قرار المشرف} BASE_VERSION_REQUIRED{حدّث المهمة ثم أعد المحاولة} GRANT_REQUIRED{لا يوجد تصريح عمل دون اتصال} GRANT_INVALID{تصريح العمل غير صالح لهذا الجهاز} GRANT_EXPIRED{أُنجز بعد انتهاء تصريح العمل دون اتصال} GRANT_REVOKED{أُنجز بعد إلغاء تصريح العمل} GRANT_WINDOW_UNPROVEN{لا يمكن إثبات وقت إنجازه (أُعيد تشغيل الهاتف دون اتصال)؛ ينتظر قرار المشرف} QUARANTINE_DISCARDED{رفضه المشرف بعد المراجعة} NOT_ASSIGNEE{أمر العمل ليس مسندًا إليك} INVALID_TRANSITION{لم تعد هذه الخطوة ممكنة في حالة أمر العمل الحالية} other{تعذّرت العملية ({code})}}'**
+  /// **'{code, select, WORK_ORDER_CHANGED{تغيّر أمر العمل على الخادم بعد آخر تحديث للهاتف؛ حدّث المهمة وتحقق قبل إعادة الخطوة} WORK_ORDER_REASSIGNED{أُعيد إسناد أمر العمل لفني آخر؛ صورك وموادك محفوظة لكن هذه الخطوة لم تُطبّق} WORK_ORDER_CANCELLED{أُلغي أمر العمل؛ ينتظر العمل قرار المشرف} WORK_ORDER_CLOSED{أُغلق أمر العمل؛ ينتظر العمل قرار المشرف} BASE_VERSION_REQUIRED{حدّث المهمة ثم أعد المحاولة} GRANT_REQUIRED{لا يوجد تصريح عمل دون اتصال} GRANT_INVALID{تصريح العمل غير صالح لهذا الجهاز} GRANT_EXPIRED{أُنجز بعد انتهاء تصريح العمل دون اتصال} GRANT_REVOKED{أُنجز بعد إلغاء تصريح العمل} GRANT_WINDOW_UNPROVEN{لا يمكن إثبات وقت إنجازه (أُعيد تشغيل الهاتف دون اتصال)؛ ينتظر قرار المشرف} QUARANTINE_DISCARDED{رفضه المشرف بعد المراجعة} NOT_ASSIGNEE{أمر العمل ليس مسندًا إليك} INVALID_TRANSITION{لم تعد هذه الخطوة ممكنة في حالة أمر العمل الحالية} CORE_RETURN_NOT_DECLARED{صرّح بالقطعة التالفة لكل قطعة استبدلتها قبل التقديم} SERIALS_NOT_CONFIRMED{أكّد الأرقام التي استلمتها بالضبط، أو أبلغ عن مشكلة} INSUFFICIENT_CUSTODY{الكمية أكبر مما في عهدتك} SERIAL_NOT_IN_CUSTODY{هذا الرقم ليس في عهدتك} NOT_RECEIVER{هذا الصرف ليس لك} other{تعذّرت العملية ({code})}}'**
   String refusalReason(String code);
 
   /// No description provided for @commandHeld.
@@ -907,6 +907,180 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'لا يوجد تصريح للعمل دون اتصال بعد: اتصل بالإنترنت'**
   String get grantNone;
+
+  /// No description provided for @tabStock.
+  ///
+  /// In ar, this message translates to:
+  /// **'المواد'**
+  String get tabStock;
+
+  /// No description provided for @stepCoreReturn.
+  ///
+  /// In ar, this message translates to:
+  /// **'القطع التالفة: {count} بحاجة إلى تصريح'**
+  String stepCoreReturn(int count);
+
+  /// No description provided for @stepCoreReturnDone.
+  ///
+  /// In ar, this message translates to:
+  /// **'القطع التالفة: صُرِّح بها'**
+  String get stepCoreReturnDone;
+
+  /// No description provided for @declareCoreAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'صرّح بالقطعة التالفة'**
+  String get declareCoreAction;
+
+  /// No description provided for @coreReturnTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'القطعة التالفة'**
+  String get coreReturnTitle;
+
+  /// No description provided for @coreReturnHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'استبدلت {part}. أحضر القطعة التالفة إلى المستودع، أو اذكر لماذا لا يمكن إحضارها. الصورة مطلوبة في الحالتين.'**
+  String coreReturnHint(String part);
+
+  /// No description provided for @coreExpectedSerial.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرقم المعروف على العمود: {serial}'**
+  String coreExpectedSerial(String serial);
+
+  /// No description provided for @coreInstalledSerial.
+  ///
+  /// In ar, this message translates to:
+  /// **'القطعة الجديدة المركّبة: {serial}'**
+  String coreInstalledSerial(String serial);
+
+  /// No description provided for @coreWithPart.
+  ///
+  /// In ar, this message translates to:
+  /// **'القطعة التالفة معي'**
+  String get coreWithPart;
+
+  /// No description provided for @coreUnrecoverable.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يمكن إحضارها'**
+  String get coreUnrecoverable;
+
+  /// No description provided for @coreSerialLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرقم التسلسلي على القطعة التالفة'**
+  String get coreSerialLabel;
+
+  /// No description provided for @coreReasonLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'لماذا لا يمكن إحضارها؟'**
+  String get coreReasonLabel;
+
+  /// No description provided for @corePhotoAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'صوّر القطعة التالفة'**
+  String get corePhotoAction;
+
+  /// No description provided for @corePhotoReady.
+  ///
+  /// In ar, this message translates to:
+  /// **'الصورة جاهزة'**
+  String get corePhotoReady;
+
+  /// No description provided for @coreStateName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{state, select, OPEN{بحاجة إلى تصريح} DECLARED_WITH_PART{أحضرها إلى المستودع} DECLARED_UNRECOVERABLE{غير قابلة للاسترداد: ينتظر قرار المشرف} RECEIVED{استلمها المستودع} WAIVED{أُعفيت} other{{state}}}'**
+  String coreStateName(String state);
+
+  /// No description provided for @issuesToConfirmTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مواد بانتظار تأكيد استلامك'**
+  String get issuesToConfirmTitle;
+
+  /// No description provided for @issueFrom.
+  ///
+  /// In ar, this message translates to:
+  /// **'{code} · صرفها {name}'**
+  String issueFrom(String code, String name);
+
+  /// No description provided for @tickSerials.
+  ///
+  /// In ar, this message translates to:
+  /// **'أشِّر على كل رقم تسلسلي استلمته فعلًا'**
+  String get tickSerials;
+
+  /// No description provided for @confirmReceipt.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد الاستلام'**
+  String get confirmReceipt;
+
+  /// No description provided for @reportProblem.
+  ///
+  /// In ar, this message translates to:
+  /// **'الإبلاغ عن مشكلة'**
+  String get reportProblem;
+
+  /// No description provided for @disputeReasonLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'ما المشكلة؟ (مثلًا: وصلت قطعة واحدة فقط)'**
+  String get disputeReasonLabel;
+
+  /// No description provided for @send.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال'**
+  String get send;
+
+  /// No description provided for @myCustodyTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'عهدتي'**
+  String get myCustodyTitle;
+
+  /// No description provided for @returnUnused.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرجاع مواد غير مستخدمة'**
+  String get returnUnused;
+
+  /// No description provided for @returnNoteLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملاحظة (اختياري)'**
+  String get returnNoteLabel;
+
+  /// No description provided for @returnsWaitingTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'مرتجعات بانتظار استلام المستودع'**
+  String get returnsWaitingTitle;
+
+  /// No description provided for @coresTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'القطع التالفة'**
+  String get coresTitle;
+
+  /// No description provided for @nothingWaiting.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا شيء بانتظارك.'**
+  String get nothingWaiting;
+
+  /// No description provided for @stockHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'المواد المصروفة لك لا تدخل عهدتك إلا بعد تأكيد استلامها. الإرجاع يبقى «قيد التسليم» حتى يستلمه المستودع.'**
+  String get stockHint;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -6,9 +6,102 @@
 | M1 — Audit core + register / approve / QR (web) | ✅ **approved by the owner** | 2026-09-24 |
 | M2 — Android scan + faults + work-order creation | ✅ **approved by the owner** | 2026-09-25 |
 | M3 — Field execution + review + dashboard → DEMO 1 | ✅ **approved by the owner** (APK also installed on a real phone) | 2026-09-25 |
-| M4 — Offline and BYOD hardening | ✅ **PASS — CI green on all 6 jobs incl. Android emulator; awaiting owner approval; M5 not started** | 2026-09-25 |
+| M4 — Offline and BYOD hardening | ✅ **approved by the owner** (real-phone checks: owner, before a real field pilot) | 2026-09-25 |
+| M5 — Inventory completion (material accountability) | ✅ **implemented and tested locally; CI pending on the M5 commit; awaiting owner approval; M6 not started** | 2026-09-25 |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
+
+---
+
+## Owner decisions in force (2026-09-25)
+
+- **M4 approved.** All final CI results and the M4 implementation accepted.
+- **Real-phone checks** (`docs/runbooks/android-field-test.md`, M4 steps 13–19 and M5 steps 20–24) are performed by the owner
+  separately. They **do not block the repository** and are **required before a real municipal field pilot**.
+- **SLA hours per priority: TBD.** No values are invented: `WorkOrders:SlaHoursByPriority` stays empty/configurable until the
+  municipality's operational policy is received (work orders are created with no SLA due time meanwhile).
+
+---
+
+## M5 — Inventory completion (material accountability)
+
+Scope followed: 11 §11.2 M5 (`IN_TRANSIT` + technician acknowledgment/dispute, unused returns, core returns with serial
+matching, inventory flags; 04 §4.9–4.11, 07) and the owner's M5 list (acknowledgment of issued materials, custody,
+work-order consumption, unused-material return, failed/replaced-part return, warehouse reconciliation, offboarding material
+return, stock history and auditability, supervisor/warehouse workflows, tests for shortages, duplicate movements, invalid
+returns and reconciliation). Nothing from M6 was started (no flag review/decide workflow, presence, risk tier, ON_HOLD,
+ResolveNoWork). Deferred as specified (07 §7.4): stock requests with approval, custody limits, cycle counts, four-eyes
+adjustments, multiple warehouses, reorder points, PO-linked receipts. Corrections remain REVERSAL movements of the command
+that owns the flow — there is no free adjustment anywhere.
+
+### Deliverables vs. specification
+
+| # | Deliverable | Status | Where |
+|---|---|---|---|
+| 1 | **Issue → IN_TRANSIT → technician acknowledgment** (04 §4.9): stock-issue documents `ISS-nnnnnn` (StockIssue machine SI1–SI4); issue WAREHOUSE → IN_TRANSIT, never below zero (`INSUFFICIENT_STOCK`), serials must be in the warehouse, issuer ≠ receiver; the technician **acknowledges on the phone confirming exactly the issued serials** (IN_TRANSIT → CUSTODY) or **disputes** with a reason (WARNING `STOCK_ISSUE_DISPUTED`); the warehouse **cancels** an ISSUED/DISPUTED issue with a reason (REVERSAL → WAREHOUSE) | ✅ | `Inventory/Application/StockDocumentService.cs`, `docs/state-machines/stock-issue.yaml`, web **Stock → Issues**, phone **المواد** |
+| 2 | **Technician custody**: custody changes only by acknowledgment, consumption, return, rejection reversal or offboarding return; the phone shows custody and serials | ✅ | `InventoryQueries.CustodyOfAsync`, `stock_tab.dart` |
+| 3 | **Work-order consumption** (unchanged ledger CUSTODY → CONSUMED) now **installs the unit on the light** (`serial_units.installed_asset_id`) and **opens a core-return obligation** for core-return items (one per serial unit); the known removed serial is recorded as the expected one | ✅ | `InventoryService.ConsumeInCurrentUnitOfWorkAsync` |
+| 4 | **Unused-material return** (04 §4.10): declared on the phone (CUSTODY → IN_TRANSIT, only what the custody holds: `INSUFFICIENT_CUSTODY`, `SERIAL_NOT_IN_CUSTODY`); the warehouse **ticks every serial** and receives (IN_TRANSIT → WAREHOUSE; `SERIALS_DO_NOT_MATCH` otherwise) or **rejects** with a reason (REVERSAL → CUSTODY, WARNING `STOCK_RETURN_REJECTED`); receiver ≠ returner | ✅ | `stock-return.yaml`, web **Stock → Returns**, phone **إرجاع مواد غير مستخدمة** |
+| 5 | **Failed/replaced-part (core) return** (04 §4.11): **W9/W12 refuse submission until every core is declared** (`CORE_RETURN_NOT_DECLARED`); DeclareCoreReturn WITH_PART (photo, serial) or UNRECOVERABLE (reason, photo) — offline-capable, named by the consumption; warehouse **receives** FIELD → CORE_BIN with the **serial check** (mismatch recorded + CRITICAL `CORE_SERIAL_MISMATCH`; a serial in stock is refused) or records **not presented** (→ DECLARED_UNRECOVERABLE, WARNING); **supervisor ≠ technician waives** an unrecoverable part (INFO `CORE_RETURN_WAIVED`); historical installed serial when none was known | ✅ | `core-return.yaml`, `FieldExecutionService.DeclareCoreReturnAsync`, web **Stock → Failed parts**, phone step **القطع التالفة** |
+| 6 | **Policy timers**: issue not acknowledged after `issue_ack_warning_hours` (24) → WARNING `ISSUE_UNACKNOWLEDGED`; part declared with part and not received after `core_return_overdue_days` (7) → WARNING `CORE_RETURN_OVERDUE`; once per document; durations are data (Settings) | ✅ | `InventoryTimers.cs`, `PolicySetting.cs` |
+| 7 | **Warehouse reconciliation**: per item received / warehouse / in transit / custody / consumed / core bin; findings: stored balance ≠ ledger, in transit ≠ open documents, serial count ≠ balance, negative balance, core bin ≠ received cores, custody left with a disabled user; open documents (awaiting acknowledgment, overdue, disputed, returns, cores); custody per technician | ✅ | `GET /api/v1/stock/reconciliation`, web **Stock → Reconciliation** |
+| 8 | **Offboarding material return**: the warehouse records what a disabled technician handed back (CUSTODY → WAREHOUSE, only that custody, note required, INFO `OFFBOARDING_RETURN_RECORDED`); a final handover with material left → WARNING `CUSTODY_NOT_RETURNED`; nothing written off | ✅ | `StockDocumentService.OffboardingReturnAsync`, web **Stock → Returns**, `docs/runbooks/offboarding.md` §D |
+| 9 | **Stock history and auditability**: every change audited in the same transaction; history by item, serial (where it is now, which light), technician, type, document; `audit-verify` also checks in-transit stock against open documents and the core bin against received cores | ✅ | `GET /api/v1/stock/movements`, web **Stock → History**, `tools/audit-verify/WorkOrderSeals.cs` |
+| 10 | **Supervisor / warehouse workflows**: warehouse home links (issue, returns to receive, failed parts, reconciliation); supervisor sees failed parts and waives with the photo shown; auditors read everything | ✅ | web `HomePage.tsx`, `features/stock/*` |
+| 11 | **Specification tables**: `stock-issue.yaml`, `stock-return.yaml`, `core-return.yaml` (new), `stock-ledger.yaml` (IN_TRANSIT, FIELD, CORE_BIN, S5–S12), `work-order.yaml` (DeclareCoreReturn, W9 `core_returns_declared`), `permissions.yaml` (5 M5 actions, 2 policies) — code equals tables (conformance tests) | ✅ | `docs/state-machines`, `docs/lean-pilot/permissions.yaml` |
+
+### DEMO 1 remains green
+
+DEMO 1 now runs with the M5 rules: the seed issues material and **tech1 acknowledges it through the phone's sync
+pipeline**; the earlier repairs declare their failed modules (repair 1's part is received by the warehouse, repair 2's waits
+in the queue). The golden path (steps 2–19), the Playwright DEMO 1 flow and the emulator flow **add the failed-part
+declaration** before submission (W9), and the golden path also acknowledges the waiting issue, returns an unused fuse and
+receives the repeat repair's failed module, then asserts the reconciliation is **balanced** and the verifier is OK.
+
+### Tests run (local, final)
+
+| Suite | Tests | Result |
+|---|---|---|
+| `Mfop.SpecFiles.Tests` (+ StockIssue, StockReturn, CoreReturn machines == code; stock-ledger v2; M5 machines present; scope `m5`) | 158 | ✅ |
+| `Mfop.Domain.Tests` (ledger now WAREHOUSE → IN_TRANSIT → CUSTODY) | 73 | ✅ |
+| `Mfop.Architecture.Tests` (Inventory → Evidence/Rules contracts only; no new audit-exempt type) | 38 | ✅ |
+| `Mfop.Api.Tests` — **InventoryAccountabilityTests** (10): **full custody chain** (receipt 10 → issue 2 in transit → wrong serials refused → acknowledge → consume D1 → declare core → warehouse receives → unused D2 returned and received → warehouse 9 / consumed 1 / core bin 1 / reconciliation row / serial history and installed light); **shortages** (warehouse, serial not in warehouse, custody, serial not in custody, zero quantity, non-technician receiver); **duplicate movements** (same command id → DUPLICATE, second acknowledgment, cancel after acknowledgment, return id reuse, return received twice, duplicate line/serial, consumption movement id reuse); **invalid returns** (serials not matching, reason required, technician cannot receive, rejection → REVERSAL + flag, empty/unknown lines); **dispute** (only the receiver, flag + photo, cancel restores the warehouse); **core returns** (W9, photo and reason required, serial in stock refused, mismatch → CRITICAL flag + receipt, expected serial from the previous repair, not presented → WARNING, waiver only by a supervisor, INFO flag); **timers** (flags once after the policy durations); **offboarding return** (only for disabled users, no free adjustment, partial and final handover, flags, reconciliation finding); **verifier** detects an issue state edited behind the ledger; technicians see only their own documents | 10 | ✅ |
+| `Mfop.Api.Tests` — all M1–M4 tests (FieldFlow now acknowledges the issue and declares the core) | 113 | ✅ |
+| `Mfop.GoldenPath.Tests` — **DEMO 1 steps 2–19** on a `make seed` database + M5 acknowledgment, unused return, core receipt, **balanced reconciliation**, verifier OK | 1 | ✅ |
+| Web: lint, typecheck, build; Vitest (+ stock-line validation; issue form, cancel with reason; receive only with every serial ticked, reject; core receipt with serial, waiver only for another technician's part; reconciliation) | 38 | ✅ |
+| Mobile (Flutter 3.41.6): `flutter analyze` no issues; `flutter test` (+ offline core obligation from the queued consumption, answered issues hidden, **Materials tab**: confirm only with every serial ticked, dispute, unused return; DEMO 1 phone flow now declares the failed part before submitting) | 42 | ✅ |
+| Playwright E2E specs typecheck and lint (the new `m5-inventory.spec.ts` runs in CI) | — | ✅ |
+
+**Not run locally** (done by CI): the Compose stack (Playwright E2E incl. the new M5 spec, `make seed`, `make verify-audit`),
+the Android APK build and the emulator run. This sandbox's proxy refuses `quay.io` (Keycloak image) and `dl.google.com`
+(Android SDK); Docker Hub rate-limits the Flutter image, so the pinned Flutter 3.41.6 was checked out from its git tag for
+local runs. Network settings were not changed.
+
+### Deviations from the specification
+
+All recorded in ADR-0008 (M5 entries): virtual FIELD location for the source of failed parts; outcome-split commands in the
+core-return table; declaration named by the consumption (offline); core-return photos owned by the core return; CORE_PART_NOT_PRESENTED
+flag; offboarding return as SR4/S12; YAML scope value `m5`; default `min_app_version` 0.5.0 for new databases.
+
+### Warnings and known limitations
+
+| # | What | Status |
+|---|---|---|
+| 1 | **Upgrade:** new inventory migration and seed — run `make demo-reset`; phones need app **0.5.0** (raise `min_app_version` on existing databases when every phone is updated). | Documented (dev-setup) |
+| 2 | Flags raised by M5 are shown on the documents; the auditor's review/decide workflow is M6. Material left with a disabled user stays visible (reconciliation finding + flags) until then. | By plan |
+| 3 | The dispute photo is supported by the API (owned by the issue); the phone sends the reason only. | Documented |
+| 4 | Real-phone checks M5 steps 20–24 (with M4 steps 13–19) are required before a real municipal field pilot. | Owner checklist |
+| 5 | CI: the emulator job on a85304d (docs-only) failed twice on runner infrastructure (emulator service crash; runner shutdown during APK install), no test assertion reached; the job now builds the test APK before booting the emulator. | Verified by the M5 CI run |
+
+### Decisions needed from the owner
+
+1. Approve M5 (M6 will not start before that).
+2. Run the real-phone checks (M4 13–19, M5 20–24) before a real municipal field pilot.
+3. Still open: SLA hours per priority (TBD, from the municipality's operational policy).
+
+### CI results
+
+Pending on the M5 commit.
 
 ---
 
@@ -72,11 +165,12 @@ YAML scope value `m4`.
 | 3 | The phone pins the server's grant key on first use; a key rotation needs a new key id. A key shipped inside the APK is for the pilot build (M8/M9). | By design |
 | 4 | Without `MFOP_GRANT_SIGNING_KEY` the API signs grants with an ephemeral key (warning in the log); phones then simply renew their grant after an API restart. `make env` generates the key. | Dev only |
 
-### Decisions needed from the owner
+### Decisions (resolved by the owner, 2026-09-25)
 
-1. Approve M4 (M5 will not start before that).
-2. Run steps 13–19 of the real-phone checklist, or accept the emulator result.
-3. Still open from M2/M3: SLA hours per priority.
+1. **M4 approved**, with all final CI results.
+2. Real-phone checks (steps 13–19): performed by the owner separately; required before a real municipal field pilot, not
+   blocking the repository.
+3. SLA hours per priority: **TBD** — left unset/configurable until the municipality's operational policy is received.
 
 ### CI results
 

@@ -27,7 +27,7 @@ public sealed class TestPhone : IDisposable
 
     public Guid? DeviceId { get; private set; }
 
-    public string AppVersion { get; set; } = "0.4.0";
+    public string AppVersion { get; set; } = "0.5.0";
 
     /// <summary>Boot session id; <see cref="Reboot"/> starts a new one (the server then has no clock sample for it).</summary>
     public string BootId { get; private set; } = Guid.NewGuid().ToString("N");

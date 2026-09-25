@@ -7,6 +7,7 @@ import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/device_info.dart';
 import '../core/field_work.dart';
+import '../core/field_work.dart' as field show CoreObligation, issuesToAnswer;
 import '../core/device_trust.dart';
 import '../core/local_db.dart';
 import '../core/models.dart';
@@ -195,8 +196,67 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   /// The cached task (last pull), if it is still assigned to me.
   WorkOrderTask? cachedTask(String id) => tasks.where((t) => t.id == id).firstOrNull;
 
-  WorkView workView(WorkOrderTask task) =>
-      WorkView.of(cachedTask(task.id) ?? task, reference, outbox?.all() ?? const [], sync?.evidence.forWorkOrder(task.id) ?? const []);
+  WorkView workView(WorkOrderTask task) => WorkView.of(cachedTask(task.id) ?? task, reference, outbox?.all() ?? const [],
+      sync?.evidence.forWorkOrder(task.id) ?? const [], stock: stock, items: sync?.cachedItems ?? const []);
+
+  // ---- M5: material accountability (docs/lean-pilot/04 §4.9–4.11). Also commands in the outbox, sent by sync. ----
+
+  TechnicianStock get stock => sync?.cachedStock ?? const TechnicianStock();
+
+  /// Issues waiting for my acknowledgment (those already answered on this phone are hidden).
+  List<StockIssueView> get issuesToAnswer => field.issuesToAnswer(stock, outbox?.all() ?? const []);
+
+  /// Material is mine only after I confirm every serial I received (two-party handover).
+  Future<void> acknowledgeIssue(StockIssueView issue) =>
+      _enqueueStock('AcknowledgeStockIssue', {'issueId': issue.id, 'confirmedSerials': issue.serials});
+
+  /// Something is missing or different: the warehouse is told (a flag) and cancels or re-issues.
+  Future<void> disputeIssue(StockIssueView issue, String reason) =>
+      _enqueueStock('DisputeStockIssue', {'issueId': issue.id, 'reason': reason.trim()});
+
+  /// Unused material goes back: it is in transit until the warehouse receives it.
+  Future<void> returnUnused(CustodyItem item, double quantity, List<String> serials, String? note) => _enqueueStock('DeclareStockReturn', {
+    'returnId': Outbox.newId(),
+    'lines': [
+      {'itemId': item.itemId, 'quantity': quantity, 'serials': serials.isEmpty ? null : serials},
+    ],
+    'note': (note?.trim().isEmpty ?? true) ? null : note!.trim(),
+  });
+
+  /// W9: the failed part of a core-return item, WITH_PART (serial read on it) or UNRECOVERABLE (reason), always with a photo.
+  Future<void> declareCore(WorkOrderTask task, field.CoreObligation core, {required bool withPart, String? serial, String? reason,
+      required ProcessedPhoto photo, required DateTime capturedAt}) {
+    final evidenceId = Outbox.newId();
+    return _enqueue(
+      task,
+      'DeclareCoreReturn',
+      {
+        'workOrderId': task.id,
+        'coreReturnId': core.coreReturnId,
+        'movementId': core.movementId,
+        'installedSerial': core.installedSerial,
+        'outcome': withPart ? 'WITH_PART' : 'UNRECOVERABLE',
+        'serial': (serial?.trim().isEmpty ?? true) ? null : serial!.trim(),
+        'reason': (reason?.trim().isEmpty ?? true) ? null : reason!.trim(),
+        'photo': {
+          'evidenceId': evidenceId,
+          'sha256': photo.sha256,
+          'sizeBytes': photo.bytes.length,
+          'mime': 'image/jpeg',
+          'capturedAt': capturedAt.toUtc().toIso8601String(),
+        },
+      },
+      after: (commandId) => sync!.evidence.add(
+        evidenceId: evidenceId,
+        workOrderId: task.id,
+        kind: 'CORE_RETURN',
+        sha256: photo.sha256,
+        bytes: photo.bytes,
+        capturedAt: capturedAt,
+        commandId: commandId,
+      ),
+    );
+  }
 
   /// W5: the scanned tag must be this light's; a typed code needs a reason (damaged tag).
   Future<void> arrive(WorkOrderTask task, {String? scanned, String? manualCode, String? manualReason}) => _enqueue(task, 'ArriveOnSite', {
@@ -268,7 +328,13 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   /// Records a work action in the outbox with its context: the offline grant it is made under, the monotonic clock and boot
   /// (trusted time), and the work-order version the technician is looking at. Without a valid grant nothing is recorded and
   /// the app locks (docs/lean-pilot/05 §5.5). Actions are recorded one after the other, in the order they were made.
-  Future<void> _enqueue(WorkOrderTask task, String type, Map<String, dynamic> payload, {void Function(String commandId)? after}) {
+  Future<void> _enqueue(WorkOrderTask task, String type, Map<String, dynamic> payload, {void Function(String commandId)? after}) =>
+      _enqueueCommand(type, payload, task: task, after: after);
+
+  /// A stock command that is not about a work order (no work-order version to carry).
+  Future<void> _enqueueStock(String type, Map<String, dynamic> payload) => _enqueueCommand(type, payload);
+
+  Future<void> _enqueueCommand(String type, Map<String, dynamic> payload, {WorkOrderTask? task, void Function(String commandId)? after}) {
     final run = _serial.then((_) async {
       final now = await trust.now();
       final grant = grants?.current;
@@ -278,8 +344,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
         return;
       }
 
-      final cached = cachedTask(task.id);
-      final seen = cached == null || task.eventSeq > cached.eventSeq ? task.eventSeq : cached.eventSeq;
+      final cached = task == null ? null : cachedTask(task.id);
+      final seen = task == null ? null : (cached == null || task.eventSeq > cached.eventSeq ? task.eventSeq : cached.eventSeq);
       final id = outbox!.enqueue(type, payload, CommandContext(grantId: grant.grantId, elapsedMs: now.elapsedMs, bootId: now.bootId, baseVersion: seen));
       after?.call(id);
       _afterEnqueue();

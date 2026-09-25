@@ -48,6 +48,17 @@ public static class FlagCodes
     public const string NeedsReassignment = "NEEDS_REASSIGNMENT";
     public const string CustodyToReconcile = "CUSTODY_TO_RECONCILE";
     public const string SubmittedByNonAssignee = "SUBMITTED_BY_NON_ASSIGNEE"; // docs/spec/10 §10.5: field facts from the previous assignee
+
+    // M5 (docs/lean-pilot/04 §4.9–4.11, 07): inventory accountability. Signals for review, never verdicts.
+    public const string StockIssueDisputed = "STOCK_ISSUE_DISPUTED";
+    public const string IssueUnacknowledged = "ISSUE_UNACKNOWLEDGED";
+    public const string StockReturnRejected = "STOCK_RETURN_REJECTED";
+    public const string CoreSerialMismatch = "CORE_SERIAL_MISMATCH";
+    public const string CoreReturnOverdue = "CORE_RETURN_OVERDUE";
+    public const string CorePartNotPresented = "CORE_PART_NOT_PRESENTED";
+    public const string CoreReturnWaived = "CORE_RETURN_WAIVED";
+    public const string OffboardingReturnRecorded = "OFFBOARDING_RETURN_RECORDED";
+    public const string CustodyNotReturned = "CUSTODY_NOT_RETURNED";
 }
 
 public sealed record RuleSettingDto(string RuleCode, bool Enabled, System.Text.Json.JsonElement Params, Guid? ChangedBy, DateTimeOffset ChangedAt, int Version);

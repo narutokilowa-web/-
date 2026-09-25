@@ -1,5 +1,5 @@
 {
-  "_comment": "DEV ONLY. Synthetic demo data for DEMO 1 (docs/lean-pilot/02 §2.3, 07 §7.1, 11 §11.2 M3). Nothing here is a municipality fact: names, coordinates, quantities and costs are invented for the demo. Loaded by `make seed` through the application's own audited commands, acting as the seeded users.",
+  "_comment": "DEV ONLY. Synthetic demo data for DEMO 1 (docs/lean-pilot/02 §2.3, 07 §7.1, 11 §11.2 M3). Nothing here is a municipality fact: names, coordinates, quantities and costs are invented for the demo. M5: the first tech1 issue is acknowledged during the seed (the second one and tech2's wait for the phone); each earlier repair declares its failed part (the first is received by the warehouse, the second waits in the warehouse queue). Loaded by `make seed` through the application's own audited commands, acting as the seeded users.",
   "center": {"latitude": 33.5000, "longitude": 36.3000},
   "street": "شارع العرض التجريبي",
   "lights": 10,
@@ -25,12 +25,16 @@
     {"sku": "SOLAR-PANEL-100W", "quantity": 2, "serial_prefix": "P-"}
   ],
   "issues": [
-    {"technician": "tech1", "lines": [
+    {"technician": "tech1", "acknowledge": true, "lines": [
       {"sku": "LED-MOD-50W", "serials": ["M-0001", "M-0002", "M-0003", "M-0004"]},
       {"sku": "LED-DRV-50W", "serials": ["D-0001", "D-0002"]},
       {"sku": "PHOTOCELL", "quantity": 3},
       {"sku": "FUSE-10A", "quantity": 5},
       {"sku": "CABLE-2.5", "quantity": 20}
+    ]},
+    {"technician": "tech1", "lines": [
+      {"sku": "LED-DRV-50W", "serials": ["D-0004"]},
+      {"sku": "FUSE-10A", "quantity": 2}
     ]},
     {"technician": "tech2", "lines": [
       {"sku": "LED-DRV-50W", "serials": ["D-0003"]},
@@ -40,8 +44,8 @@
   "repeat_failure_light": {
     "address": "شارع العرض التجريبي — العمود المتكرر العطل",
     "earlier_repairs": [
-      {"diagnosis": "LED_MODULE_FAIL", "sku": "LED-MOD-50W", "serial": "M-0001", "root_cause": "وحدة الليد محترقة", "test_method": "BYPASS"},
-      {"diagnosis": "LED_MODULE_FAIL", "sku": "LED-MOD-50W", "serial": "M-0002", "root_cause": "وحدة الليد محترقة مجددًا", "test_method": "BYPASS"}
+      {"diagnosis": "LED_MODULE_FAIL", "sku": "LED-MOD-50W", "serial": "M-0001", "root_cause": "وحدة الليد محترقة", "test_method": "BYPASS", "removed_serial": "M-9001", "core_received": true},
+      {"diagnosis": "LED_MODULE_FAIL", "sku": "LED-MOD-50W", "serial": "M-0002", "root_cause": "وحدة الليد محترقة مجددًا", "test_method": "BYPASS", "removed_serial": "M-0001", "core_received": false}
     ]
   }
 }

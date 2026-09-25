@@ -450,7 +450,7 @@ export interface AuditSearchEntry {
 
 export interface Balance {
   locationId: string;
-  locationKind: 'WAREHOUSE' | 'CUSTODY' | 'SUPPLIER' | 'CONSUMED';
+  locationKind: 'WAREHOUSE' | 'IN_TRANSIT' | 'CUSTODY' | 'CONSUMED' | 'CORE_BIN' | 'SUPPLIER';
   locationName: string;
   custodianUserId: string | null;
   custodianName: string | null;
@@ -554,4 +554,232 @@ export interface PolicySetting {
   changedBy: string | null;
   changedAt: string;
   version: number;
+}
+
+// ---- M5: material accountability (docs/lean-pilot/04 §4.9–4.11, 07) ----
+
+export type LocationKind = 'WAREHOUSE' | 'IN_TRANSIT' | 'CUSTODY' | 'CONSUMED' | 'CORE_BIN' | 'SUPPLIER' | 'FIELD';
+
+export interface DocumentLine {
+  movementId: string;
+  itemId: string;
+  sku: string;
+  nameAr: string;
+  nameEn: string;
+  unit: string;
+  serialTracked: boolean;
+  quantity: number;
+  serials: string[];
+}
+
+export interface DocumentFlag {
+  id: string;
+  ruleCode: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  state: string;
+  createdAt: string;
+}
+
+export type StockIssueState = 'ISSUED' | 'ACKNOWLEDGED' | 'DISPUTED' | 'CANCELLED';
+
+export interface StockIssue {
+  id: string;
+  code: string;
+  state: StockIssueState;
+  technicianId: string;
+  technicianName: string;
+  issuedBy: string;
+  issuedByName: string;
+  issuedAt: string;
+  note: string | null;
+  referenceWorkOrderId: string | null;
+  requestedBy: string | null;
+  respondedAt: string | null;
+  disputeReason: string | null;
+  disputeEvidenceId: string | null;
+  cancelledAt: string | null;
+  cancelledByName: string | null;
+  cancelReason: string | null;
+  overdue: boolean;
+  lines: DocumentLine[];
+  flags: DocumentFlag[];
+}
+
+export type StockReturnState = 'DECLARED' | 'RECEIVED' | 'REJECTED';
+
+export interface StockReturn {
+  id: string;
+  code: string;
+  kind: 'UNUSED' | 'OFFBOARDING';
+  state: StockReturnState;
+  technicianId: string;
+  technicianName: string;
+  declaredBy: string;
+  declaredByName: string;
+  declaredAt: string;
+  note: string | null;
+  decidedAt: string | null;
+  decidedByName: string | null;
+  rejectReason: string | null;
+  lines: DocumentLine[];
+  flags: DocumentFlag[];
+}
+
+export type CoreReturnState = 'OPEN' | 'DECLARED_WITH_PART' | 'DECLARED_UNRECOVERABLE' | 'RECEIVED' | 'WAIVED';
+
+export interface CoreReturn {
+  id: string;
+  code: string;
+  state: CoreReturnState;
+  consumeMovementId: string;
+  workOrderId: string;
+  workOrderCode: string;
+  assetId: string;
+  assetCode: string | null;
+  itemId: string;
+  sku: string;
+  nameAr: string;
+  nameEn: string;
+  serialTracked: boolean;
+  quantity: number;
+  technicianId: string;
+  technicianName: string;
+  installedSerial: string | null;
+  expectedSerial: string | null;
+  createdAt: string;
+  declaredAt: string | null;
+  declaredSerial: string | null;
+  declaredReason: string | null;
+  evidenceId: string | null;
+  receivedAt: string | null;
+  receivedByName: string | null;
+  receivedSerial: string | null;
+  serialMismatch: boolean;
+  notPresentedReason: string | null;
+  waivedAt: string | null;
+  waivedByName: string | null;
+  waiveReason: string | null;
+  overdue: boolean;
+  flags: DocumentFlag[];
+}
+
+export interface StockItem {
+  id: string;
+  sku: string;
+  nameAr: string;
+  nameEn: string;
+  unit: string;
+  serialTracked: boolean;
+  coreReturnRequired: boolean;
+}
+
+export interface CustodyLine {
+  itemId: string;
+  sku: string;
+  nameAr: string;
+  nameEn: string;
+  unit: string;
+  serialTracked: boolean;
+  quantity: number;
+  serials: string[];
+}
+
+export interface ReconciliationItem {
+  itemId: string;
+  sku: string;
+  nameAr: string;
+  nameEn: string;
+  unit: string;
+  receivedNet: number;
+  warehouse: number;
+  inTransit: number;
+  custody: number;
+  consumed: number;
+  coreBin: number;
+  coresExpected: number;
+  inTransitOpenDocuments: number;
+}
+
+export interface CustodyHolder {
+  userId: string;
+  name: string;
+  active: boolean;
+  items: CustodyLine[];
+  openIssues: number;
+  openReturns: number;
+  openCoreReturns: number;
+}
+
+export interface ReconciliationFinding {
+  code: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  message: string;
+  itemId: string | null;
+  locationId: string | null;
+  userId: string | null;
+}
+
+export interface Reconciliation {
+  generatedAt: string;
+  balanced: boolean;
+  movementsChecked: number;
+  items: ReconciliationItem[];
+  custodians: CustodyHolder[];
+  open: {
+    issuesAwaitingAcknowledgment: number;
+    issuesOverdue: number;
+    issuesDisputed: number;
+    returnsDeclared: number;
+    coreReturnsOpen: number;
+    coreReturnsDeclaredWithPart: number;
+    coreReturnsOverdue: number;
+    coreReturnsUnrecoverable: number;
+  };
+  findings: ReconciliationFinding[];
+}
+
+export interface StockHistoryEntry {
+  id: string;
+  type: string;
+  occurredAt: string;
+  recordedAt: string;
+  itemId: string;
+  sku: string;
+  unit: string;
+  quantity: number;
+  serials: string[];
+  fromLocationId: string;
+  fromKind: LocationKind;
+  fromName: string;
+  toLocationId: string;
+  toKind: LocationKind;
+  toName: string;
+  actorId: string;
+  actorName: string;
+  documentId: string | null;
+  documentCode: string | null;
+  workOrderId: string | null;
+  assetId: string | null;
+  reversalOf: string | null;
+  note: string | null;
+  exceedsCustody: boolean;
+  serialNotInCustody: boolean;
+}
+
+export interface StockHistory {
+  movements: StockHistoryEntry[];
+  serial: {
+    itemId: string;
+    sku: string;
+    serial: string;
+    locationKind: LocationKind | null;
+    locationName: string | null;
+    custodianUserId: string | null;
+    installedAssetId: string | null;
+    installedAt: string | null;
+    removedFromAssetId: string | null;
+    removedAt: string | null;
+    historical: boolean;
+  } | null;
+  truncated: boolean;
 }

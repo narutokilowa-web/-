@@ -34,8 +34,8 @@ void main() {
     await h.controller.signIn();
     final register = h.server.requests.singleWhere((r) => r.url.path == '/sync/v1/devices/register');
     expect(jsonDecode(register.body)['publicKey'], 'device-public-key');
-    expect(jsonDecode(register.body)['appVersion'], '0.4.0');
-    expect(register.headers['X-App-Version'], '0.4.0');
+    expect(jsonDecode(register.body)['appVersion'], '0.5.0');
+    expect(register.headers['X-App-Version'], '0.5.0');
 
     h.server.deviceStatus = 'ACTIVE';
     h.server.tasks = [{...taskJson(), 'progress': progressJson()}];

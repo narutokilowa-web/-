@@ -23,7 +23,7 @@ const testConfig = AppConfig(
   clientId: 'mfop-mobile',
   redirectUri: 'mfop://oauth-callback',
   environment: 'TEST',
-  appVersion: '0.4.0',
+  appVersion: '0.5.0',
   allowInsecureConnections: true,
   appLockMinutes: 5,
 );
@@ -160,6 +160,24 @@ final List<Map<String, dynamic>> custodyJson = [
   {'itemId': 'item-fuse', 'sku': 'FUSE-10A', 'nameAr': 'فيوز', 'nameEn': 'Fuse', 'unit': 'EA', 'serialTracked': false, 'quantity': 5, 'serials': <String>[]},
 ];
 
+/// The catalogue as the pull sends it (M5): LED modules are serial-tracked and must come back as cores.
+final List<Map<String, dynamic>> itemsJson = [
+  {'id': 'item-led', 'sku': 'LED-MOD-50W', 'nameAr': 'وحدة ليد 50 واط', 'nameEn': 'LED module 50 W', 'unit': 'EA', 'serialTracked': true, 'coreReturnRequired': true, 'cost': null},
+  {'id': 'item-fuse', 'sku': 'FUSE-10A', 'nameAr': 'فيوز', 'nameEn': 'Fuse', 'unit': 'EA', 'serialTracked': false, 'coreReturnRequired': false, 'cost': null},
+];
+
+Map<String, dynamic> issueJson({String id = 'iss-1', String code = 'ISS-000007', List<String> serials = const ['D-0004']}) => {
+  'id': id,
+  'code': code,
+  'state': 'ISSUED',
+  'issuedAt': '2026-09-24T09:00:00Z',
+  'issuedByName': 'أمين المستودع',
+  'note': null,
+  'lines': [
+    {'movementId': 'm-$id', 'itemId': 'item-drv', 'sku': 'LED-DRV-50W', 'nameAr': 'درايفر', 'nameEn': 'Driver', 'unit': 'EA', 'serialTracked': true, 'quantity': serials.length, 'serials': serials},
+  ],
+};
+
 /// A small JPEG (optionally large) standing in for a camera frame.
 Uint8List cameraJpeg({int width = 64, int height = 48, int seed = 1}) {
   final image = img.Image(width: width, height: height);
@@ -193,6 +211,10 @@ class FakeServer {
   List<Map<String, dynamic>> tasks = [];
   final Map<String, List<int>> uploads = {};
   List<Map<String, dynamic>> recommendations = [];
+
+  /// M5: catalogue and the technician's stock documents in the pull (null = an M4 server without them).
+  List<Map<String, dynamic>>? items;
+  Map<String, dynamic>? stock;
   String? blockedCode;
   bool offline = false;
 
@@ -237,7 +259,9 @@ class FakeServer {
         'workOrders': tasks,
         'reference': referenceJson,
         'custody': custodyJson,
-        'policy': {'offlineGraceHours': grantHours, 'appLockMinutes': 5, 'minAppVersion': '0.4.0'},
+        'policy': {'offlineGraceHours': grantHours, 'appLockMinutes': 5, 'minAppVersion': '0.5.0'},
+        'items': ?items,
+        'stock': ?stock,
       });
     }
 
@@ -259,7 +283,7 @@ class FakeServer {
         'signature': 'server-signature',
         'publicKey': grantKey,
         'keyId': 'k1',
-        'policy': {'offlineGraceHours': grantHours, 'appLockMinutes': 5, 'minAppVersion': '0.4.0'},
+        'policy': {'offlineGraceHours': grantHours, 'appLockMinutes': 5, 'minAppVersion': '0.5.0'},
         'serverTime': serverTime.toIso8601String(),
       });
     }
@@ -330,6 +354,8 @@ class FakeServer {
 extension on FakeServer {
   void _apply(Map<String, dynamic> command) {
     final payload = command['payload'] as Map<String, dynamic>;
+    final documents = stock;
+    if (documents != null) _applyStock(documents, command['type'] as String, payload);
     final task = tasks.where((t) => t['id'] == payload['workOrderId']).firstOrNull;
     if (task == null) return;
     final p = (task['progress'] as Map<String, dynamic>?) ?? (task['progress'] = progressJson());
@@ -351,6 +377,37 @@ extension on FakeServer {
       case 'SubmitWorkOrder' || 'Resubmit':
         task['state'] = 'PENDING_REVIEW';
         inc('submissions');
+    }
+  }
+
+  /// What the M5 server does with stock commands, as far as the phone can see it in the next pull.
+  void _applyStock(Map<String, dynamic> documents, String type, Map<String, dynamic> payload) {
+    final issues = (documents['issues'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final cores = (documents['coreReturns'] as List<dynamic>).cast<Map<String, dynamic>>();
+    switch (type) {
+      case 'AcknowledgeStockIssue':
+        issues.removeWhere((i) => i['id'] == payload['issueId']);
+      case 'DisputeStockIssue':
+        for (final i in issues.where((i) => i['id'] == payload['issueId'])) {
+          i['state'] = 'DISPUTED';
+        }
+      case 'DeclareStockReturn':
+        (documents['returns'] as List<dynamic>).add({'id': payload['returnId'], 'code': 'RET-000001', 'state': 'DECLARED', 'declaredAt': serverTime.toIso8601String(), 'lines': []});
+      case 'ConsumeMaterial':
+        final item = (items ?? const []).where((i) => i['id'] == payload['itemId']).firstOrNull;
+        final task = tasks.where((t) => t['id'] == payload['workOrderId']).firstOrNull;
+        if (item == null || item['coreReturnRequired'] != true || task == null) return;
+        for (final serial in ((payload['serials'] as List<dynamic>?) ?? const []).cast<String>()) {
+          cores.add({
+            'id': 'core-$serial', 'code': 'CORE-${cores.length + 1}', 'state': 'OPEN', 'consumeMovementId': payload['movementId'],
+            'workOrderId': task['id'], 'workOrderCode': task['code'], 'sku': item['sku'], 'nameAr': item['nameAr'], 'nameEn': item['nameEn'],
+            'serialTracked': item['serialTracked'], 'installedSerial': serial, 'expectedSerial': 'M-0002',
+          });
+        }
+      case 'DeclareCoreReturn':
+        for (final c in cores.where((c) => c['consumeMovementId'] == payload['movementId'] || c['id'] == payload['coreReturnId'])) {
+          c['state'] = payload['outcome'] == 'WITH_PART' ? 'DECLARED_WITH_PART' : 'DECLARED_UNRECOVERABLE';
+        }
     }
   }
 }

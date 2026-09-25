@@ -30,7 +30,8 @@ class GrantRejectedException implements Exception {
 
 /// One sync cycle (docs/lean-pilot/08 §8.6, M4 hardening): push queued commands in order — each with the grant, boot and
 /// monotonic clock it was made under and the work-order version the technician saw — ask again about held commands, upload
-/// photo bytes (resumable), renew the offline grant, then pull the current tasks, reference data, custody and policies.
+/// photo bytes (resumable), renew the offline grant, then pull the current tasks, reference data, custody, stock documents
+/// (M5) and policies.
 /// The server wins: after a pull, the cached tasks are replaced by the server's view; a refused change stays visible.
 class SyncEngine {
   SyncEngine(this._api, this._outbox, this._db, {DateTime Function()? clock, required this.grants, required this.deviceId})
@@ -51,6 +52,8 @@ class SyncEngine {
   static const _userKey = 'user_json';
   static const _referenceKey = 'reference_json';
   static const _custodyKey = 'custody_json';
+  static const _stockKey = 'stock_json';
+  static const _itemsKey = 'items_json';
   static const batchSize = 50;
 
   SyncStatus get status => SyncStatus(
@@ -70,6 +73,18 @@ class SyncEngine {
     final json = _db.getValue(_custodyKey);
     if (json == null) return [];
     return (jsonDecode(json) as List<dynamic>).map((e) => CustodyItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// M5: issues waiting for my acknowledgment, my declared returns, failed parts to declare or bring back.
+  TechnicianStock get cachedStock {
+    final json = _db.getValue(_stockKey);
+    return TechnicianStock.fromJson(json == null ? null : jsonDecode(json) as Map<String, dynamic>?);
+  }
+
+  List<StockItemRef> get cachedItems {
+    final json = _db.getValue(_itemsKey);
+    if (json == null) return [];
+    return (jsonDecode(json) as List<dynamic>).map((e) => StockItemRef.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   List<WorkOrderTask> get cachedTasks {
@@ -122,6 +137,8 @@ class SyncEngine {
       _db.setValue(_tasksKey, jsonEncode(pull.raw['workOrders']));
       if (pull.raw['reference'] != null) _db.setValue(_referenceKey, jsonEncode(pull.raw['reference']));
       if (pull.raw['custody'] != null) _db.setValue(_custodyKey, jsonEncode(pull.raw['custody']));
+      _db.setValue(_stockKey, jsonEncode(pull.raw['stock']));
+      if (pull.raw['items'] != null) _db.setValue(_itemsKey, jsonEncode(pull.raw['items']));
       _db.setValue(_userKey, jsonEncode({'displayName': pull.userName, 'roles': pull.roles}));
       _db.setValue(_lastSyncKey, _clock().toUtc().toIso8601String());
       _online = true;

@@ -6,11 +6,26 @@ namespace Mfop.Inventory.Domain;
 public static class LocationKinds
 {
     public const string Supplier = "SUPPLIER", Warehouse = "WAREHOUSE", Custody = "CUSTODY", Consumed = "CONSUMED";
+
+    /// <summary>M5: material between two parties (issued, not yet acknowledged; declared for return, not yet received).</summary>
+    public const string InTransit = "IN_TRANSIT";
+
+    /// <summary>M5: failed parts received back from the field (core returns).</summary>
+    public const string CoreBin = "CORE_BIN";
+
+    /// <summary>
+    /// M5: virtual source of parts removed from lights. A failed part was never in stock, so its receipt into CORE_BIN is
+    /// balanced against this location (its balance is minus the cores received, like SUPPLIER for receipts).
+    /// </summary>
+    public const string Field = "FIELD";
 }
 
 public static class MovementTypes
 {
     public const string Receipt = "RECEIPT", Issue = "ISSUE", Consume = "CONSUME", Reversal = "REVERSAL";
+
+    // M5 (docs/lean-pilot/04 §4.9–4.11)
+    public const string Acknowledge = "ACKNOWLEDGE", ReturnDeclare = "RETURN_DECLARE", ReturnReceive = "RETURN_RECEIVE", CoreReceive = "CORE_RECEIVE";
 }
 
 public static class LedgerCommands
@@ -20,28 +35,46 @@ public static class LedgerCommands
     public const string IssueStock = nameof(IssueStock);
     public const string ConsumeMaterial = nameof(ConsumeMaterial);
     public const string ReverseReceipt = nameof(ReverseReceipt);
-    public const string ReverseIssue = nameof(ReverseIssue);
+    public const string DefineFieldLocation = nameof(DefineFieldLocation);
+
+    // M5
+    public const string CancelStockIssue = nameof(CancelStockIssue);
+    public const string AcknowledgeStockIssue = nameof(AcknowledgeStockIssue);
+    public const string DeclareStockReturn = nameof(DeclareStockReturn);
+    public const string ReceiveStockReturn = nameof(ReceiveStockReturn);
+    public const string RejectStockReturn = nameof(RejectStockReturn);
+    public const string ReceiveCorePart = nameof(ReceiveCorePart);
+    public const string ReceiveOffboardingReturn = nameof(ReceiveOffboardingReturn);
 }
 
 /// <summary>
 /// The allowed movements of the append-only ledger, as a table over location kinds.
 /// MUST equal docs/state-machines/stock-ledger.yaml (StateMachineConformanceTests).
-/// DEMO 1: one-step ISSUE (no IN_TRANSIT / acknowledgment), no returns or core returns (M5).
+/// M5: issue goes through IN_TRANSIT until the technician acknowledges; unused returns go back through IN_TRANSIT; failed
+/// parts are received into CORE_BIN. Corrections are REVERSAL movements of the command that owns the flow (no free adjustment).
 /// </summary>
 public static class InventoryStateMachines
 {
     public static readonly StateMachine StockLedger = new(
         "StockLedger",
-        [LocationKinds.Supplier, LocationKinds.Warehouse, LocationKinds.Custody, LocationKinds.Consumed],
+        [LocationKinds.Supplier, LocationKinds.Warehouse, LocationKinds.InTransit, LocationKinds.Custody, LocationKinds.Consumed, LocationKinds.Field,
+         LocationKinds.CoreBin],
         LocationKinds.Supplier,
-        [LocationKinds.Consumed],
+        [LocationKinds.Consumed, LocationKinds.CoreBin],
         [
             new("S0", [StateMachine.Start], LedgerCommands.DefineSupplierLocation, LocationKinds.Supplier, ["system"]),
             new("S1", [LocationKinds.Supplier], LedgerCommands.RecordReceipt, LocationKinds.Warehouse, ["WAREHOUSE"]),
-            new("S2", [LocationKinds.Warehouse], LedgerCommands.IssueStock, LocationKinds.Custody, ["WAREHOUSE"]),
+            new("S2", [LocationKinds.Warehouse], LedgerCommands.IssueStock, LocationKinds.InTransit, ["WAREHOUSE"]),
             new("S3", [LocationKinds.Custody], LedgerCommands.ConsumeMaterial, LocationKinds.Consumed, ["assignee"]),
             new("S4", [LocationKinds.Warehouse], LedgerCommands.ReverseReceipt, LocationKinds.Supplier, ["WAREHOUSE"]),
-            new("S5", [LocationKinds.Custody], LedgerCommands.ReverseIssue, LocationKinds.Warehouse, ["WAREHOUSE"]),
+            new("S5", [LocationKinds.InTransit], LedgerCommands.CancelStockIssue, LocationKinds.Warehouse, ["WAREHOUSE"]),
+            new("S6", [LocationKinds.InTransit], LedgerCommands.AcknowledgeStockIssue, LocationKinds.Custody, ["TECHNICIAN"]),
+            new("S7", [LocationKinds.Custody], LedgerCommands.DeclareStockReturn, LocationKinds.InTransit, ["TECHNICIAN"]),
+            new("S8", [LocationKinds.InTransit], LedgerCommands.ReceiveStockReturn, LocationKinds.Warehouse, ["WAREHOUSE"]),
+            new("S9", [LocationKinds.InTransit], LedgerCommands.RejectStockReturn, LocationKinds.Custody, ["WAREHOUSE"]),
+            new("S10", [StateMachine.Start], LedgerCommands.DefineFieldLocation, LocationKinds.Field, ["system"]),
+            new("S11", [LocationKinds.Field], LedgerCommands.ReceiveCorePart, LocationKinds.CoreBin, ["WAREHOUSE"]),
+            new("S12", [LocationKinds.Custody], LedgerCommands.ReceiveOffboardingReturn, LocationKinds.Warehouse, ["WAREHOUSE"]),
         ]);
 }
 
@@ -71,7 +104,7 @@ public sealed class Item : IAuditable
     public string Unit { get; private set; } = "EA";
     public bool SerialTracked { get; private set; }
 
-    /// <summary>Recorded for M5 (core returns); not enforced in DEMO 1.</summary>
+    /// <summary>M5: consuming it opens a core-return obligation (the failed part comes back to the warehouse).</summary>
     public bool CoreReturnRequired { get; private set; }
     public int Version { get; private set; }
 }
@@ -130,7 +163,7 @@ public sealed class StockMovement : IAuditable
 
     public StockMovement(Guid id, string type, Guid itemId, decimal quantity, Guid fromLocationId, Guid toLocationId, string[] serials,
         Guid? workOrderId, Guid? assetId, Guid? reversalOf, Guid actorId, Guid commandId, DateTimeOffset occurredAt, DateTimeOffset recordedAt,
-        string? note, bool exceedsCustody = false, bool serialNotInCustody = false)
+        string? note, bool exceedsCustody = false, bool serialNotInCustody = false, Guid? documentId = null)
     {
         Id = id;
         Type = type;
@@ -149,6 +182,7 @@ public sealed class StockMovement : IAuditable
         Note = note;
         ExceedsCustody = exceedsCustody;
         SerialNotInCustody = serialNotInCustody;
+        DocumentId = documentId;
     }
 
     public string AuditEntityType => "stock_movement";
@@ -174,6 +208,9 @@ public sealed class StockMovement : IAuditable
     /// <summary>Consumption was applied although the technician's known custody was smaller ("field reality first, review after").</summary>
     public bool ExceedsCustody { get; private set; }
     public bool SerialNotInCustody { get; private set; }
+
+    /// <summary>M5: the stock issue, stock return or core return this movement belongs to (null for receipts and consumption).</summary>
+    public Guid? DocumentId { get; private set; }
 }
 
 /// <summary>Balance per (location, item), maintained in the same transaction as each movement; the verifier recomputes it.</summary>

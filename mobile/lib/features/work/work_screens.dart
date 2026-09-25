@@ -144,6 +144,14 @@ class _WorkStepsState extends State<WorkSteps> {
               action: v.canRecordWork ? l10n.addMaterial : null,
               onAction: () => _open(MaterialScreen(controller: c, task: task)),
             ),
+            if (v.coresToDeclare.isNotEmpty || c.stock.coreReturns.any((x) => x.workOrderId == task.id))
+              _Step(
+                key: const Key('step-core'),
+                done: v.coresToDeclare.isEmpty,
+                title: v.coresToDeclare.isEmpty ? l10n.stepCoreReturnDone : l10n.stepCoreReturn(v.coresToDeclare.length),
+                action: v.canRecordWork && v.coresToDeclare.isNotEmpty ? l10n.declareCoreAction : null,
+                onAction: () => _open(CoreReturnScreen(controller: c, task: task, core: v.coresToDeclare.first)),
+              ),
             _Step(
               key: const Key('step-checklist'),
               done: v.checklistRecorded,
@@ -419,6 +427,103 @@ class _MaterialScreenState extends State<MaterialScreen> {
             decoration: InputDecoration(labelText: l10n.quantityLabel(item.unit)),
             onChanged: (_) => setState(() {}),
           ),
+      ],
+    );
+  }
+}
+
+/// W9 / 04 §4.11: the failed part of a replaced core-return item — with the part (serial read on it) or why it cannot be
+/// brought back — always with a photo taken in the app (hash first; the bytes follow like any other photo).
+class CoreReturnScreen extends StatefulWidget {
+  const CoreReturnScreen({super.key, required this.controller, required this.task, required this.core});
+
+  final AppController controller;
+  final WorkOrderTask task;
+  final CoreObligation core;
+
+  @override
+  State<CoreReturnScreen> createState() => _CoreReturnScreenState();
+}
+
+class _CoreReturnScreenState extends State<CoreReturnScreen> {
+  bool _withPart = true;
+  final _serial = TextEditingController();
+  final _reason = TextEditingController();
+  ProcessedPhoto? _photo;
+  DateTime? _capturedAt;
+  bool _processing = false;
+
+  Future<void> _takePhoto() async {
+    final l10n = AppLocalizations.of(context);
+    final raw = await widget.controller.photoSource.capture(context, l10n.coreReturnTitle);
+    if (raw == null || !mounted) return;
+    setState(() => _processing = true);
+    try {
+      final now = DateTime.now();
+      final photo = await processPhotoInBackground(PhotoRequest(raw, photoStamp(widget.task.code, 'CORE', now)));
+      if (mounted) {
+        setState(() {
+          _photo = photo;
+          _capturedAt = now;
+        });
+      }
+    } on FormatException {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.photoUnreadable)));
+    } finally {
+      if (mounted) setState(() => _processing = false);
+    }
+  }
+
+  bool get _ready => _photo != null && (_withPart || _reason.text.trim().length >= 3);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final core = widget.core;
+    return ActionScaffold(
+      title: l10n.coreReturnTitle,
+      primary: FilledButton(
+        key: const Key('core-save'),
+        onPressed: !_ready
+            ? null
+            : () {
+                widget.controller.declareCore(widget.task, core,
+                    withPart: _withPart, serial: _withPart ? _serial.text : null, reason: _withPart ? null : _reason.text, photo: _photo!, capturedAt: _capturedAt!);
+                Navigator.of(context).pop();
+              },
+        child: Text(l10n.save),
+      ),
+      children: [
+        Text(l10n.coreReturnHint('${core.sku} — ${_arabic(context) ? core.nameAr : core.nameEn}')),
+        if (core.installedSerial != null) Text(l10n.coreInstalledSerial(core.installedSerial!)),
+        if (core.expectedSerial != null) Text(l10n.coreExpectedSerial(core.expectedSerial!), key: const Key('core-expected')),
+        RadioGroup<bool>(
+          groupValue: _withPart,
+          onChanged: (v) => setState(() => _withPart = v ?? true),
+          child: Column(
+            children: [
+              RadioListTile<bool>(key: const Key('core-with-part'), value: true, title: Text(l10n.coreWithPart)),
+              RadioListTile<bool>(key: const Key('core-unrecoverable'), value: false, title: Text(l10n.coreUnrecoverable)),
+            ],
+          ),
+        ),
+        if (_withPart && core.serialTracked)
+          TextField(key: const Key('core-serial'), controller: _serial, decoration: InputDecoration(labelText: l10n.coreSerialLabel)),
+        if (!_withPart)
+          TextField(
+            key: const Key('core-reason'),
+            controller: _reason,
+            decoration: InputDecoration(labelText: l10n.coreReasonLabel),
+            onChanged: (_) => setState(() {}),
+          ),
+        const SizedBox(height: 8),
+        if (_processing) const LinearProgressIndicator(),
+        OutlinedButton.icon(
+          key: const Key('core-photo-action'),
+          onPressed: _processing ? null : _takePhoto,
+          icon: Icon(_photo == null ? Icons.photo_camera : Icons.check_circle),
+          label: Text(_photo == null ? l10n.corePhotoAction : l10n.corePhotoReady),
+        ),
       ],
     );
   }

@@ -133,3 +133,14 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: flex; flex-directio
 .badge.quarantine-PENDING { background: #fff4d6; color: #7a5300; }
 .badge.quarantine-DISCARDED { background: #eef1ef; }
 pre.payload { max-width: 28rem; overflow-x: auto; font-size: 0.75rem; direction: ltr; text-align: left; }
+
+/* M5 warehouse area */
+.tab { padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; color: inherit; }
+.tab.active { background: var(--accent, #1d6b3a); color: #fff; border-color: transparent; }
+ul.plain { list-style: none; margin: 0; padding: 0; }
+.badge.issue-ISSUED, .badge.return-DECLARED, .badge.core-DECLARED_WITH_PART, .badge.core-OPEN { background: #e6effa; color: #1d3f73; }
+.badge.issue-ACKNOWLEDGED, .badge.return-RECEIVED, .badge.core-RECEIVED { background: #dcf3e1; color: #1b5e20; }
+.badge.issue-DISPUTED, .badge.core-DECLARED_UNRECOVERABLE { background: #fff4d6; color: #7a5300; }
+.badge.issue-CANCELLED, .badge.return-REJECTED, .badge.core-WAIVED { background: #eef1ef; }
+.badge.severity-INFO { background: #e6effa; color: #1d3f73; }
+.serial-ticks { display: flex; flex-wrap: wrap; gap: 8px; }

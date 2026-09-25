@@ -58,7 +58,7 @@ test('field work → review → approve and seal → recurrent-failure recommend
   await signIn(techPage, 'tech1');
   const techToken = await accessToken(techPage);
   const phone = new E2EPhone();
-  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone M3', osVersion: '14', appVersion: '0.4.0', publicKey: phone.publicKey });
+  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone M3', osVersion: '14', appVersion: '0.5.0', publicKey: phone.publicKey });
   expect(registered.status).toBe(201);
   const deviceId = registered.json!.deviceId as string;
 
@@ -105,7 +105,18 @@ test('field work → review → approve and seal → recurrent-failure recommend
   await photo('BEFORE');
   await push('RecordDiagnosis', { workOrderId, code: 'LED_MODULE_FAIL', note: 'وحدة الليد لا تعمل' });
   await push('StartWork', { workOrderId });
-  await push('ConsumeMaterial', { workOrderId, movementId: crypto.randomUUID(), itemId: led.itemId, quantity: 1, serials: [serial] });
+  const movementId = crypto.randomUUID();
+  await push('ConsumeMaterial', { workOrderId, movementId, itemId: led.itemId, quantity: 1, serials: [serial] });
+  // M5 (W9): the failed module is declared "with part" (the seed installed M-0002 on this light), with its photo.
+  const core = await syntheticJpeg(techPage, 'CORE');
+  const coreId = crypto.randomUUID();
+  await push('DeclareCoreReturn', {
+    workOrderId, movementId, outcome: 'WITH_PART', serial: 'M-0002',
+    photo: { evidenceId: coreId, sha256: sha256Hex(core), sizeBytes: core.length, mime: 'image/jpeg' },
+  });
+  expect((await request.put(`${API}/sync/v1/evidence/${coreId}/content`, {
+    headers: { Authorization: `Bearer ${techToken}`, 'X-Device-Id': deviceId, 'Content-Type': 'image/jpeg' }, data: core,
+  })).status()).toBe(200);
   const answers = Object.fromEntries((template.items as Json[]).map((i) => [i.code, i.expected]));
   await push('RecordChecklist', { workOrderId, checklistId: crypto.randomUUID(), templateId, testMethod: 'NIGHT', notTestedReason: null, answers });
   await photo('TEST');

@@ -93,15 +93,16 @@ public class M3DomainTests
     }
 
     [Fact]
-    public void Stock_ledger_moves_supplier_to_warehouse_to_custody_to_consumed_only()
+    public void Stock_ledger_moves_supplier_to_warehouse_to_transit_to_custody_to_consumed_only()
     {
         var ledger = InventoryStateMachines.StockLedger;
         Assert.Equal(LocationKinds.Warehouse, ledger.Resolve(LocationKinds.Supplier, LedgerCommands.RecordReceipt).Value.To);
-        Assert.Equal(LocationKinds.Custody, ledger.Resolve(LocationKinds.Warehouse, LedgerCommands.IssueStock).Value.To);
+        Assert.Equal(LocationKinds.InTransit, ledger.Resolve(LocationKinds.Warehouse, LedgerCommands.IssueStock).Value.To); // M5: two-party handover
+        Assert.Equal(LocationKinds.Custody, ledger.Resolve(LocationKinds.InTransit, LedgerCommands.AcknowledgeStockIssue).Value.To);
         Assert.Equal(LocationKinds.Consumed, ledger.Resolve(LocationKinds.Custody, LedgerCommands.ConsumeMaterial).Value.To);
         Assert.False(ledger.Resolve(LocationKinds.Warehouse, LedgerCommands.ConsumeMaterial).IsSuccess);
-        Assert.False(ledger.Resolve(LocationKinds.Consumed, LedgerCommands.ReverseIssue).IsSuccess);
-        Assert.Equal(LocationKinds.Warehouse, ledger.Resolve(LocationKinds.Custody, LedgerCommands.ReverseIssue).Value.To);
+        Assert.False(ledger.Resolve(LocationKinds.Consumed, LedgerCommands.CancelStockIssue).IsSuccess);
+        Assert.Equal(LocationKinds.Warehouse, ledger.Resolve(LocationKinds.InTransit, LedgerCommands.CancelStockIssue).Value.To);
     }
 
     [Theory]

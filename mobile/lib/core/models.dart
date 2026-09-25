@@ -271,6 +271,165 @@ class CustodyItem {
   final List<String> serials;
 }
 
+/// An item of the catalogue as the pull sends it (Mfop.Inventory.Contracts.ItemDto): whether it must come back as a core.
+class StockItemRef {
+  StockItemRef(this.id, this.sku, this.nameAr, this.nameEn, this.unit, this.serialTracked, this.coreReturnRequired);
+
+  factory StockItemRef.fromJson(Map<String, dynamic> j) => StockItemRef(
+    j['id'] as String,
+    j['sku'] as String,
+    j['nameAr'] as String,
+    j['nameEn'] as String,
+    j['unit'] as String,
+    j['serialTracked'] as bool? ?? false,
+    j['coreReturnRequired'] as bool? ?? false,
+  );
+
+  final String id;
+  final String sku;
+  final String nameAr;
+  final String nameEn;
+  final String unit;
+  final bool serialTracked;
+  final bool coreReturnRequired;
+}
+
+/// One line of a stock document (one ledger movement).
+class StockDocLine {
+  StockDocLine(this.itemId, this.sku, this.nameAr, this.nameEn, this.unit, this.quantity, this.serials);
+
+  factory StockDocLine.fromJson(Map<String, dynamic> j) => StockDocLine(
+    j['itemId'] as String,
+    j['sku'] as String,
+    j['nameAr'] as String,
+    j['nameEn'] as String,
+    j['unit'] as String,
+    (j['quantity'] as num).toDouble(),
+    ((j['serials'] as List<dynamic>?) ?? const []).cast<String>(),
+  );
+
+  final String itemId;
+  final String sku;
+  final String nameAr;
+  final String nameEn;
+  final String unit;
+  final double quantity;
+  final List<String> serials;
+}
+
+/// M5 (docs/lean-pilot/04 §4.9): material issued to me, in transit until I acknowledge it (or dispute it).
+class StockIssueView {
+  StockIssueView(this.id, this.code, this.state, this.issuedAt, this.issuedByName, this.note, this.lines);
+
+  factory StockIssueView.fromJson(Map<String, dynamic> j) => StockIssueView(
+    j['id'] as String,
+    j['code'] as String,
+    j['state'] as String,
+    DateTime.parse(j['issuedAt'] as String),
+    j['issuedByName'] as String? ?? '',
+    j['note'] as String?,
+    ((j['lines'] as List<dynamic>?) ?? const []).map((e) => StockDocLine.fromJson(e as Map<String, dynamic>)).toList(),
+  );
+
+  final String id;
+  final String code;
+
+  /// ISSUED (waiting for me) or DISPUTED (waiting for the warehouse).
+  final String state;
+  final DateTime issuedAt;
+  final String issuedByName;
+  final String? note;
+  final List<StockDocLine> lines;
+
+  List<String> get serials => [for (final l in lines) ...l.serials];
+}
+
+/// M5 (04 §4.10): unused material I declared, waiting for the warehouse.
+class StockReturnView {
+  StockReturnView(this.id, this.code, this.state, this.declaredAt, this.lines);
+
+  factory StockReturnView.fromJson(Map<String, dynamic> j) => StockReturnView(
+    j['id'] as String,
+    j['code'] as String,
+    j['state'] as String,
+    DateTime.parse(j['declaredAt'] as String),
+    ((j['lines'] as List<dynamic>?) ?? const []).map((e) => StockDocLine.fromJson(e as Map<String, dynamic>)).toList(),
+  );
+
+  final String id;
+  final String code;
+  final String state;
+  final DateTime declaredAt;
+  final List<StockDocLine> lines;
+}
+
+/// M5 (04 §4.11): a failed part that must come back, opened by my consumption of a core-return item.
+class CoreReturnView {
+  CoreReturnView({
+    required this.id,
+    required this.code,
+    required this.state,
+    required this.consumeMovementId,
+    required this.workOrderId,
+    required this.workOrderCode,
+    required this.sku,
+    required this.nameAr,
+    required this.nameEn,
+    required this.serialTracked,
+    this.installedSerial,
+    this.expectedSerial,
+  });
+
+  factory CoreReturnView.fromJson(Map<String, dynamic> j) => CoreReturnView(
+    id: j['id'] as String,
+    code: j['code'] as String,
+    state: j['state'] as String,
+    consumeMovementId: j['consumeMovementId'] as String,
+    workOrderId: j['workOrderId'] as String,
+    workOrderCode: j['workOrderCode'] as String? ?? '',
+    sku: j['sku'] as String,
+    nameAr: j['nameAr'] as String,
+    nameEn: j['nameEn'] as String,
+    serialTracked: j['serialTracked'] as bool? ?? false,
+    installedSerial: j['installedSerial'] as String?,
+    expectedSerial: j['expectedSerial'] as String?,
+  );
+
+  final String id;
+  final String code;
+
+  /// OPEN (to declare), DECLARED_WITH_PART (bring it to the warehouse), DECLARED_UNRECOVERABLE (a supervisor decides).
+  final String state;
+  final String consumeMovementId;
+  final String workOrderId;
+  final String workOrderCode;
+  final String sku;
+  final String nameAr;
+  final String nameEn;
+  final bool serialTracked;
+  final String? installedSerial;
+
+  /// Serial known to be on the light before the repair (the removed part should carry it).
+  final String? expectedSerial;
+}
+
+/// The technician's stock documents from the last pull (M5).
+class TechnicianStock {
+  const TechnicianStock({this.issues = const [], this.returns = const [], this.coreReturns = const []});
+
+  factory TechnicianStock.fromJson(Map<String, dynamic>? j) => j == null
+      ? const TechnicianStock()
+      : TechnicianStock(
+          issues: ((j['issues'] as List<dynamic>?) ?? const []).map((e) => StockIssueView.fromJson(e as Map<String, dynamic>)).toList(),
+          returns: ((j['returns'] as List<dynamic>?) ?? const []).map((e) => StockReturnView.fromJson(e as Map<String, dynamic>)).toList(),
+          coreReturns: ((j['coreReturns'] as List<dynamic>?) ?? const []).map((e) => CoreReturnView.fromJson(e as Map<String, dynamic>)).toList(),
+        );
+
+  final List<StockIssueView> issues;
+  final List<StockReturnView> returns;
+  final List<CoreReturnView> coreReturns;
+}
+
 class CountedFailure {
   CountedFailure(this.workOrderCode, this.diagnosisCode, this.resolvedAt);
 

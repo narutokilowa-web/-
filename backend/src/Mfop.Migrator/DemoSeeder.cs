@@ -36,7 +36,8 @@ namespace Mfop.Migrator;
 
 /// <summary>
 /// DEV ONLY (`make seed`): synthetic DEMO 1 data created through the application's own audited commands, acting as the
-/// seeded users (docs/lean-pilot/02 §2.3): items and costs, opening stock, issues to technicians' custody, street lights
+/// seeded users (docs/lean-pilot/02 §2.3): items and costs, opening stock, issues to technicians (M5: acknowledged by tech1
+/// through the sync pipeline, or left waiting for the phone), street lights
 /// (registered by registrar1, approved by approver1), and one light with two earlier repairs inside the repeated-failure
 /// window, executed by tech1 through the same sync pipeline as the phone (from a dev-only seed device that is revoked at
 /// the end), with synthetic in-memory JPEG evidence that goes through the real upload and verification.
@@ -77,11 +78,14 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
             new ReceiptRequest(data.OpeningStock.Select(o => new StockLine(itemIds[o.Sku], o.Quantity,
                 o.SerialPrefix is null ? null : Enumerable.Range(1, (int)o.Quantity).Select(i => $"{o.SerialPrefix}{i:D4}").ToList())).ToList(),
                 "رصيد افتتاحي — بيانات عرض تجريبية"), ct));
+        // M5: an issue goes to IN_TRANSIT; the technician acknowledges it on the phone (below, through the sync pipeline).
+        var issued = new List<(IssueData Data, IssueCreated Created)>();
         foreach (var issue in data.Issues)
         {
-            await Run(provider, sp => sp.GetRequiredService<InventoryService>().IssueAsync(Cmd("IssueStock", users["warehouse1"]),
+            var created = await Run(provider, sp => sp.GetRequiredService<StockDocumentService>().IssueAsync(Cmd("IssueStock", users["warehouse1"]),
                 new IssueRequest(users[issue.Technician].UserId!.Value,
                     issue.Lines.Select(l => new StockLine(itemIds[l.Sku], l.Serials?.Count ?? l.Quantity ?? 0, l.Serials)).ToList(), "صرف تجريبي"), ct));
+            issued.Add((issue, created));
         }
 
         log.WriteLine($"demo seed: {data.Items.Count} items, opening stock, {data.Issues.Count} issues (warehouse1)");
@@ -104,6 +108,14 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         await Run(provider, sp => sp.GetRequiredService<DeviceService>().ApproveAsync(Cmd("ApproveDevice", users["admin1"]), deviceId, "DEMO_SEED", ct));
         var techOnDevice = tech with { DeviceId = deviceId };
         var grant = await Run(provider, sp => sp.GetRequiredService<GrantService>().IssueAsync(Cmd("IssueOfflineGrant", techOnDevice), ct));
+
+        // tech1 acknowledges the issues marked so in the demo data (the others stay ISSUED, to be acknowledged on a phone).
+        foreach (var (issue, created) in issued.Where(i => i.Data.Acknowledge && i.Data.Technician == "tech1"))
+        {
+            var serials = issue.Lines.SelectMany(l => l.Serials ?? []).ToArray();
+            await PushAsync(provider, techOnDevice, grant.GrantId, [("AcknowledgeStockIssue", new { issueId = created.IssueId, confirmedSerials = serials })], null, ct);
+            log.WriteLine($"demo seed: {created.Code} acknowledged by tech1");
+        }
 
         var asset = await Scoped(provider, sp => sp.GetRequiredService<AssetQueries>().GetAssetAsync(repeatLight, ct));
         var tagToken = asset.Value.Tag!.HumanCode;
@@ -161,6 +173,9 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         };
 
         var answers = template.Items.ToDictionary(i => i.Code, i => i.Expected);
+        var movementId = Guid.CreateVersion7();
+        // M5: the removed (failed) part is declared WITH_PART, with a photo, before submission (W9).
+        var core = (Id: Guid.CreateVersion7(), Bytes: SyntheticPhoto($"CORE · repair {n} · {repair.RemovedSerial}"));
         var commands = new List<(string Type, object Payload)>
         {
             ("ArriveOnSite", new { workOrderId, scannedToken = tagToken }),
@@ -168,20 +183,21 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
             ("AddEvidence", Photo(1)),
             ("RecordDiagnosis", new { workOrderId, code = repair.Diagnosis, note = repair.RootCause }),
             ("StartWork", new { workOrderId }),
-            ("ConsumeMaterial", new { workOrderId, movementId = Guid.CreateVersion7(), itemId, quantity = 1, serials = new[] { repair.Serial } }),
+            ("ConsumeMaterial", new { workOrderId, movementId, itemId, quantity = 1, serials = new[] { repair.Serial } }),
+            ("DeclareCoreReturn", new
+            {
+                workOrderId, movementId, outcome = "WITH_PART", serial = repair.RemovedSerial,
+                photo = new { evidenceId = core.Id, sha256 = Convert.ToHexStringLower(SHA256.HashData(core.Bytes)), sizeBytes = core.Bytes.LongLength, mime = "image/jpeg" },
+            }),
             ("RecordChecklist", new { workOrderId, checklistId = Guid.CreateVersion7(), templateId, testMethod = repair.TestMethod, answers }),
             ("AddEvidence", Photo(2)),
             ("AddEvidence", Photo(3)),
             ("AddEvidence", Photo(4)),
             ("SubmitWorkOrder", new { workOrderId, rootCauseNote = repair.RootCause }),
         };
-        var push = new PushRequest(commands.Select(c => new PushCommand(Guid.CreateVersion7(), c.Type, JsonSerializer.SerializeToElement(c.Payload, PayloadJson),
-            DateTimeOffset.UtcNow, grantId, BaseVersion: task.EventSeq)).ToList(), 0);
-        var pushed = await Scoped(provider, sp => sp.GetRequiredService<SyncService>().PushAsync(tech, push, "demo-seed", ct));
-        var rejected = pushed.Value.Results.FirstOrDefault(r => r.Result == "REJECTED");
-        if (rejected is not null) throw new InvalidOperationException($"demo seed push #{pushed.Value.Results.ToList().IndexOf(rejected)}: {rejected.Code} {rejected.Message}");
+        await PushAsync(provider, tech, grantId, commands, task.EventSeq, ct);
 
-        foreach (var photo in photos)
+        foreach (var photo in photos.Append((core.Id, "CORE_RETURN", core.Bytes)))
         {
             var uploaded = await Scoped(provider, sp => sp.GetRequiredService<EvidenceService>().UploadAsync(tech, photo.Id, new MemoryStream(photo.Bytes), photo.Bytes.LongLength, ct));
             if (!uploaded.IsSuccess) throw new InvalidOperationException($"demo seed upload: {uploaded.Error!.Code}");
@@ -190,6 +206,24 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         await Scoped(provider, sp => sp.GetRequiredService<EvidenceVerifier>().RunOnceAsync(ct));
         await Run(provider, sp => sp.GetRequiredService<ReviewService>().ApproveAsync(Cmd("ApproveWorkOrder", supervisor), workOrderId,
             new ApproveRequest("إصلاح سابق — بيانات عرض تجريبية"), ct));
+
+        if (repair.CoreReceived)
+        {
+            var coreReturn = (await Scoped(provider, sp => sp.GetRequiredService<InventoryQueries>().CoreReturnsForWorkOrdersAsync([workOrderId], ct))).Single();
+            await Run(provider, sp => sp.GetRequiredService<StockDocumentService>().ReceiveCoreAsync(Cmd("ReceiveCorePart", users["warehouse1"]), coreReturn.Id,
+                new ReceiveCoreRequest("RECEIVED", repair.RemovedSerial, null), ct));
+        }
+    }
+
+    /// <summary>Phone commands through the real sync pipeline (as the field app sends them); any rejection stops the seed.</summary>
+    private static async Task PushAsync(ServiceProvider provider, ActorContext tech, Guid grantId, IReadOnlyList<(string Type, object Payload)> commands, long? baseVersion,
+        CancellationToken ct)
+    {
+        var push = new PushRequest(commands.Select(c => new PushCommand(Guid.CreateVersion7(), c.Type, JsonSerializer.SerializeToElement(c.Payload, PayloadJson),
+            DateTimeOffset.UtcNow, grantId, BaseVersion: baseVersion)).ToList(), 0);
+        var pushed = await Scoped(provider, sp => sp.GetRequiredService<SyncService>().PushAsync(tech, push, "demo-seed", ct));
+        var rejected = pushed.Value.Results.FirstOrDefault(r => r.Result is "REJECTED" or "QUARANTINED");
+        if (rejected is not null) throw new InvalidOperationException($"demo seed push #{pushed.Value.Results.ToList().IndexOf(rejected)}: {rejected.Code} {rejected.Message}");
     }
 
     /// <summary>A unique synthetic JPEG (not a photo of anything real).</summary>
@@ -227,7 +261,7 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         services.AddFaultsModule();
         services.AddWorkOrdersModule(configuration);
         services.AddRulesModule();
-        services.AddInventoryModule();
+        services.AddInventoryModule(configuration, withBackgroundTimers: false);
         services.AddEvidenceModule(configuration, withBackgroundVerifier: false);
         services.AddSyncModule();
         return services;
@@ -259,13 +293,16 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
 
     private sealed record OpeningLine(string Sku, decimal Quantity, string? SerialPrefix);
 
-    private sealed record IssueData(string Technician, List<IssueLine> Lines);
+    /// <param name="Acknowledge">M5: tech1 acknowledges this issue during the seed (others stay ISSUED for the phone).</param>
+    private sealed record IssueData(string Technician, List<IssueLine> Lines, bool Acknowledge = false);
 
     private sealed record IssueLine(string Sku, decimal? Quantity, List<string>? Serials);
 
     private sealed record RepeatLight(string Address, List<Repair> EarlierRepairs);
 
-    private sealed record Repair(string Diagnosis, string Sku, string Serial, string RootCause, string TestMethod);
+    /// <param name="RemovedSerial">M5: serial of the failed part removed (declared WITH_PART).</param>
+    /// <param name="CoreReceived">M5: the warehouse received the failed part (otherwise it waits in the warehouse queue).</param>
+    private sealed record Repair(string Diagnosis, string Sku, string Serial, string RootCause, string TestMethod, string RemovedSerial, bool CoreReceived);
 
     private sealed record DevUsersFile(List<DevUser> Users);
 

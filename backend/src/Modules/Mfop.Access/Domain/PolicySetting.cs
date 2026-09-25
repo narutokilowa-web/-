@@ -8,7 +8,7 @@ namespace Mfop.Access.Domain;
 public sealed record PolicyDefinition(string Key, string Default, string Description, Func<string, string?> Validate);
 
 /// <summary>
-/// The security policies of M4. Values are data in <c>access.policy_settings</c> (seeded with these defaults by the migrator,
+/// The security policies of M4 and the inventory timers of M5. Values are data in <c>access.policy_settings</c> (seeded with these defaults by the migrator,
 /// changed by the admin, audited); nothing reads a duration from code.
 /// </summary>
 public static class PolicyKeys
@@ -18,12 +18,18 @@ public static class PolicyKeys
     public const string AppLockMinutes = "app_lock_minutes";
     public const string MinAppVersion = "min_app_version";
 
+    // M5 (docs/lean-pilot/04 §4.9, §4.11): the timers of the inventory flows.
+    public const string IssueAckWarningHours = "issue_ack_warning_hours";
+    public const string CoreReturnOverdueDays = "core_return_overdue_days";
+
     public static readonly IReadOnlyList<PolicyDefinition> All =
     [
         new(OfflineGraceHours, "24", "Offline grant lifetime (hours)", v => IntInRange(v, 1, 72)),
         new(GrantWindowToleranceMinutes, "10", "Tolerance of the server grant-window check (minutes)", v => IntInRange(v, 0, 60)),
         new(AppLockMinutes, "5", "App PIN lock after this long in the background (minutes)", v => IntInRange(v, 1, 30)),
-        new(MinAppVersion, "0.4.0", "Oldest field-app version the API accepts (older → 426 update required)", v => AppVersion.TryParse(v, out _) ? null : "must look like 1.2.3"),
+        new(MinAppVersion, "0.5.0", "Oldest field-app version the API accepts (older → 426 update required)", v => AppVersion.TryParse(v, out _) ? null : "must look like 1.2.3"),
+        new(IssueAckWarningHours, "24", "Stock issue not acknowledged after this long → WARNING flag ISSUE_UNACKNOWLEDGED (hours)", v => IntInRange(v, 1, 168)),
+        new(CoreReturnOverdueDays, "7", "Failed part declared but not received after this long → WARNING flag CORE_RETURN_OVERDUE (days)", v => IntInRange(v, 1, 90)),
     ];
 
     public static PolicyDefinition? Find(string key) => All.FirstOrDefault(d => d.Key == key);

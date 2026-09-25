@@ -92,7 +92,7 @@ jobs:
           retention-days: 14
 
   e2e:
-    name: "E2E (Docker Compose stack + make seed; every role signs in; M1, M2, M3 / DEMO 1 and M4 web flows; verifier)"
+    name: "E2E (Docker Compose stack + make seed; every role signs in; M1, M2, M3 / DEMO 1, M4 and M5 web flows; verifier)"
     runs-on: ubuntu-latest
     needs: [backend, web]
     steps:
@@ -112,9 +112,9 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: web
         run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
-      - name: Sign in as every seeded user; M1, M2, M3 / DEMO 1 and M4 (policies, offboarding with Keycloak) web flows
+      - name: Sign in as every seeded user; M1, M2, M3 / DEMO 1, M4 (policies, offboarding with Keycloak) and M5 (issue, acknowledgment, returns, failed parts, reconciliation) web flows
         run: make e2e
-      - name: Audit verifier on the demo database after the flows (chain, snapshots, seals, stock balances)
+      - name: Audit verifier on the demo database after the flows (chain, snapshots, seals, stock balances, in-transit documents, core bin)
         run: make verify-audit
       - name: Compose logs on failure
         if: failure()
@@ -124,7 +124,7 @@ jobs:
         run: docker compose -f deploy/compose/docker-compose.yml --env-file .env down -v
 
   android:
-    name: "Android emulator (real app: sign-in, Keystore device key, device approval, PIN, offline grant, My tasks, QR, signed field work, evidence upload, approval, revocation)"
+    name: "Android emulator (real app: sign-in, Keystore device key, device approval, PIN, offline grant, material acknowledgment, My tasks, QR, signed field work with failed-part declaration, evidence upload, approval, unused return, revocation)"
     runs-on: ubuntu-latest
     needs: [backend, web, mobile]
     timeout-minutes: 50
@@ -160,6 +160,11 @@ jobs:
           df -h /
       - working-directory: mobile
         run: flutter pub get
+      # Build the test app before the emulator boots: building it next to a running emulator starved the runner
+      # (QEMU "hanging thread" errors, then a runner shutdown on a85304d). The emulator then only installs and runs it.
+      - name: Build the field-app test APK (integration test entry point)
+        working-directory: mobile
+        run: flutter build apk --debug --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
       - name: "Field-app flow on an Android 14 emulator (the phone reaches the stack as localhost via adb reverse)"
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -171,7 +176,7 @@ jobs:
           # Each line runs in its own shell.
           script: |
             adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080
-            cd mobile && flutter drive --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
+            cd mobile && flutter drive --use-application-binary=build/app/outputs/flutter-apk/app-debug.apk --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart
       - name: Screenshots from the device
         if: always()
         uses: actions/upload-artifact@v4

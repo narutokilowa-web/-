@@ -20,6 +20,8 @@ void main() {
     h.server.deviceStatus = 'ACTIVE';
     h.server.simulateWorkOrders = true;
     h.server.tasks = [{...taskJson(code: 'WO-2026-000009'), 'progress': progressJson()}];
+    h.server.items = itemsJson; // M5: the LED module must come back as a core
+    h.server.stock = {'issues': [], 'returns': [], 'coreReturns': []};
     await tester.runAsync(() async {
       await h.controller.start();
       await h.controller.setPin('2468');
@@ -98,6 +100,15 @@ void main() {
     await photo('step-after');
     await photo('step-after');
 
+    // M5 (W9): nothing to submit until the failed module is declared, with its photo and the serial read on it.
+    expect(find.byKey(const Key('step-submit-action')), findsNothing);
+    await tap('step-core-action');
+    expect(find.byKey(const Key('core-expected')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('core-serial')), 'M-0002');
+    await photo('core-photo');
+    await tap('core-save');
+    expect(find.byKey(const Key('step-core-action')), findsNothing);
+
     await tap('step-submit-action');
     await tester.enterText(find.byKey(const Key('root-cause')), 'احتراق وحدة الليد');
     await tester.pump();
@@ -110,8 +121,8 @@ void main() {
     ];
     expect(types, [
       'ArriveOnSite', 'AddEvidence', 'AddEvidence', 'RecordDiagnosis', 'StartWork', 'ConsumeMaterial', 'RecordChecklist',
-      'AddEvidence', 'AddEvidence', 'AddEvidence', 'SubmitWorkOrder',
+      'AddEvidence', 'AddEvidence', 'AddEvidence', 'DeclareCoreReturn', 'SubmitWorkOrder',
     ]);
-    expect(h.server.uploads, hasLength(5));
+    expect(h.server.uploads, hasLength(6)); // 5 work-order photos + the failed part
   });
 }

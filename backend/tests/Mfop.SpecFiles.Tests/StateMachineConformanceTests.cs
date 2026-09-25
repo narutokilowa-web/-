@@ -19,6 +19,7 @@ public class StateMachineConformanceTests
     [
         "registration.yaml", "asset-lifecycle.yaml", "asset-operational-status.yaml",
         "device.yaml", "fault.yaml", "work-order.yaml", "assignment.yaml", "evidence.yaml", "stock-ledger.yaml", "user.yaml", "sync-quarantine.yaml",
+        "stock-issue.yaml", "stock-return.yaml", "core-return.yaml",
     ]);
 
     private static StateMachine CodeFor(string file) => file switch
@@ -34,6 +35,9 @@ public class StateMachineConformanceTests
         "stock-ledger.yaml" => InventoryStateMachines.StockLedger,
         "user.yaml" => Mfop.Access.Domain.UserStateMachine.Machine,
         "sync-quarantine.yaml" => Mfop.Sync.Domain.SyncStateMachines.Quarantine,
+        "stock-issue.yaml" => StockDocumentMachines.StockIssue,
+        "stock-return.yaml" => StockDocumentMachines.StockReturn,
+        "core-return.yaml" => StockDocumentMachines.CoreReturn,
         _ => throw new ArgumentException(file),
     };
 
@@ -95,7 +99,7 @@ public class StateMachineConformanceTests
                  {
                      AssetStateMachines.Registration, AssetStateMachines.AssetLifecycle, AccessStateMachines.Device, FaultStateMachines.Fault,
                      WorkOrderStateMachines.WorkOrder, WorkOrderStateMachines.Assignment, EvidenceStateMachines.Evidence,
-                     InventoryStateMachines.StockLedger,
+                     InventoryStateMachines.StockLedger, StockDocumentMachines.StockIssue, StockDocumentMachines.StockReturn, StockDocumentMachines.CoreReturn,
                  })
         {
             foreach (var terminal in code.Terminal)

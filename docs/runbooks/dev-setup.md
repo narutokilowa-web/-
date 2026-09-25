@@ -49,6 +49,15 @@ make apk           # Android debug APK → mobile/build/app/outputs/flutter-apk/
   `make demo-reset` once after pulling M4.
 - **Phones:** install app **0.4.0** and register again (old registrations have no device key). The API refuses older
   apps (`min_app_version`, 426).
+
+**After pulling M5 (material accountability):**
+
+- The inventory migration adds stock issues, returns, core returns and serial units; the demo seed changed (issues now wait
+  for the technician's acknowledgment, the earlier repairs declare their failed parts). Run `make demo-reset` once.
+- **Phones:** install app **0.5.0** (new **المواد** tab and the failed-part step). A new database has `min_app_version`
+  0.5.0; on an existing one the admin raises it on **Settings** when every phone is updated.
+- Two new policies (data, **Settings**): `issue_ack_warning_hours` (24) and `core_return_overdue_days` (7). The timers run
+  inside the API (`Inventory:RunBackgroundTimers`, `Inventory:IntervalSeconds` 60).
 - **API settings:** `Grants:SigningKey`, `Grants:KeyId`, `Keycloak:BaseUrl`, `Keycloak:AdminClientSecret`,
   `Keycloak:TaskIntervalSeconds` (5), `Auth:SignatureMaxSkewMinutes` (15). Security **policies** are data, changed by the
   admin on **Settings** (offline grant hours, grant-window tolerance, app lock minutes, minimum app version).

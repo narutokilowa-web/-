@@ -23,6 +23,182 @@ namespace Mfop.Inventory.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("core_return_code_seq");
+
+            modelBuilder.HasSequence("stock_issue_code_seq");
+
+            modelBuilder.HasSequence("stock_return_code_seq");
+
+            modelBuilder.Entity("Mfop.Inventory.Domain.CoreReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AssetCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("asset_code");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asset_id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid>("ConsumeMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("consume_movement_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeclaredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("declared_at");
+
+                    b.Property<Guid?>("DeclaredBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("declared_by");
+
+                    b.Property<string>("DeclaredReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("declared_reason");
+
+                    b.Property<string>("DeclaredSerial")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("declared_serial");
+
+                    b.Property<Guid?>("EvidenceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("evidence_id");
+
+                    b.Property<string>("ExpectedSerial")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("expected_serial");
+
+                    b.Property<string>("InstalledSerial")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("installed_serial");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<string>("NotPresentedReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("not_presented_reason");
+
+                    b.Property<DateTimeOffset?>("OverdueFlaggedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("overdue_flagged_at");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid?>("ReceiveMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receive_movement_id");
+
+                    b.Property<DateTimeOffset?>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<Guid?>("ReceivedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("received_by");
+
+                    b.Property<string>("ReceivedSerial")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("received_serial");
+
+                    b.Property<bool>("SerialMismatch")
+                        .HasColumnType("boolean")
+                        .HasColumnName("serial_mismatch");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("state");
+
+                    b.Property<Guid>("TechnicianId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("technician_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.Property<string>("WaiveReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("waive_reason");
+
+                    b.Property<DateTimeOffset?>("WaivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("waived_at");
+
+                    b.Property<Guid?>("WaivedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("waived_by");
+
+                    b.Property<string>("WorkOrderCode")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("work_order_code");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_core_returns");
+
+                    b.HasIndex("AssetId")
+                        .HasDatabaseName("ix_core_returns_asset_id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_core_returns_code");
+
+                    b.HasIndex("ConsumeMovementId")
+                        .HasDatabaseName("ix_core_returns_consume_movement_id");
+
+                    b.HasIndex("ItemId")
+                        .HasDatabaseName("ix_core_returns_item_id");
+
+                    b.HasIndex("State")
+                        .HasDatabaseName("ix_core_returns_state");
+
+                    b.HasIndex("WorkOrderId")
+                        .HasDatabaseName("ix_core_returns_work_order_id");
+
+                    b.HasIndex("TechnicianId", "State")
+                        .HasDatabaseName("ix_core_returns_technician_id_state");
+
+                    b.ToTable("core_returns", "inventory", t =>
+                        {
+                            t.HasCheckConstraint("ck_core_returns_quantity_positive", "quantity > 0");
+                        });
+                });
+
             modelBuilder.Entity("Mfop.Inventory.Domain.Item", b =>
                 {
                     b.Property<Guid>("Id")
@@ -121,6 +297,65 @@ namespace Mfop.Inventory.Infrastructure.Migrations
                     b.ToTable("item_costs", "inventory");
                 });
 
+            modelBuilder.Entity("Mfop.Inventory.Domain.SerialUnit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Historical")
+                        .HasColumnType("boolean")
+                        .HasColumnName("historical");
+
+                    b.Property<Guid?>("InstalledAssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installed_asset_id");
+
+                    b.Property<DateTimeOffset?>("InstalledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("installed_at");
+
+                    b.Property<Guid?>("InstalledByMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("installed_by_movement_id");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.Property<DateTimeOffset?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("removed_at");
+
+                    b.Property<Guid?>("RemovedFromAssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("removed_from_asset_id");
+
+                    b.Property<string>("Serial")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("serial");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_serial_units");
+
+                    b.HasIndex("InstalledAssetId", "ItemId")
+                        .HasDatabaseName("ix_serial_units_installed_asset_id_item_id");
+
+                    b.HasIndex("ItemId", "Serial")
+                        .IsUnique()
+                        .HasDatabaseName("ix_serial_units_item_id_serial");
+
+                    b.ToTable("serial_units", "inventory");
+                });
+
             modelBuilder.Entity("Mfop.Inventory.Domain.StockBalance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -157,6 +392,102 @@ namespace Mfop.Inventory.Infrastructure.Migrations
                         .HasDatabaseName("ix_stock_balances_location_id_item_id");
 
                     b.ToTable("stock_balances", "inventory");
+                });
+
+            modelBuilder.Entity("Mfop.Inventory.Domain.StockIssue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<Guid?>("DisputeEvidenceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dispute_evidence_id");
+
+                    b.Property<string>("DisputeReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("dispute_reason");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<Guid>("IssuedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("issued_by");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("note");
+
+                    b.Property<Guid?>("ReferenceWorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reference_work_order_id");
+
+                    b.Property<string>("RequestedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("requested_by");
+
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("responded_at");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.Property<Guid>("TechnicianId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("technician_id");
+
+                    b.Property<DateTimeOffset?>("UnacknowledgedFlaggedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("unacknowledged_flagged_at");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_issues");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_issues_code");
+
+                    b.HasIndex("State")
+                        .HasDatabaseName("ix_stock_issues_state");
+
+                    b.HasIndex("TechnicianId", "State")
+                        .HasDatabaseName("ix_stock_issues_technician_id_state");
+
+                    b.ToTable("stock_issues", "inventory");
                 });
 
             modelBuilder.Entity("Mfop.Inventory.Domain.StockLocation", b =>
@@ -212,6 +543,10 @@ namespace Mfop.Inventory.Infrastructure.Migrations
                     b.Property<Guid>("CommandId")
                         .HasColumnType("uuid")
                         .HasColumnName("command_id");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
 
                     b.Property<bool>("ExceedsCustody")
                         .HasColumnType("boolean")
@@ -276,6 +611,9 @@ namespace Mfop.Inventory.Infrastructure.Migrations
                     b.HasIndex("AssetId")
                         .HasDatabaseName("ix_stock_movements_asset_id");
 
+                    b.HasIndex("DocumentId")
+                        .HasDatabaseName("ix_stock_movements_document_id");
+
                     b.HasIndex("FromLocationId")
                         .HasDatabaseName("ix_stock_movements_from_location_id");
 
@@ -298,6 +636,99 @@ namespace Mfop.Inventory.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Mfop.Inventory.Domain.StockReturn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by");
+
+                    b.Property<DateTimeOffset>("DeclaredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("declared_at");
+
+                    b.Property<Guid>("DeclaredBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("declared_by");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("note");
+
+                    b.Property<string>("RejectReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reject_reason");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.Property<Guid>("TechnicianId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("technician_id");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_returns");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_returns_code");
+
+                    b.HasIndex("State")
+                        .HasDatabaseName("ix_stock_returns_state");
+
+                    b.HasIndex("TechnicianId", "State")
+                        .HasDatabaseName("ix_stock_returns_technician_id_state");
+
+                    b.ToTable("stock_returns", "inventory");
+                });
+
+            modelBuilder.Entity("Mfop.Inventory.Domain.CoreReturn", b =>
+                {
+                    b.HasOne("Mfop.Inventory.Domain.StockMovement", null)
+                        .WithMany()
+                        .HasForeignKey("ConsumeMovementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_core_returns_stock_movements_consume_movement_id");
+
+                    b.HasOne("Mfop.Inventory.Domain.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_core_returns_items_item_id");
+                });
+
             modelBuilder.Entity("Mfop.Inventory.Domain.ItemCost", b =>
                 {
                     b.HasOne("Mfop.Inventory.Domain.Item", null)
@@ -306,6 +737,16 @@ namespace Mfop.Inventory.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_item_costs_items_item_id");
+                });
+
+            modelBuilder.Entity("Mfop.Inventory.Domain.SerialUnit", b =>
+                {
+                    b.HasOne("Mfop.Inventory.Domain.Item", null)
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_serial_units_items_item_id");
                 });
 
             modelBuilder.Entity("Mfop.Inventory.Domain.StockBalance", b =>

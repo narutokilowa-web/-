@@ -22,6 +22,11 @@ import { WorkOrderDetailPage } from '../features/workorders/WorkOrderDetailPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AuditSearchPage } from '../features/audit/AuditSearchPage';
 import { StockBalancesPage } from '../features/stock/StockBalancesPage';
+import { IssuesPage } from '../features/stock/IssuesPage';
+import { ReturnsPage } from '../features/stock/ReturnsPage';
+import { CoreReturnsPage } from '../features/stock/CoreReturnsPage';
+import { ReconciliationPage } from '../features/stock/ReconciliationPage';
+import { StockHistoryPage } from '../features/stock/StockHistoryPage';
 import { RuleSettingsPage } from '../features/settings/RuleSettingsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { QuarantinePage } from '../features/quarantine/QuarantinePage';
@@ -107,6 +112,11 @@ export function App({ config }: { config: RuntimeConfig }) {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/audit" element={<AuditSearchPage />} />
                   <Route path="/stock" element={<StockBalancesPage />} />
+                  <Route path="/stock/issues" element={<IssuesPage />} />
+                  <Route path="/stock/returns" element={<ReturnsPage />} />
+                  <Route path="/stock/core-returns" element={<CoreReturnsPage />} />
+                  <Route path="/stock/reconciliation" element={<ReconciliationPage />} />
+                  <Route path="/stock/history" element={<StockHistoryPage />} />
                   <Route path="/settings/rules" element={<RuleSettingsPage />} />
                   <Route path="/users" element={<UsersPage />} />
                   <Route path="/sync/quarantine" element={<QuarantinePage />} />

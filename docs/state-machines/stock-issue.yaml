@@ -1,0 +1,18 @@
+machine: StockIssue
+scope: m5
+spec_ref: docs/lean-pilot/04-state-machines.md#49-stock-issue
+# Two-party handover: the material is in the technician's custody only after they acknowledge it.
+# Timer (policy issue_ack_warning_hours, default 24): still ISSUED → WARNING flag ISSUE_UNACKNOWLEDGED; the state does not change.
+states: [ISSUED, ACKNOWLEDGED, DISPUTED, CANCELLED]
+initial: ISSUED
+terminal: [ACKNOWLEDGED, CANCELLED]
+transitions:
+  - {id: SI1, from: [_start], command: IssueStock, to: ISSUED, actor: WAREHOUSE,
+     policies: [issuer_not_receiver], requires: [receiver_active_technician, warehouse_balance_sufficient, serials_in_warehouse],
+     effects: [movement_issue_warehouse_to_in_transit]}
+  - {id: SI2, from: [ISSUED], command: AcknowledgeStockIssue, to: ACKNOWLEDGED, actor: TECHNICIAN,
+     policies: [own_records_only], requires: [serials_confirmed], effects: [movement_acknowledge_in_transit_to_custody]}
+  - {id: SI3, from: [ISSUED], command: DisputeStockIssue, to: DISPUTED, actor: TECHNICIAN,
+     policies: [own_records_only], requires: [reason], effects: [optional_photo, flag_warning_stock_issue_disputed]}
+  - {id: SI4, from: [ISSUED, DISPUTED], command: CancelStockIssue, to: CANCELLED, actor: WAREHOUSE,
+     requires: [reason], effects: [movement_reversal_in_transit_to_warehouse]}

@@ -20,7 +20,7 @@ class AppConfig {
     clientId: String.fromEnvironment('MFOP_CLIENT_ID', defaultValue: 'mfop-mobile'),
     redirectUri: String.fromEnvironment('MFOP_REDIRECT_URI', defaultValue: 'mfop://oauth-callback'),
     environment: String.fromEnvironment('MFOP_ENV', defaultValue: 'DEV'),
-    appVersion: String.fromEnvironment('MFOP_APP_VERSION', defaultValue: '0.4.0'),
+    appVersion: String.fromEnvironment('MFOP_APP_VERSION', defaultValue: '0.5.0'),
     // Only the local development stack is plain HTTP (localhost via adb reverse). Pilot builds use HTTPS (M8).
     allowInsecureConnections: bool.fromEnvironment('MFOP_ALLOW_HTTP', defaultValue: true),
     appLockMinutes: int.fromEnvironment('MFOP_APP_LOCK_MINUTES', defaultValue: 5),

@@ -37,6 +37,7 @@ public sealed class TestApp(DatabaseFixture db, bool backgroundVerifier = true, 
         builder.UseSetting("Storage:Root", db.ObjectStoreRoot);
         builder.UseSetting("Evidence:VerifyIntervalSeconds", "0.3");
         builder.UseSetting("Evidence:RunBackgroundVerifier", backgroundVerifier ? "true" : "false");
+        builder.UseSetting("Inventory:RunBackgroundTimers", "false"); // tests run InventoryTimers themselves
         builder.UseSetting("Keycloak:RunWorker", "false"); // tests run IdpTaskProcessor themselves, against FakeIdentityProvider
         builder.ConfigureTestServices(services =>
         {

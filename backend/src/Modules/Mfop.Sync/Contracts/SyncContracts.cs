@@ -34,9 +34,10 @@ public sealed record PullUser(Guid Id, string DisplayName, IReadOnlyList<string>
 /// <param name="Reference">Diagnosis codes and checklist templates (M3), so the wizard works offline.</param>
 /// <param name="Custody">The technician's custody (items, quantities, serials); empty for other roles.</param>
 /// <param name="Policy">M4: offline grace, app lock and minimum app version, read from the policy settings.</param>
+/// <param name="Stock">M5: issues waiting for acknowledgment, returns waiting for the warehouse, unfinished core returns (technicians only).</param>
 public sealed record PullResponse(DateTimeOffset ServerTime, string Cursor, PullUser User, Guid DeviceId, IReadOnlyList<WorkOrderTask> WorkOrders,
     FieldReferenceData? Reference = null, IReadOnlyList<CustodyItem>? Custody = null, IReadOnlyList<ItemDto>? Items = null,
-    Mfop.Access.Contracts.ClientPolicyDto? Policy = null);
+    Mfop.Access.Contracts.ClientPolicyDto? Policy = null, TechnicianStockDto? Stock = null);
 
 /// <summary>A command held for a supervisor's decision (docs/lean-pilot/05 §5.5, 03: "resolve sync quarantine").</summary>
 public sealed record QuarantineDto(

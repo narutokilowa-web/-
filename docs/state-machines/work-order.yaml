@@ -23,7 +23,7 @@ transitions:
   - {id: W6, from: [ON_SITE], command: StartWork, to: IN_PROGRESS, actor: assignee,
      requires: [diagnosis_recorded, before_photos], effects: [asset_status_under_maintenance, work_timer_started]}
   - {id: W9, from: [IN_PROGRESS], command: SubmitWorkOrder, to: PENDING_REVIEW, actor: assignee,
-     requires: [checklist_complete, materials_recorded_or_explicit_none, after_photos_min_2, test_photo_or_not_tested_reason, root_cause_note],
+     requires: [checklist_complete, materials_recorded_or_explicit_none, core_returns_declared, after_photos_min_2, test_photo_or_not_tested_reason, root_cause_note],
      effects: [submission_recorded]}
   - {id: W10, from: [PENDING_REVIEW], command: ApproveWorkOrder, to: CLOSED, actor: SUPERVISOR,
      policies: [reviewer_not_executor], requires: [all_evidence_verified],
@@ -40,3 +40,6 @@ in_state_commands:
   - {command: RecordDiagnosis, in: [ON_SITE, IN_PROGRESS], actor: assignee}
   - {command: ConsumeMaterial, in: [IN_PROGRESS, RETURNED], actor: assignee}
   - {command: RecordChecklist, in: [IN_PROGRESS, RETURNED], actor: assignee}
+  # M5: DeclareCoreReturn is also accepted after close until the part is received; that part is governed by core-return.yaml
+  # (a closed work order is terminal and sealed: the declaration adds no work-order event then).
+  - {command: DeclareCoreReturn, in: [IN_PROGRESS, RETURNED], actor: assignee}

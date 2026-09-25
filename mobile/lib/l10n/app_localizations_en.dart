@@ -364,6 +364,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'RecordChecklist': 'Checklist',
       'SubmitWorkOrder': 'Submission',
       'Resubmit': 'Resubmission',
+      'AcknowledgeStockIssue': 'Material receipt',
+      'DisputeStockIssue': 'Material dispute',
+      'DeclareStockReturn': 'Material return',
+      'DeclareCoreReturn': 'Failed part',
       'other': '$type',
     });
     return '$_temp0';
@@ -533,6 +537,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'QUARANTINE_DISCARDED': 'Discarded by the supervisor after review',
       'NOT_ASSIGNEE': 'This work order is not assigned to you',
       'INVALID_TRANSITION': 'This step is no longer possible in the work order\'s current state',
+      'CORE_RETURN_NOT_DECLARED': 'Declare the failed part of every part you replaced before submitting',
+      'SERIALS_NOT_CONFIRMED': 'Confirm exactly the serials you received, or report a problem',
+      'INSUFFICIENT_CUSTODY': 'More than your custody holds',
+      'SERIAL_NOT_IN_CUSTODY': 'This serial is not in your custody',
+      'NOT_RECEIVER': 'This issue is not addressed to you',
       'other': 'The operation failed ($code)',
     });
     return '$_temp0';
@@ -582,4 +591,112 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get grantNone => 'No offline permission yet: connect to the internet';
+
+  @override
+  String get tabStock => 'Materials';
+
+  @override
+  String stepCoreReturn(int count) {
+    return 'Failed parts: $count to declare';
+  }
+
+  @override
+  String get stepCoreReturnDone => 'Failed parts: declared';
+
+  @override
+  String get declareCoreAction => 'Declare failed part';
+
+  @override
+  String get coreReturnTitle => 'Failed part';
+
+  @override
+  String coreReturnHint(String part) {
+    return 'You replaced $part. Bring the failed part to the warehouse, or say why it cannot be brought back. A photo is required either way.';
+  }
+
+  @override
+  String coreExpectedSerial(String serial) {
+    return 'Serial known on the light: $serial';
+  }
+
+  @override
+  String coreInstalledSerial(String serial) {
+    return 'New part installed: $serial';
+  }
+
+  @override
+  String get coreWithPart => 'I have the failed part';
+
+  @override
+  String get coreUnrecoverable => 'It cannot be brought back';
+
+  @override
+  String get coreSerialLabel => 'Serial on the failed part';
+
+  @override
+  String get coreReasonLabel => 'Why can it not be brought back?';
+
+  @override
+  String get corePhotoAction => 'Photograph the failed part';
+
+  @override
+  String get corePhotoReady => 'Photo ready';
+
+  @override
+  String coreStateName(String state) {
+    String _temp0 = intl.Intl.selectLogic(state, {
+      'OPEN': 'To declare',
+      'DECLARED_WITH_PART': 'Bring it to the warehouse',
+      'DECLARED_UNRECOVERABLE': 'Unrecoverable: waits for the supervisor',
+      'RECEIVED': 'Received by the warehouse',
+      'WAIVED': 'Waived',
+      'other': '$state',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get issuesToConfirmTitle => 'Material waiting for your confirmation';
+
+  @override
+  String issueFrom(String code, String name) {
+    return '$code · issued by $name';
+  }
+
+  @override
+  String get tickSerials => 'Tick every serial you actually received';
+
+  @override
+  String get confirmReceipt => 'Confirm receipt';
+
+  @override
+  String get reportProblem => 'Report a problem';
+
+  @override
+  String get disputeReasonLabel => 'What is wrong? (e.g. only one arrived)';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get myCustodyTitle => 'My custody';
+
+  @override
+  String get returnUnused => 'Return unused material';
+
+  @override
+  String get returnNoteLabel => 'Note (optional)';
+
+  @override
+  String get returnsWaitingTitle => 'Returns waiting for the warehouse';
+
+  @override
+  String get coresTitle => 'Failed parts';
+
+  @override
+  String get nothingWaiting => 'Nothing waiting for you.';
+
+  @override
+  String get stockHint =>
+      'Material issued to you is in your custody only after you confirm it. A return stays in transit until the warehouse receives it.';
 }

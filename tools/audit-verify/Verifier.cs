@@ -27,6 +27,7 @@ public sealed class VerificationReport
 ///  3. active street lights: the current row still equals its latest approved snapshot.
 ///  4. closed work orders: the seal recomputed from the operational rows equals the stored and the audited seal (M3).
 ///  5. stock balances equal the sum of the append-only movements (M3).
+///  6. M5: stock in transit equals the lines of the open issues and declared returns; the core bin equals the received cores.
 /// Limitation (documented, ADR-0007): deleting the most recent events leaves a shorter but valid chain; that is
 /// detected by signed checkpoints stored outside the database (M8), and partially by check 2 when approvals disappear.
 /// </summary>
@@ -47,6 +48,7 @@ public static class Verifier
         await CheckActiveAssetsAsync(conn, tx, report, latestSnapshots, ct);
         await WorkOrderSeals.CheckAsync(conn, tx, report, auditedSeals, ct);
         await WorkOrderSeals.CheckBalancesAsync(conn, tx, report, ct);
+        await WorkOrderSeals.CheckInventoryDocumentsAsync(conn, tx, report, ct);
         return report;
     }
 

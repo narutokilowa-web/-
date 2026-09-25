@@ -87,10 +87,12 @@ public class FieldExecutionTests(DatabaseFixture db) : IAsyncLifetime
         await flow.PhotoAsync("BEFORE");
         await flow.ApplyAsync("RecordDiagnosis", new { workOrderId = flow.WorkOrderId, code = "LED_MODULE_FAIL" });
         await flow.ApplyAsync("StartWork", new { workOrderId = flow.WorkOrderId });
-        await flow.ConsumeAsync();
+        var consumed = await flow.ConsumeAsync();
         await flow.ChecklistAsync();
         await flow.PhotoAsync("TEST");
         await flow.PhotoAsync("AFTER");
+        await FieldFlow.AssertRejectedAsync(flow.SubmitAsync(), "CORE_RETURN_NOT_DECLARED"); // W9 (M5)
+        await flow.DeclareCoreAsync(consumed.GetProperty("entityId").GetGuid());
         await FieldFlow.AssertRejectedAsync(flow.SubmitAsync(), "EVIDENCE_MISSING");
         await flow.PhotoAsync("AFTER");
         Assert.Equal("APPLIED", (await flow.SubmitAsync()).GetProperty("result").GetString());
@@ -338,7 +340,7 @@ public class FieldExecutionTests(DatabaseFixture db) : IAsyncLifetime
         await flow.PhotoAsync("BEFORE");
         await flow.ApplyAsync("RecordDiagnosis", new { workOrderId = flow.WorkOrderId, code = "LED_MODULE_FAIL" });
         await flow.ApplyAsync("StartWork", new { workOrderId = flow.WorkOrderId });
-        await flow.ConsumeAsync();
+        await flow.DeclareCoreAsync((await flow.ConsumeAsync()).GetProperty("entityId").GetGuid());
         await flow.PhotoAsync("AFTER");
         await flow.PhotoAsync("AFTER");
         await FieldFlow.AssertRejectedAsync(flow.SubmitAsync(), "CHECKLIST_MISSING");

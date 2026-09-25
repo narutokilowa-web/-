@@ -36,7 +36,7 @@ builder.Services.AddAssetsModule(builder.Configuration);
 builder.Services.AddFaultsModule();
 builder.Services.AddWorkOrdersModule(builder.Configuration);
 builder.Services.AddRulesModule();
-builder.Services.AddInventoryModule();
+builder.Services.AddInventoryModule(builder.Configuration);
 builder.Services.AddEvidenceModule(builder.Configuration);
 builder.Services.AddSyncModule();
 

@@ -88,6 +88,14 @@ public sealed record RecordChecklistPayload(Guid WorkOrderId, Guid ChecklistId, 
 
 public sealed record SubmitWorkOrderPayload(Guid WorkOrderId, string? RootCauseNote, string? NoMaterialReason);
 
+/// <summary>
+/// DeclareCoreReturn (M5). The obligation is named by its id, or (offline, before the phone has pulled it) by the consumption
+/// that opened it: the movement id the phone generated, plus the installed serial when one consumption installed several units.
+/// </summary>
+/// <param name="Outcome">WITH_PART (photo; serial read on the removed part if serial-tracked) or UNRECOVERABLE (reason and photo).</param>
+public sealed record DeclareCoreReturnPayload(Guid WorkOrderId, Guid? CoreReturnId, Guid? MovementId, string? InstalledSerial, string? Outcome, string? Serial,
+    string? Reason, Mfop.Inventory.Contracts.PhotoAnnouncement? Photo);
+
 // ---- Supervisor review (web) ----
 
 public sealed record ApproveRequest(string? Note);

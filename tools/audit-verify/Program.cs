@@ -33,7 +33,7 @@ catch (Exception ex) when (ex is Npgsql.NpgsqlException or InvalidOperationExcep
 }
 
 Console.WriteLine($"audit-verify: {report.EventsChecked} audit events, {report.VersionsChecked} asset versions, {report.AssetsChecked} active assets, " +
-                  $"{report.WorkOrdersChecked} closed work-order seals, {report.MovementsChecked} stock movements checked.");
+                  $"{report.WorkOrdersChecked} closed work-order seals, {report.MovementsChecked} stock movements checked (balances, in-transit documents, core bin).");
 if (report.Ok)
 {
     Console.WriteLine("RESULT: OK — no tampering detected.");

@@ -68,7 +68,11 @@
     "settings": "Rule settings",
     "needsReassignment": "Work orders needing reassignment",
     "quarantine": "Held commands to decide",
-    "users": "Users and offboarding"
+    "users": "Users and offboarding",
+    "issues": "Issue stock to technicians",
+    "returns": "Returns to receive",
+    "coreReturns": "Failed parts (core returns)",
+    "reconciliation": "Warehouse reconciliation"
   },
   "common": {
     "notFound": "Page not found",
@@ -212,7 +216,25 @@
     "old": "Old value",
     "new": "New value",
     "hashTitle": "Event hash in the audit chain",
-    "device": "Device"
+    "device": "Device",
+    "title": "Stock history",
+    "hint": "Every movement of the append-only ledger. Filter by item, serial, type or technician.",
+    "anyItem": "Any item",
+    "anyType": "Any movement",
+    "serial": "Serial",
+    "clearTechnician": "All technicians",
+    "where": "Now: {{where}}",
+    "installedOn": "Installed on light",
+    "removedFrom": "Removed from light",
+    "historical": "known from a failed-part declaration",
+    "truncated": "Only the latest 500 movements are shown.",
+    "when": "When",
+    "type": "Movement",
+    "fromTo": "From → to",
+    "by": "By",
+    "document": "Document",
+    "exceeds": "Beyond known custody",
+    "workOrder": "Work order"
   },
   "action": {
     "registration.drafted": "Registration drafted",
@@ -542,7 +564,16 @@
     "CLOCK_SKEW": "The phone clock differs from the server time by more than 5 minutes",
     "NEEDS_REASSIGNMENT": "The technician was disabled: reassign this work order",
     "CUSTODY_TO_RECONCILE": "The disabled employee still holds materials in custody",
-    "SUBMITTED_BY_NON_ASSIGNEE": "Photo or material recorded offline by the previous technician after reassignment"
+    "SUBMITTED_BY_NON_ASSIGNEE": "Photo or material recorded offline by the previous technician after reassignment",
+    "STOCK_ISSUE_DISPUTED": "The technician disputed this issue",
+    "ISSUE_UNACKNOWLEDGED": "Issue not acknowledged within the policy time",
+    "STOCK_RETURN_REJECTED": "Return rejected by the warehouse",
+    "CORE_SERIAL_MISMATCH": "Failed part's serial differs from the one on the light",
+    "CORE_RETURN_OVERDUE": "Failed part not received within the policy time",
+    "CORE_PART_NOT_PRESENTED": "Failed part not presented at the warehouse",
+    "CORE_RETURN_WAIVED": "Core return waived by a supervisor",
+    "OFFBOARDING_RETURN_RECORDED": "Material handed back by a disabled employee was recorded",
+    "CUSTODY_NOT_RETURNED": "Material not returned at the end of the handover"
   },
   "testMethod": {
     "NIGHT": "At night",
@@ -725,14 +756,18 @@
     "ConsumeMaterial": "Material used",
     "RecordChecklist": "Checklist",
     "SubmitWorkOrder": "Submit for review",
-    "Resubmit": "Resubmit"
+    "Resubmit": "Resubmit",
+    "AcknowledgeStockIssue": "Acknowledge issued material",
+    "DisputeStockIssue": "Dispute issued material",
+    "DeclareStockReturn": "Return unused material",
+    "DeclareCoreReturn": "Declare failed part"
   },
   "needsReassignment": {
     "title": "Work orders needing reassignment",
     "hint": "Open work orders whose technician was disabled (offboarded). Reassign each one (the new technician captures new arrival photos) or cancel it."
   },
   "policy": {
-    "title": "Security policies (offline work)",
+    "title": "Policies (offline work, inventory timers)",
     "hint": "Values are data, not code: each change needs a reason and is recorded in the audit log. A new grant lifetime applies to grants issued after the change.",
     "setting": "Setting",
     "current": "Current value",
@@ -741,6 +776,169 @@
     "offline_grace_hours": "Offline grant lifetime (hours, 1–72)",
     "grant_window_tolerance_minutes": "Grant-window tolerance (minutes, 0–60)",
     "app_lock_minutes": "Phone app lock after (minutes, 1–30)",
-    "min_app_version": "Minimum field-app version"
+    "min_app_version": "Minimum field-app version",
+    "issue_ack_warning_hours": "Stock issue not acknowledged → warning after (hours, 1–168)",
+    "core_return_overdue_days": "Failed part not received → warning after (days, 1–90)"
+  },
+  "stockNav": {
+    "balances": "Balances",
+    "issues": "Issues",
+    "returns": "Returns",
+    "coreReturns": "Failed parts",
+    "reconciliation": "Reconciliation",
+    "history": "History"
+  },
+  "stockForm": {
+    "chooseItem": "Choose an item",
+    "quantity": "Quantity",
+    "serials": "Serials (one per unit)",
+    "addLine": "Add line",
+    "removeLine": "Remove",
+    "linesRequired": "Add at least one line.",
+    "duplicateItem": "Each item once: put all its quantity and serials on one line.",
+    "unknownItem": "Unknown item.",
+    "quantityInvalid": "The quantity must be positive.",
+    "wholeUnits": "This item is counted in whole units.",
+    "serialPerUnit": "Give one serial per unit.",
+    "duplicateSerial": "A serial appears twice.",
+    "notSerialTracked": "This item has no serials.",
+    "technicianRequired": "Choose the receiving technician."
+  },
+  "issues": {
+    "title": "Stock issues",
+    "hint": "Issued material is in transit until the technician acknowledges it on the phone (two-party handover). A disputed or unanswered issue is cancelled here with a reason; the material goes back to the warehouse by a reversal movement.",
+    "new": "New issue",
+    "technician": "Technician",
+    "requestedBy": "Requested by (optional)",
+    "note": "Note (optional)",
+    "issue": "Issue",
+    "created": "Issued as {{code}}: waiting for the technician's acknowledgment.",
+    "code": "Issue",
+    "lines": "Material",
+    "state": "State",
+    "overdue": "Not acknowledged in time",
+    "disputeReason": "Disputed: {{reason}}",
+    "cancelReason": "Reason to cancel",
+    "cancel": "Cancel issue"
+  },
+  "issueState": {
+    "ISSUED": "Waiting for acknowledgment",
+    "ACKNOWLEDGED": "Acknowledged",
+    "DISPUTED": "Disputed",
+    "CANCELLED": "Cancelled"
+  },
+  "returns": {
+    "title": "Returned material",
+    "hint": "Unused material declared by a technician is in transit until received here. Tick every serial actually handed over; if something is missing or different, reject with a reason (it goes back to the technician's custody and is flagged for review).",
+    "code": "Return",
+    "technician": "Technician",
+    "lines": "Material",
+    "state": "State",
+    "recordedBy": "Recorded by {{name}}",
+    "tickSerials": "Serials handed over:",
+    "receive": "Receive",
+    "rejectReason": "Reason to reject",
+    "reject": "Reject"
+  },
+  "returnState": {
+    "DECLARED": "Declared, not yet received",
+    "RECEIVED": "Received",
+    "REJECTED": "Rejected"
+  },
+  "returnKind": {
+    "UNUSED": "Unused material",
+    "OFFBOARDING": "Offboarding handover"
+  },
+  "offboarding": {
+    "title": "Material handed back by a disabled technician",
+    "hint": "A disabled user cannot act on the phone. Record what was physically handed back from their custody. Nothing is written off: what is not brought back stays in their custody, and a final handover flags it for review.",
+    "none": "No disabled user holds material.",
+    "note": "Who brought it, when (required)",
+    "final": "Final handover: nothing more will be returned",
+    "record": "Record handover",
+    "nothingLeft": "Nothing left in this custody.",
+    "left": "Still in the custody: {{items}}"
+  },
+  "cores": {
+    "title": "Failed parts (core returns)",
+    "hint": "When a technician replaces a part that must come back, they declare the failed part on the phone. The warehouse reads its serial here: it is checked against the serial known on the light, and a difference is recorded and flagged for review. Only a supervisor other than the technician can waive an unrecoverable part.",
+    "code": "Core return",
+    "part": "Part",
+    "serials": "Serials",
+    "state": "State",
+    "expected": "Known on the light: {{serial}}",
+    "declared": "Declared: {{serial}}",
+    "installed": "New part installed: {{serial}}",
+    "received": "Presented: {{serial}}",
+    "mismatch": "Serial differs",
+    "overdue": "Not received in time",
+    "photo": "Photo of the failed part",
+    "readSerial": "Serial on the part",
+    "receive": "Receive part",
+    "notPresentedReason": "Reason (not presented)",
+    "notPresented": "Not presented",
+    "waiveReason": "Reason to waive",
+    "waive": "Waive"
+  },
+  "coreState": {
+    "OPEN": "Not yet declared",
+    "DECLARED_WITH_PART": "Declared with part",
+    "DECLARED_UNRECOVERABLE": "Declared unrecoverable",
+    "RECEIVED": "Received",
+    "WAIVED": "Waived"
+  },
+  "reconciliation": {
+    "title": "Warehouse reconciliation",
+    "hint": "Everything here is computed from the append-only stock movements. A finding is a signal to look at; stock only changes through the commands of its flow (no free adjustments).",
+    "balanced": "Balanced",
+    "notBalanced": "Findings to review",
+    "generated": "Computed {{at}} from {{count}} movements",
+    "open": "Open documents",
+    "issuesAwaiting": "{{count}} issue(s) waiting for acknowledgment ({{overdue}} overdue)",
+    "issuesDisputed": "{{count}} disputed issue(s)",
+    "returnsDeclared": "{{count}} return(s) to receive",
+    "coresOpen": "{{count}} failed part(s) not yet declared",
+    "coresWithPart": "{{count}} failed part(s) to receive ({{overdue}} overdue)",
+    "coresUnrecoverable": "{{count}} unrecoverable part(s)",
+    "findings": "Findings",
+    "received": "Received (net)",
+    "warehouse": "Warehouse",
+    "inTransit": "In transit",
+    "custody": "In custody",
+    "consumed": "Consumed",
+    "coreBin": "Core bin",
+    "custodians": "Technicians",
+    "technician": "Technician",
+    "holds": "Holds",
+    "openDocs": "Open documents",
+    "disabled": "Disabled",
+    "docs": "{{issues}} issue(s), {{returns}} return(s), {{cores}} failed part(s)"
+  },
+  "reconciliationFinding": {
+    "BALANCE_MISMATCH": "Stored balance differs from the ledger",
+    "IN_TRANSIT_MISMATCH": "In transit differs from open documents",
+    "SERIAL_COUNT_MISMATCH": "Serial count differs from balance",
+    "NEGATIVE_BALANCE": "Negative balance",
+    "CORE_BIN_MISMATCH": "Core bin differs from received parts",
+    "CUSTODY_OF_DISABLED_USER": "Custody left with a disabled user"
+  },
+  "movementType": {
+    "RECEIPT": "Receipt",
+    "ISSUE": "Issue",
+    "ACKNOWLEDGE": "Acknowledged",
+    "CONSUME": "Consumed",
+    "RETURN_DECLARE": "Return declared",
+    "RETURN_RECEIVE": "Return received",
+    "CORE_RECEIVE": "Failed part received",
+    "REVERSAL": "Reversal"
+  },
+  "locationKind": {
+    "SUPPLIER": "Supplier",
+    "WAREHOUSE": "Warehouse",
+    "IN_TRANSIT": "In transit",
+    "CUSTODY": "Custody",
+    "CONSUMED": "Consumed",
+    "FIELD": "Removed from lights",
+    "CORE_BIN": "Core bin (failed parts)"
   }
 }

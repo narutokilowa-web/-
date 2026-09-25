@@ -30,7 +30,7 @@ test('device approval → fault → work order → assignment → task visible t
   await signIn(techPage, 'tech2');
   const techToken = await accessToken(techPage);
   const phone = new E2EPhone();
-  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone', osVersion: '14', appVersion: '0.4.0', publicKey: phone.publicKey });
+  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone', osVersion: '14', appVersion: '0.5.0', publicKey: phone.publicKey });
   expect(registered.status).toBe(201);
   const deviceId = registered.json!.deviceId as string;
   expect((await api(request, techToken, 'GET', '/sync/v1/pull', undefined, deviceId)).json!.code).toBe('DEVICE_NOT_APPROVED');

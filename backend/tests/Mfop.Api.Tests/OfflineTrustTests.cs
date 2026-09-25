@@ -145,7 +145,7 @@ public class OfflineTrustTests(DatabaseFixture db) : IAsyncLifetime
         using var client = App.FieldAppClientFor(user, null);
         foreach (var key in new[] { null, "not-a-key", Convert.ToBase64String(RSA.Create(2048).ExportSubjectPublicKeyInfo()) })
         {
-            var response = await client.PostAsJsonAsync("/sync/v1/devices/register", new { platform = "ANDROID", model = "X", osVersion = "14", appVersion = "0.4.0", publicKey = key });
+            var response = await client.PostAsJsonAsync("/sync/v1/devices/register", new { platform = "ANDROID", model = "X", osVersion = "14", appVersion = "0.5.0", publicKey = key });
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var details = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("details");
             Assert.True(details.TryGetProperty("publicKey", out _));
@@ -159,23 +159,23 @@ public class OfflineTrustTests(DatabaseFixture db) : IAsyncLifetime
     {
         var (user, device, phone, _) = await PhoneAsync();
         using var client = App.FieldAppClientFor(user, device);
-        phone.AppVersion = "0.3.9";
+        phone.AppVersion = "0.4.9";
         var old = await client.GetAsync("/sync/v1/pull");
         Assert.Equal((HttpStatusCode)426, old.StatusCode);
         var problem = await old.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(TrustErrorCodes.UpgradeRequired, problem.GetProperty("code").GetString());
-        Assert.Equal("0.4.0", problem.GetProperty("details").GetProperty("minAppVersion").GetString());
+        Assert.Equal("0.5.0", problem.GetProperty("details").GetProperty("minAppVersion").GetString());
 
-        phone.AppVersion = "0.4.0";
+        phone.AppVersion = "0.5.0";
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/sync/v1/pull")).StatusCode);
         try
         {
-            await SetPolicyAsync("min_app_version", "0.5.0");
+            await SetPolicyAsync("min_app_version", "0.6.0");
             Assert.Equal((HttpStatusCode)426, (await client.GetAsync("/sync/v1/pull")).StatusCode);
         }
         finally
         {
-            await SetPolicyAsync("min_app_version", "0.4.0");
+            await SetPolicyAsync("min_app_version", "0.5.0");
         }
     }
 

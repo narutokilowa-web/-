@@ -71,7 +71,7 @@ public class Demo1GoldenPathTests(GoldenPathFixture fixture) : IClassFixture<Gol
 
         // 10–16 on the phone.
         var field = new Phone(phone, workOrderId);
-        await field.RepairAsync(humanCode, pull, serial: "M-0003");
+        await field.RepairAsync(humanCode, pull, serial: "M-0003", removedSerial: "OLD-GOLDEN-1");
 
         // 17. Supervisor approves and closes (the executing technician cannot: N2).
         var review = await field.WaitVerifiedAsync(supervisor);
@@ -103,7 +103,7 @@ public class Demo1GoldenPathTests(GoldenPathFixture fixture) : IClassFixture<Gol
         (await supervisor.PostAsJsonAsync($"/api/v1/work-orders/{repeatWorkOrderId}/assign", new { assigneeId = DevUsers.Technician, reason = (string?)null })).EnsureSuccessStatusCode();
         var repeatTag = (await supervisor.GetFromJsonAsync<JsonElement>($"/api/v1/assets/{repeatId}")).GetProperty("tag").GetProperty("humanCode").GetString()!;
         var repeatField = new Phone(phone, repeatWorkOrderId);
-        await repeatField.RepairAsync(repeatTag, await phone.GetFromJsonAsync<JsonElement>("/sync/v1/pull"), serial: "M-0004");
+        await repeatField.RepairAsync(repeatTag, await phone.GetFromJsonAsync<JsonElement>("/sync/v1/pull"), serial: "M-0004", removedSerial: "M-0002");
         await repeatField.WaitVerifiedAsync(supervisor);
         (await supervisor.PostAsJsonAsync($"/api/v1/work-orders/{repeatWorkOrderId}/approve", new { note = (string?)null })).EnsureSuccessStatusCode();
 
@@ -149,6 +149,33 @@ public class Demo1GoldenPathTests(GoldenPathFixture fixture) : IClassFixture<Gol
         Assert.Contains("fault.reported", assetHistory);
         Assert.Contains("fault.resolved", assetHistory);
 
+        // M5 on the demo data: tech1 acknowledges the issue still in transit, returns an unused fuse, and the warehouse receives
+        // it and the failed module of the repeat repair (its serial is the one the seed installed on that light).
+        using var warehouse = App.ClientFor(DevUsers.Warehouse);
+        var stock = (await phone.GetFromJsonAsync<JsonElement>("/sync/v1/pull")).GetProperty("stock");
+        var waiting = Assert.Single(stock.GetProperty("issues").EnumerateArray());
+        Assert.Equal("ISSUED", waiting.GetProperty("state").GetString());
+        var waitingSerials = waiting.GetProperty("lines").EnumerateArray().SelectMany(l => l.GetProperty("serials").EnumerateArray().Select(x => x.GetString()!)).ToArray();
+        Assert.Equal(["D-0004"], waitingSerials);
+        await field.ApplyAsync("AcknowledgeStockIssue", new { issueId = waiting.GetProperty("id").GetGuid(), confirmedSerials = waitingSerials });
+        var fuse = (await phone.GetFromJsonAsync<JsonElement>("/sync/v1/pull")).GetProperty("custody").EnumerateArray().Single(c => c.GetProperty("sku").GetString() == "FUSE-10A");
+        Assert.Equal(7, fuse.GetProperty("quantity").GetDecimal());
+        var returnId = Guid.CreateVersion7();
+        await field.ApplyAsync("DeclareStockReturn", new { returnId, lines = new[] { new { itemId = fuse.GetProperty("itemId").GetGuid(), quantity = 1 } }, note = "فائض" });
+        (await warehouse.PostAsJsonAsync($"/api/v1/stock/returns/{returnId}/receive", new { confirmedSerials = Array.Empty<string>() })).EnsureSuccessStatusCode();
+        var repeatCore = (await warehouse.GetFromJsonAsync<JsonElement>("/api/v1/stock/core-returns?state=DECLARED_WITH_PART")).EnumerateArray()
+            .Single(c => c.GetProperty("workOrderId").GetGuid() == repeatWorkOrderId);
+        Assert.Equal("M-0002", repeatCore.GetProperty("expectedSerial").GetString());
+        (await warehouse.PostAsJsonAsync($"/api/v1/stock/core-returns/{repeatCore.GetProperty("id").GetGuid()}/receive", new { outcome = "RECEIVED", serial = "M-0002" }))
+            .EnsureSuccessStatusCode();
+        var reconciliation = await warehouse.GetFromJsonAsync<JsonElement>("/api/v1/stock/reconciliation");
+        Assert.True(reconciliation.GetProperty("balanced").GetBoolean(), reconciliation.GetProperty("findings").ToString());
+        var module = reconciliation.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("sku").GetString() == "LED-MOD-50W");
+        Assert.Equal(10, module.GetProperty("receivedNet").GetDecimal());
+        Assert.Equal(4, module.GetProperty("consumed").GetDecimal());   // two seed repairs + two golden-path repairs
+        Assert.Equal(6, module.GetProperty("warehouse").GetDecimal());
+        Assert.Equal(2, module.GetProperty("coreBin").GetDecimal());    // failed modules received: seed repair 1 and the repeat repair
+
         // The whole demo database still verifies (chain, snapshots, seals, stock balances).
         var report = await Verifier.RunAsync(fixture.Db.ReadOnlyConnectionString);
         Assert.True(report.Ok, string.Join("; ", report.Findings.Select(f => $"{f.Code} {f.EntityId} {f.Message}")));
@@ -180,8 +207,8 @@ public class Demo1GoldenPathTests(GoldenPathFixture fixture) : IClassFixture<Gol
             (await client.PutAsync($"/sync/v1/evidence/{id}/content", content)).EnsureSuccessStatusCode();
         }
 
-        /// <summary>Steps 10–16: arrive (tag scan), before photos, diagnosis, start work, one material from custody, checklist + test photo, after photos, submit.</summary>
-        public async Task RepairAsync(string scannedToken, JsonElement pull, string serial)
+        /// <summary>Steps 10–16: arrive (tag scan), before photos, diagnosis, start work, one material from custody (+ its failed part declared, M5), checklist + test photo, after photos, submit.</summary>
+        public async Task RepairAsync(string scannedToken, JsonElement pull, string serial, string removedSerial)
         {
             var task = pull.GetProperty("workOrders").EnumerateArray().Single(t => t.GetProperty("id").GetGuid() == workOrderId);
             var templateId = task.GetProperty("progress").GetProperty("checklistTemplateId").GetGuid();
@@ -206,7 +233,20 @@ public class Demo1GoldenPathTests(GoldenPathFixture fixture) : IClassFixture<Gol
             // 13. One material from the technician's custody (serial-tracked).
             var custody = pull.GetProperty("custody").EnumerateArray().Single(c => c.GetProperty("sku").GetString() == "LED-MOD-50W");
             Assert.Contains(serial, custody.GetProperty("serials").EnumerateArray().Select(s => s.GetString()));
-            await ApplyAsync("ConsumeMaterial", new { workOrderId, movementId = Guid.CreateVersion7(), itemId = custody.GetProperty("itemId").GetGuid(), quantity = 1, serials = new[] { serial } });
+            var movementId = Guid.CreateVersion7();
+            await ApplyAsync("ConsumeMaterial", new { workOrderId, movementId, itemId = custody.GetProperty("itemId").GetGuid(), quantity = 1, serials = new[] { serial } });
+
+            // 13a (M5). The failed module is declared "with part", with a photo (W9: required before submission).
+            var core = TestJpeg.Create();
+            var coreId = Guid.CreateVersion7();
+            await ApplyAsync("DeclareCoreReturn", new
+            {
+                workOrderId, movementId, outcome = "WITH_PART", serial = removedSerial,
+                photo = new { evidenceId = coreId, sha256 = TestJpeg.Sha256(core), sizeBytes = core.LongLength, mime = "image/jpeg" },
+            });
+            var content = new ByteArrayContent(core);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg");
+            (await client.PutAsync($"/sync/v1/evidence/{coreId}/content", content)).EnsureSuccessStatusCode();
 
             // 14. Functional-test checklist (pinned template) + test photo.
             var answers = template.GetProperty("items").EnumerateArray().ToDictionary(i => i.GetProperty("code").GetString()!, i => i.GetProperty("expected").GetString()!);

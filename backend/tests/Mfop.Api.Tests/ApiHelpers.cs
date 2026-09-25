@@ -97,7 +97,7 @@ public static class ApiHelpers
 
     public const string FieldAppClientId = "mfop-mobile";
 
-    public const string CurrentAppVersion = "0.4.0";
+    public const string CurrentAppVersion = "0.5.0";
 
     /// <summary>
     /// A client that behaves like the field app: token issued to mfop-mobile, app version, optional device header. For a device

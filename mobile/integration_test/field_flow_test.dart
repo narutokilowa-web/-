@@ -102,7 +102,7 @@ void main() {
     expect(row['osVersion'], startsWith('Android'));
     // M4: the phone registered the public half of its Android Keystore key (the private key never leaves the Keystore).
     expect(row['hasKey'], isTrue);
-    expect(row['appVersion'], '0.4.0');
+    expect(row['appVersion'], '0.5.0');
     final keystoreKey = await PlatformDeviceTrust().publicKey();
 
     // Supervisor/admin approves on the server; the phone learns it on its next check.
@@ -123,6 +123,20 @@ void main() {
     }
     expect(controller.grants!.pinnedKeys, isNotEmpty);
     expect(await controller.grantValid(), isTrue);
+
+    // M5: the seed issued tech1 a driver (D-0004) and fuses that are in transit until tech1 confirms them on the phone.
+    await tester.tap(find.byKey(const Key('tab-stock')));
+    await until(find.byKey(const Key('issue-serial-D-0004')));
+    await shot('04b-material-to-confirm');
+    await tester.tap(find.byKey(const Key('issue-serial-D-0004')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('issue-confirm')));
+    await until(find.byKey(const Key('issues-empty')));
+    final ackEnd = DateTime.now().add(const Duration(seconds: 40));
+    while (!controller.custody.any((c) => c.serials.contains('D-0004'))) {
+      if (DateTime.now().isAfter(ackEnd)) throw TestFailure('D-0004 did not reach the custody after the acknowledgment');
+      await tester.pump(const Duration(milliseconds: 500));
+    }
 
     // DEMO 1 steps 8–9 on the web side: a synthetic light, a fault, a work order assigned to tech1.
     final address = 'شارع أندرويد ${DateTime.now().millisecondsSinceEpoch % 100000}';
@@ -202,6 +216,13 @@ void main() {
     await tapKey('custody-LED-MOD-50W');
     await tapKey('serial-M-0003');
     await tapKey('material-save');
+    // M5 (W9): the failed LED module is declared "with part", photographed, with the serial read on it (a new light: no known serial).
+    await tapKey('step-core-action');
+    await tester.enterText(find.byKey(const Key('core-serial')), 'OLD-ANDROID-1');
+    await tapKey('core-photo-action');
+    await until(find.text('الصورة جاهزة'), timeout: const Duration(seconds: 60));
+    await shot('08b-failed-part');
+    await tapKey('core-save');
     await tapKey('step-checklist-action');
     await tapKey('method-NIGHT');
     // Every item answered with its expected value (the template is reference data pinned to this work order).
@@ -226,7 +247,8 @@ void main() {
     expect(controller.sync!.evidence.waitingCount, 0); // every photo's bytes reached the server and left the phone
     // Every command was signed by the Keystore key and accepted under the grant (no refusals, nothing held).
     expect(controller.outbox!.all().where((c) => c.state != OutboxState.sent), isEmpty);
-    expect(controller.outbox!.all().every((c) => c.grantId != null && c.baseVersion != null), isTrue);
+    expect(controller.outbox!.all().every((c) => c.grantId != null), isTrue);
+    expect(controller.outbox!.all().where((c) => c.payload['workOrderId'] != null).every((c) => c.baseVersion != null), isTrue);
 
     // Step 17 on the server: every photo VERIFIED, supervisor1 approves → CLOSED with a seal.
     final woPath = '/api/v1/work-orders/${workOrder['id']}';
@@ -251,6 +273,24 @@ void main() {
     await tester.tap(find.byKey(const Key('tab-tasks')));
     await tester.pumpAndSettle();
     expect(find.byKey(Key('task-$code')), findsNothing); // closed work orders leave My tasks
+
+    // M5: an unused fuse goes back from the phone; the warehouse receives it and the failed module (serial checked).
+    await tester.tap(find.byKey(const Key('tab-stock')));
+    await tapKey('return-unused');
+    await tapKey('return-item-FUSE-10A');
+    await tester.enterText(find.byKey(const Key('return-quantity')), '1');
+    await tester.pumpAndSettle();
+    await tapKey('return-save');
+    await until(find.textContaining('RET-'), timeout: const Duration(seconds: 60));
+    await shot('10b-return-declared');
+    final returns = (await office.call('warehouse1', 'GET', '/api/v1/stock/returns?state=DECLARED&technicianId=$technicianId'))['items'] as List<dynamic>;
+    await office.call('warehouse1', 'POST', '/api/v1/stock/returns/${(returns.single as Map<String, dynamic>)['id']}/receive', {'confirmedSerials': <String>[]});
+    final cores = (await office.call('warehouse1', 'GET', '/api/v1/stock/core-returns?state=DECLARED_WITH_PART&technicianId=$technicianId'))['items'] as List<dynamic>;
+    final core = cores.cast<Map<String, dynamic>>().singleWhere((c) => c['workOrderId'] == workOrder['id']);
+    expect(core['declaredSerial'], 'OLD-ANDROID-1');
+    await office.call('warehouse1', 'POST', '/api/v1/stock/core-returns/${core['id']}/receive', {'outcome': 'RECEIVED', 'serial': 'OLD-ANDROID-1'});
+    final reconciliation = await office.call('warehouse1', 'GET', '/api/v1/stock/reconciliation');
+    expect(reconciliation['balanced'], isTrue, reason: '${reconciliation['findings']}');
 
     // Revocation (server-side only): the phone is refused on its next request and deletes only the app's own data.
     await office.call('admin1', 'POST', '/api/v1/devices/$deviceId/revoke', {'reason': 'نهاية اختبار أندرويد'});

@@ -101,6 +101,66 @@ public static class WorkOrderSeals
         }
     }
 
+    /// <summary>
+    /// M5: what is IN_TRANSIT must be exactly the lines of the issues not yet acknowledged/cancelled and of the returns not yet
+    /// decided, and what is in CORE_BIN must be exactly the received core returns (independent SQL over the raw rows).
+    /// </summary>
+    public static async Task CheckInventoryDocumentsAsync(NpgsqlConnection conn, NpgsqlTransaction tx, VerificationReport report, CancellationToken ct)
+    {
+        async Task<Dictionary<Guid, decimal>> SumAsync(string sql)
+        {
+            var sums = new Dictionary<Guid, decimal>();
+            await using var cmd = new NpgsqlCommand(sql, conn, tx);
+            await using var r = await cmd.ExecuteReaderAsync(ct);
+            while (await r.ReadAsync(ct))
+            {
+                sums[r.GetGuid(0)] = r.GetDecimal(1);
+            }
+
+            return sums;
+        }
+
+        var ledgerInTransit = await SumAsync(
+            """
+            SELECT m.item_id, sum(CASE WHEN m.to_location_id = l.id THEN m.quantity ELSE -m.quantity END)
+            FROM inventory.stock_movements m JOIN inventory.stock_locations l ON l.kind = 'IN_TRANSIT' AND (m.to_location_id = l.id OR m.from_location_id = l.id)
+            GROUP BY m.item_id
+            """);
+        var openDocuments = await SumAsync(
+            """
+            SELECT m.item_id, sum(m.quantity) FROM inventory.stock_movements m
+            WHERE (m.type = 'ISSUE' AND m.document_id IN (SELECT id FROM inventory.stock_issues WHERE state IN ('ISSUED', 'DISPUTED')))
+               OR (m.type = 'RETURN_DECLARE' AND m.document_id IN (SELECT id FROM inventory.stock_returns WHERE state = 'DECLARED'))
+            GROUP BY m.item_id
+            """);
+        foreach (var item in ledgerInTransit.Keys.Union(openDocuments.Keys))
+        {
+            var ledger = ledgerInTransit.GetValueOrDefault(item);
+            var open = openDocuments.GetValueOrDefault(item);
+            if (ledger != open)
+            {
+                report.Findings.Add(new("IN_TRANSIT_MISMATCH", null, "item", item.ToString("D"), $"in transit {Q(ledger)} but open issues/returns hold {Q(open)}"));
+            }
+        }
+
+        var ledgerCoreBin = await SumAsync(
+            """
+            SELECT m.item_id, sum(CASE WHEN m.to_location_id = l.id THEN m.quantity ELSE -m.quantity END)
+            FROM inventory.stock_movements m JOIN inventory.stock_locations l ON l.kind = 'CORE_BIN' AND (m.to_location_id = l.id OR m.from_location_id = l.id)
+            GROUP BY m.item_id
+            """);
+        var received = await SumAsync("SELECT item_id, sum(quantity) FROM inventory.core_returns WHERE state = 'RECEIVED' GROUP BY item_id");
+        foreach (var item in ledgerCoreBin.Keys.Union(received.Keys))
+        {
+            var ledger = ledgerCoreBin.GetValueOrDefault(item);
+            var cores = received.GetValueOrDefault(item);
+            if (ledger != cores)
+            {
+                report.Findings.Add(new("CORE_BIN_MISMATCH", null, "item", item.ToString("D"), $"core bin {Q(ledger)} but received core returns add up to {Q(cores)}"));
+            }
+        }
+    }
+
     private static async Task<JsonElement> DocumentAsync(NpgsqlConnection conn, NpgsqlTransaction tx, Dictionary<string, object?> w, Guid id, CancellationToken ct)
     {
         using var ms = new MemoryStream();

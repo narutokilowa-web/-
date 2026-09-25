@@ -1,4 +1,4 @@
-# Offboarding an employee or a lost phone (M4)
+# Offboarding an employee or a lost phone (M4, material return M5)
 
 Everything happens **on the server**. Personal phones are never wiped or read (docs/lean-pilot/05 §5.6): if a revoked app
 reaches the server again, it deletes only its own data and its own device key.
@@ -20,7 +20,24 @@ reaches the server again, it deletes only its own data and its own device key.
    The new technician captures new arrival photos.
 5. **Held commands** (Home → *Held commands to decide*): commands of the departed employee can only be **discarded**
    (with a reason) now.
-6. Custody: the warehouse officer arranges the return of the materials (M5 records the return).
+6. Custody: the warehouse officer records what is handed back (section D). Material the employee declared as returned
+   before leaving, or issues they never acknowledged, are handled as usual (receive the return; cancel the issue).
+
+## D. Material handed back after offboarding (M5)
+
+A disabled user cannot act on the phone, so the warehouse officer records the handover from their custody. Nothing is
+written off: what is not brought back stays in their custody and is flagged for review.
+
+1. `warehouse1` → **Stock → Returns** → *Material handed back by a disabled technician* → choose the employee. Their custody
+   (quantities and serials) is listed.
+2. Enter each item handed back (serials for serial-tracked items; only what is in that custody is accepted) and a note (who
+   brought it, when) → **Record handover**. The material moves CUSTODY → WAREHOUSE (return `RET-…`, kind *Offboarding*), and
+   an INFO flag `OFFBOARDING_RETURN_RECORDED` lists what came back and what is left.
+3. When nothing more will come back, record a **final handover** (tick *Final handover*; lines may be empty). If material or
+   failed parts are still outstanding, a WARNING flag `CUSTODY_NOT_RETURNED` is raised for the auditor.
+4. **Stock → Reconciliation** keeps showing *Custody left with a disabled user* until the custody is empty.
+5. Unacknowledged issues to the employee: **Stock → Issues** → cancel with a reason (the material returns to the warehouse).
+   Failed parts the employee declared "with part": receive them as usual in **Stock → Failed parts**.
 
 ## B. Lost or stolen phone (the employee stays)
 

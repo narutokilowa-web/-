@@ -30,6 +30,9 @@ public static class WorkOrderCommands
     public const string RecordDiagnosis = nameof(RecordDiagnosis);
     public const string ConsumeMaterial = nameof(ConsumeMaterial);
     public const string RecordChecklist = nameof(RecordChecklist);
+
+    /// <summary>M5 (04 §4.8, §4.11): also accepted after close until the part is received (the core-return machine decides).</summary>
+    public const string DeclareCoreReturn = nameof(DeclareCoreReturn);
 }
 
 /// <summary>A non-transition command and the states in which the assignee may issue it (docs/state-machines/work-order.yaml in_state_commands).</summary>
@@ -79,6 +82,7 @@ public static class WorkOrderStateMachines
         new(WorkOrderCommands.RecordDiagnosis, [WorkOrderStates.OnSite, WorkOrderStates.InProgress], "assignee"),
         new(WorkOrderCommands.ConsumeMaterial, [WorkOrderStates.InProgress, WorkOrderStates.Returned], "assignee"),
         new(WorkOrderCommands.RecordChecklist, [WorkOrderStates.InProgress, WorkOrderStates.Returned], "assignee"),
+        new(WorkOrderCommands.DeclareCoreReturn, [WorkOrderStates.InProgress, WorkOrderStates.Returned], "assignee"),
     ];
 
     /// <summary>Non-transition command guard: INVALID_TRANSITION outside its states (the state does not change).</summary>

@@ -30,7 +30,7 @@ public class DeviceTests(DatabaseFixture db) : IAsyncLifetime
         phone.DefaultRequestHeaders.Add("Idempotency-Key", key.ToString());
         using var deviceKey = new TestPhone();
         var registered = await phone.PostAsJsonAsync("/sync/v1/devices/register",
-            new { platform = "ANDROID", model = "Galaxy A12", osVersion = "12", appVersion = "0.4.0", publicKey = deviceKey.PublicKey });
+            new { platform = "ANDROID", model = "Galaxy A12", osVersion = "12", appVersion = "0.5.0", publicKey = deviceKey.PublicKey });
         Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
         var deviceId = (await registered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("deviceId").GetGuid();
         deviceKey.Bind(deviceId);

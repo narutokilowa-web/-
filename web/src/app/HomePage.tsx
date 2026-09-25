@@ -46,6 +46,18 @@ export function HomePage() {
         {hasRole(session, 'WAREHOUSE') && (
           <li><Link to="/stock" data-testid="home-stock">{t('home.stock')}</Link></li>
         )}
+        {hasRole(session, 'WAREHOUSE') && (
+          <li><Link to="/stock/issues" data-testid="home-issues">{t('home.issues')}</Link></li>
+        )}
+        {hasRole(session, 'WAREHOUSE') && (
+          <li><Link to="/stock/returns?state=DECLARED" data-testid="home-returns">{t('home.returns')}</Link></li>
+        )}
+        {hasRole(session, 'WAREHOUSE', 'SUPERVISOR') && (
+          <li><Link to="/stock/core-returns" data-testid="home-core-returns">{t('home.coreReturns')}</Link></li>
+        )}
+        {hasRole(session, 'WAREHOUSE', 'SUPERVISOR', 'AUDITOR') && (
+          <li><Link to="/stock/reconciliation" data-testid="home-reconciliation">{t('home.reconciliation')}</Link></li>
+        )}
         {hasRole(session, 'AUDITOR') && (
           <li><Link to="/audit" data-testid="home-audit">{t('home.audit')}</Link></li>
         )}

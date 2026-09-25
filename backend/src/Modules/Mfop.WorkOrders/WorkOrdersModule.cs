@@ -40,6 +40,7 @@ public static class WorkOrdersModule
         services.AddScoped<ISyncCommandHandler, StartWorkHandler>();
         services.AddScoped<ISyncCommandHandler, ConsumeMaterialHandler>();
         services.AddScoped<ISyncCommandHandler, RecordChecklistHandler>();
+        services.AddScoped<ISyncCommandHandler, DeclareCoreReturnHandler>();
         services.AddScoped<ISyncCommandHandler, SubmitWorkOrderHandler>();
         services.AddScoped<ISyncCommandHandler, ResubmitHandler>();
         return services;

@@ -12,7 +12,8 @@ public static class WorkOrderEventLog
 {
     public const string Created = "CREATED", Assigned = "ASSIGNED", Reassigned = "REASSIGNED", Cancelled = "CANCELLED", Arrived = "ARRIVED",
         EvidenceAdded = "EVIDENCE_ADDED", DiagnosisRecorded = "DIAGNOSIS_RECORDED", WorkStarted = "WORK_STARTED", MaterialConsumed = "MATERIAL_CONSUMED",
-        ChecklistRecorded = "CHECKLIST_RECORDED", Submitted = "SUBMITTED", Resubmitted = "RESUBMITTED", Returned = "RETURNED", Approved = "APPROVED";
+        ChecklistRecorded = "CHECKLIST_RECORDED", Submitted = "SUBMITTED", Resubmitted = "RESUBMITTED", Returned = "RETURNED", Approved = "APPROVED",
+        CoreReturnDeclared = "CORE_RETURN_DECLARED";
 
     public static WorkOrderEvent Append(WorkOrdersDbContext db, IAuditTrail audit, WorkOrder workOrder, string type, CommandEnvelope cmd, DateTimeOffset now,
         IReadOnlyDictionary<string, string?>? data = null)

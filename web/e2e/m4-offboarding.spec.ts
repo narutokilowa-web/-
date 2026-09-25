@@ -12,7 +12,7 @@ test('admin changes a security policy, offboards a user (Keycloak sign-in blocke
 
   await admin.getByTestId('nav-settings').click();
   await expect(admin.getByTestId('policy-value-offline_grace_hours')).toHaveText('24');
-  await expect(admin.getByTestId('policy-value-min_app_version')).toHaveText('0.4.0');
+  await expect(admin.getByTestId('policy-value-min_app_version')).toHaveText('0.5.0');
   await admin.getByTestId('policy-input-app_lock_minutes').fill('6');
   await admin.getByTestId('policy-save-app_lock_minutes').click();
   await expect(admin.getByTestId('problem')).toHaveAttribute('data-code', 'REASON_REQUIRED');

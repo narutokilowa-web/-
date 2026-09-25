@@ -61,7 +61,7 @@ public sealed class FieldFlow : IDisposable
 
     /// <summary>
     /// A new ACTIVE light with a fault and a work order assigned to <paramref name="technician"/> (a fresh technician by default,
-    /// with an approved phone), plus a serial-tracked item issued to their custody by warehouse1.
+    /// with an approved phone), plus a serial-tracked, core-return item issued by warehouse1 and acknowledged on the phone (M5).
     /// </summary>
     public static async Task<FieldFlow> StartAsync(TestApp app, string? technician = null, Guid? assetId = null, int custodySerials = 2)
     {
@@ -104,7 +104,28 @@ public sealed class FieldFlow : IDisposable
         Serials.AddRange(Enumerable.Range(1, serials).Select(i => $"{sku}-{i:D3}"));
         using var warehouse = _app.ClientFor(DevUsers.Warehouse);
         (await warehouse.PostAsJsonAsync("/api/v1/stock/receipts", new { lines = new[] { new { itemId = ItemId, quantity = serials + 2, serials = Serials.Concat([$"{sku}-W1", $"{sku}-W2"]).ToArray() } } })).EnsureSuccessStatusCode();
-        (await warehouse.PostAsJsonAsync("/api/v1/stock/issues", new { technicianId = Technician, lines = new[] { new { itemId = ItemId, quantity = serials, serials = Serials.ToArray() } } })).EnsureSuccessStatusCode();
+        var issued = await warehouse.PostAsJsonAsync("/api/v1/stock/issues", new { technicianId = Technician, lines = new[] { new { itemId = ItemId, quantity = serials, serials = Serials.ToArray() } } });
+        issued.EnsureSuccessStatusCode();
+        IssueId = (await issued.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("issueId").GetGuid();
+
+        // M5: the material is in the technician's custody only after they acknowledge it on the phone.
+        await ApplyAsync("AcknowledgeStockIssue", new { issueId = IssueId, confirmedSerials = Serials.ToArray() });
+    }
+
+    public Guid IssueId { get; private set; }
+
+    /// <summary>M5 (W9): declares the failed part of a consumption WITH_PART, with an uploaded photo. Returns the core-return id.</summary>
+    public async Task<Guid> DeclareCoreAsync(Guid movementId, string outcome = "WITH_PART", string? serial = "OLD-001", string? reason = null)
+    {
+        var bytes = TestJpeg.Create();
+        var photoId = Guid.CreateVersion7();
+        var result = await ApplyAsync("DeclareCoreReturn", new
+        {
+            workOrderId = WorkOrderId, movementId, outcome, serial, reason,
+            photo = new { evidenceId = photoId, sha256 = TestJpeg.Sha256(bytes), sizeBytes = bytes.LongLength, mime = "image/jpeg" },
+        });
+        Assert.Equal(HttpStatusCode.OK, (await UploadAsync(photoId, bytes)).StatusCode);
+        return result.GetProperty("entityId").GetGuid();
     }
 
     public async Task<JsonElement> PushAsync(string type, object payload)
@@ -182,7 +203,7 @@ public sealed class FieldFlow : IDisposable
     public Task<JsonElement> ConsumeAsync(int quantity = 1, string[]? serials = null) =>
         ApplyAsync("ConsumeMaterial", new { workOrderId = WorkOrderId, movementId = Guid.CreateVersion7(), itemId = ItemId, quantity, serials = serials ?? Serials.Take(quantity).ToArray() });
 
-    /// <summary>Arrive → 2 before photos → diagnosis → start → 1 material → checklist → test photo → 2 after photos.</summary>
+    /// <summary>Arrive → 2 before photos → diagnosis → start → 1 material (+ its failed part declared, M5) → checklist → test photo → 2 after photos.</summary>
     public async Task WorkUntilReadyToSubmitAsync(string diagnosis = "LED_MODULE_FAIL")
     {
         await ArriveAsync();
@@ -190,7 +211,8 @@ public sealed class FieldFlow : IDisposable
         await PhotoAsync("BEFORE");
         await ApplyAsync("RecordDiagnosis", new { workOrderId = WorkOrderId, code = diagnosis, note = "وحدة الليد لا تعمل" });
         await ApplyAsync("StartWork", new { workOrderId = WorkOrderId });
-        await ConsumeAsync();
+        var consumed = await ConsumeAsync();
+        await DeclareCoreAsync(consumed.GetProperty("entityId").GetGuid());
         await ChecklistAsync();
         await PhotoAsync("TEST");
         await PhotoAsync("AFTER");

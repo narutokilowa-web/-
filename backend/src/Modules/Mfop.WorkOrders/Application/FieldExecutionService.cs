@@ -215,8 +215,9 @@ public sealed class FieldExecutionService(
         if (p.MovementId == Guid.Empty) return Error.Validation("INVALID_PAYLOAD", "movementId is required.");
 
         var now = clock.UtcNowMicros();
+        var asset = await assets.GetAsync(w.AssetId, ct);
         var consumed = await inventory.ConsumeAsync(new ConsumeRequest(p.MovementId, p.ItemId, p.Quantity, p.Serials ?? [], cmd.Actor.UserId!.Value, w.Id,
-            w.AssetId, cmd.DeviceTime ?? now, cmd.CommandId), ct);
+            w.AssetId, cmd.DeviceTime ?? now, cmd.CommandId, w.Code, asset?.AssetCode), ct);
         if (!consumed.IsSuccess) return consumed.Error!;
 
         var outcome = consumed.Value;
@@ -249,9 +250,57 @@ public sealed class FieldExecutionService(
             ["serials"] = string.Join(",", p.Serials ?? []),
             ["exceeds_custody"] = outcome.ExceedsCustody ? "true" : "false",
             ["by_previous_assignee"] = previousAssignee ? "true" : null,
+            ["core_return_ids"] = outcome.CoreReturnIds is { Count: > 0 } cores ? string.Join(",", cores.Select(c => c.ToString("D"))) : null,
         });
         if (previousAssignee) await FlagPreviousAssigneeAsync(cmd, w, WorkOrderCommands.ConsumeMaterial, outcome.MovementId, ct);
-        return new SyncCommandOutcome(outcome.MovementId, outcome.ExceedsCustody ? "APPLIED_EXCEEDS_CUSTODY" : null);
+        return new SyncCommandOutcome(outcome.MovementId, outcome.ExceedsCustody ? "APPLIED_EXCEEDS_CUSTODY" : outcome.CoreReturnIds is { Count: > 0 } ? "CORE_RETURN_OPENED" : null);
+    }
+
+    /// <summary>
+    /// DeclareCoreReturn (04 §4.11; IN_PROGRESS, RETURNED, and after close until the part is received): the failed part is
+    /// declared WITH_PART (photo, serial) or UNRECOVERABLE (reason, photo). A fact from the field: kept even if the work order
+    /// moved on. By the technician who consumed the new part, or the current assignee. A closed work order is sealed, so no
+    /// work-order event is added then (the core return's own audit trail records it).
+    /// </summary>
+    public async Task<Result<SyncCommandOutcome>> DeclareCoreReturnAsync(CommandEnvelope cmd, DeclareCoreReturnPayload p, CancellationToken ct)
+    {
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Fact, ct);
+        if (!loaded.IsSuccess) return loaded.Error!;
+        var (w, previousAssignee) = loaded.Value;
+        var candidates = (await inventory.CoreReturnsForWorkOrdersAsync([w.Id], ct))
+            .Where(c => p.CoreReturnId is { } id ? c.Id == id
+                : p.MovementId is { } movement && c.ConsumeMovementId == movement
+                  && (string.IsNullOrWhiteSpace(p.InstalledSerial) || string.Equals(c.InstalledSerial, p.InstalledSerial.Trim(), StringComparison.Ordinal)))
+            .ToList();
+        if (candidates.Count > 1) return Error.Validation("INSTALLED_SERIAL_REQUIRED", "This consumption installed several units: name the installed serial.");
+        var core = candidates.SingleOrDefault();
+        if (core is null) return Error.NotFound("CORE_RETURN_NOT_FOUND", "No core return of this work order matches.");
+        var userId = cmd.Actor.UserId!.Value;
+        if (core.TechnicianId != userId && w.AssigneeId != userId) return Error.Forbidden(NotAssignee, "Only the technician who replaced the part, or the assignee, declares it.");
+        if (w.State != WorkOrderStates.Closed && !previousAssignee)
+        {
+            var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.DeclareCoreReturn);
+            if (!allowed.IsSuccess) return allowed.Error!;
+        }
+
+        var now = clock.UtcNowMicros();
+        var declared = await inventory.DeclareCoreReturnAsync(new DeclareCoreReturnRequest(core.Id, p.Outcome, p.Serial, p.Reason, p.Photo, userId,
+            cmd.Actor.DeviceId, cmd.EstimatedTime is { } t ? ClockExtensions.TruncateToMicros(t) : now), ct);
+        if (!declared.IsSuccess) return declared.Error!;
+        if (w.State != WorkOrderStates.Closed)
+        {
+            audit.Record(w, "work_order.core_return_declared");
+            WorkOrderEventLog.Append(db, audit, w, WorkOrderEventLog.CoreReturnDeclared, cmd, now, new Dictionary<string, string?>
+            {
+                ["core_return_id"] = core.Id.ToString("D"),
+                ["outcome"] = p.Outcome?.Trim().ToUpperInvariant(),
+                ["serial"] = string.IsNullOrWhiteSpace(p.Serial) ? null : p.Serial.Trim(),
+                ["evidence_id"] = p.Photo?.EvidenceId.ToString("D"),
+                ["by_previous_assignee"] = previousAssignee ? "true" : null,
+            });
+        }
+
+        return new SyncCommandOutcome(core.Id);
     }
 
     /// <summary>RecordChecklist (IN_PROGRESS, RETURNED): the pinned template, every item answered, test method (NOT_TESTED needs a reason).</summary>
@@ -335,6 +384,18 @@ public sealed class FieldExecutionService(
         if (materials.Count == 0 && noMaterial is null)
         {
             return Error.Validation("MATERIALS_MISSING", "Record the material used, or state that none was used and why.");
+        }
+
+        // W9 (M5): every consumed core_return_required item has a core-return declaration.
+        var undeclared = (await inventory.CoreReturnsForWorkOrdersAsync([w.Id], ct)).Where(c => c.State == "OPEN").ToList();
+        if (undeclared.Count > 0)
+        {
+            return Error.Validation("CORE_RETURN_NOT_DECLARED", "Declare the failed part of each replaced item (with the part, or why it cannot be brought back).",
+                new Dictionary<string, string>
+                {
+                    ["coreReturns"] = string.Join(",", undeclared.Select(c => c.Code)),
+                    ["skus"] = string.Join(",", undeclared.Select(c => c.Sku)),
+                });
         }
 
         var requirements = await reference.RequirementsForAsync(w.ChecklistTemplateId, ct);
@@ -510,6 +571,11 @@ public sealed class StartWorkHandler(FieldExecutionService s) : FieldCommandHand
 public sealed class ConsumeMaterialHandler(FieldExecutionService s) : FieldCommandHandler<ConsumeMaterialPayload>(WorkOrderCommands.ConsumeMaterial, "material.consume")
 {
     protected override Task<Result<SyncCommandOutcome>> RunAsync(CommandEnvelope c, ConsumeMaterialPayload p, CancellationToken ct) => s.ConsumeMaterialAsync(c, p, ct);
+}
+
+public sealed class DeclareCoreReturnHandler(FieldExecutionService s) : FieldCommandHandler<DeclareCoreReturnPayload>(WorkOrderCommands.DeclareCoreReturn, "core_return.declare")
+{
+    protected override Task<Result<SyncCommandOutcome>> RunAsync(CommandEnvelope c, DeclareCoreReturnPayload p, CancellationToken ct) => s.DeclareCoreReturnAsync(c, p, ct);
 }
 
 public sealed class RecordChecklistHandler(FieldExecutionService s) : FieldCommandHandler<RecordChecklistPayload>(WorkOrderCommands.RecordChecklist, "workorder.execute")

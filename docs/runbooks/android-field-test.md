@@ -52,3 +52,19 @@ Uninstall the M3 app first (its registration has no device key), install the M4 
 | 19 | Web as `admin1` → **Users** → `tech1` → reason → **Disable** → confirm. App → any action | "Your account was disabled"; the app deleted its own data and key. Nothing else on the phone changed. Then **Enable again** `tech1` (a new device approval is needed) |
 
 Record the phone model, Android version, lighting and label condition for each run, and the time the field steps took (DEMO 1 DoD: interaction time recorded). Report any Arabic wording a technician finds unclear.
+
+## M5 checks on the real phone (app 0.5.0)
+
+Install the M5 APK over the M4 app (same device key). After `make demo-reset` the seed leaves one issue for `tech1`
+(`LED-DRV-50W` D-0004 and 2 fuses) in transit.
+
+| # | Action | Expected |
+|---|---|---|
+| 20 | App → **المواد** (Materials) | The issue from the warehouse is listed; **تأكيد الاستلام** stays disabled until D-0004 is ticked |
+| 21 | Tick D-0004 → **تأكيد الاستلام** | The issue disappears; after sync D-0004 is in **عهدتي**; web as `warehouse1` → Stock → Issues → *Acknowledged* |
+| 22 | Web as `warehouse1` → Stock → Issues → issue 1 fuse to `tech1`. App → **الإبلاغ عن مشكلة** → a reason → **إرسال** | Web: the issue is *Disputed* with the reason and a WARNING flag; cancel it there with a reason |
+| 23 | On a task: consume `LED-MOD-50W` → the step **القطع التالفة** asks for a declaration; **تقديم** is not offered yet. Declare *القطعة التالفة معي*, read the serial on the old module, photograph it, save | The submit step appears; after review the web shows the core return *Declared with part* in **Stock → Failed parts** |
+| 24 | Web as `warehouse1` → Failed parts → type the serial read on the part → **Receive part**. Then App → **إرجاع مواد غير مستخدمة** → 1 fuse → **إرسال**; web → Returns → **Receive** | Core return *Received* (a different serial shows *Serial differs* and a CRITICAL flag); the fuse is back in the warehouse; **Reconciliation** shows *Balanced* |
+
+These M4 (13–19) and M5 (20–24) checks are **required before a real municipal field pilot**; they do not block the repository
+(the emulator job in CI runs the same flows with synthetic camera frames).

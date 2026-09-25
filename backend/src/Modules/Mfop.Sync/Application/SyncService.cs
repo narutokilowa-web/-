@@ -84,10 +84,11 @@ public sealed class SyncService(
         state.Pulled(now);
         await db.SaveChangesAsync(ct);
         var custody = PermissionMatrix.Allows("stock.custody.read_own", actor.Roles) ? await inventory.CustodyOfAsync(userId, ct) : [];
+        var stock = PermissionMatrix.Allows("stock.issue.respond", actor.Roles) ? await inventory.TechnicianStockAsync(userId, ct) : null;
         var policy = new ClientPolicyDto(await policies.IntAsync("offline_grace_hours", ct), await policies.IntAsync("app_lock_minutes", ct),
             await policies.ValueAsync("min_app_version", ct));
         return new PullResponse(now, now.ToString("O"), new PullUser(userId, names.GetValueOrDefault(userId, "?"), actor.Roles), deviceId, open,
-            await reference.ReferenceAsync(ct), custody, await inventory.ItemsAsync(ct), policy);
+            await reference.ReferenceAsync(ct), custody, await inventory.ItemsAsync(ct), policy, stock);
     }
 
     /// <summary>Online tag resolution for the Scan tab: the asset card (docs/lean-pilot/08 §8.3).</summary>
