@@ -32,10 +32,13 @@ test('admin changes a security policy, offboards a user (Keycloak sign-in blocke
   await row.getByTestId('user-disable').click();
   await row.getByTestId('user-disable-confirm').click();
   await expect(row.getByTestId('user-status')).toHaveText('معطّل');
-  // The Keycloak updates are sent after commit by the API's worker: wait until nothing is pending.
+  // The Keycloak updates are sent after commit by the API's worker: wait until nothing is pending. The row's status is
+  // awaited first, so a table still loading after the reload is not mistaken for "nothing pending".
   await expect(async () => {
     await admin.reload();
-    await expect(admin.locator('tr[data-username="inspector1"]').getByTestId('user-idp')).toHaveCount(0);
+    const reloaded = admin.locator('tr[data-username="inspector1"]');
+    await expect(reloaded.getByTestId('user-status')).toHaveText('معطّل');
+    await expect(reloaded.getByTestId('user-idp')).toHaveCount(0);
   }).toPass({ timeout: 60_000 });
 
   // inspector1 can no longer sign in at Keycloak.
@@ -57,7 +60,9 @@ test('admin changes a security policy, offboards a user (Keycloak sign-in blocke
   await expect(again.getByTestId('user-status')).toHaveText('فعّال');
   await expect(async () => {
     await admin.reload();
-    await expect(admin.locator('tr[data-username="inspector1"]').getByTestId('user-idp')).toHaveCount(0);
+    const reloaded = admin.locator('tr[data-username="inspector1"]');
+    await expect(reloaded.getByTestId('user-status')).toHaveText('فعّال');
+    await expect(reloaded.getByTestId('user-idp')).toHaveCount(0);
   }).toPass({ timeout: 60_000 });
   const backContext = await browser.newContext();
   await signIn(await backContext.newPage(), 'inspector1');
