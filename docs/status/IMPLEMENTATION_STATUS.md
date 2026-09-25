@@ -5,7 +5,7 @@
 | M0 — Foundations | ✅ **approved by the owner** | 2026-09-24 |
 | M1 — Audit core + register / approve / QR (web) | ✅ **approved by the owner** | 2026-09-24 |
 | M2 — Android scan + faults + work-order creation | ✅ **approved by the owner** | 2026-09-25 |
-| M3 — Field execution + review + dashboard → DEMO 1 | ✅ **PASS — awaiting owner approval; M4 not started** | 2026-09-25 |
+| M3 — Field execution + review + dashboard → DEMO 1 | ✅ **PASS — DEMO 1 complete (CI green incl. Android emulator); awaiting owner approval; M4 not started** | 2026-09-25 |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
 
@@ -87,7 +87,7 @@ All are recorded in ADR-0008 (2026-09-25 entries). In short: the before-photos g
 
 ### CI results
 
-Run [36115603952](https://github.com/narutokilowa-web/-/actions/runs/36115603952) on code head `919f4b3`: **success**, all 6 jobs.
+Final run [36118299002](https://github.com/narutokilowa-web/-/actions/runs/36118299002) on head `df67bcc`: **success**, all 6 jobs (Android emulator finished 09:55 UTC). The same 6 jobs were also green on the last code change `919f4b3` (run [36115603952](https://github.com/narutokilowa-web/-/actions/runs/36115603952)); `df67bcc` only updated this document.
 
 | Job | Result |
 |---|---|
