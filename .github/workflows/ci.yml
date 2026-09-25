@@ -160,9 +160,9 @@ jobs:
           df -h /
       - working-directory: mobile
         run: flutter pub get
-      # Gradle next to a running emulator starves this runner (QEMU "hanging thread", then a runner shutdown or an
-      # emulator crash mid-build). The test app is built first with the flags `flutter drive` uses below, so the
-      # emulator only sees an up-to-date incremental build, the normal install and the test.
+      # Gradle next to a running emulator starves this runner (QEMU "hanging thread", then a runner shutdown or the
+      # emulator going offline) — even a 3-minute incremental rebuild did. The test APK is therefore built here, before
+      # the emulator boots, and the emulator step only installs and runs it (no Gradle while the emulator runs).
       - name: Build the field-app test app before the emulator boots
         working-directory: mobile
         run: flutter build apk --debug --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
@@ -178,7 +178,7 @@ jobs:
           script: |
             adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080
             sleep 90   # let the freshly booted system finish its start-up work before the timed test steps
-            cd mobile && flutter drive --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
+            cd mobile && flutter drive --use-application-binary=build/app/outputs/flutter-apk/app-debug.apk --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart
       - name: Screenshots from the device
         if: always()
         uses: actions/upload-artifact@v4
