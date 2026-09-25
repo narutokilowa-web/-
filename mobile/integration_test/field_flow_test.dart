@@ -97,7 +97,7 @@ void main() {
 
     // Step: technician signs in; the app registers the phone and waits for approval.
     await tester.tap(find.byKey(const Key('sign-in')));
-    await until(find.byKey(const Key('waiting-approval')));
+    await until(find.byKey(const Key('waiting-approval')), timeout: const Duration(seconds: 90));
     await shot('03-waiting-for-approval');
     final deviceId = (await store.read(SecureKeys.deviceId))!;
     final pending = (await office.call('admin1', 'GET', '/api/v1/devices?status=PENDING_APPROVAL'))['items'] as List<dynamic>;
@@ -287,12 +287,21 @@ void main() {
     await tapKey('return-save');
     await until(find.textContaining('RET-'), timeout: const Duration(seconds: 60));
     await shot('10b-return-declared');
-    final returns = (await office.call('warehouse1', 'GET', '/api/v1/stock/returns?state=DECLARED&technicianId=$technicianId'))['items'] as List<dynamic>;
-    await office.call('warehouse1', 'POST', '/api/v1/stock/returns/${(returns.single as Map<String, dynamic>)['id']}/receive', {'confirmedSerials': <String>[]});
-    final cores = (await office.call('warehouse1', 'GET', '/api/v1/stock/core-returns?state=DECLARED_WITH_PART&technicianId=$technicianId'))['items'] as List<dynamic>;
+    final returns =
+        (await office.call('warehouse1', 'GET', '/api/v1/stock/returns?state=DECLARED&technicianId=$technicianId'))['items']
+            as List<dynamic>;
+    await office.call('warehouse1', 'POST', '/api/v1/stock/returns/${(returns.single as Map<String, dynamic>)['id']}/receive', {
+      'confirmedSerials': <String>[],
+    });
+    final cores =
+        (await office.call('warehouse1', 'GET', '/api/v1/stock/core-returns?state=DECLARED_WITH_PART&technicianId=$technicianId'))['items']
+            as List<dynamic>;
     final core = cores.cast<Map<String, dynamic>>().singleWhere((c) => c['workOrderId'] == workOrder['id']);
     expect(core['declaredSerial'], 'OLD-ANDROID-1');
-    await office.call('warehouse1', 'POST', '/api/v1/stock/core-returns/${core['id']}/receive', {'outcome': 'RECEIVED', 'serial': 'OLD-ANDROID-1'});
+    await office.call('warehouse1', 'POST', '/api/v1/stock/core-returns/${core['id']}/receive', {
+      'outcome': 'RECEIVED',
+      'serial': 'OLD-ANDROID-1',
+    });
     final reconciliation = await office.call('warehouse1', 'GET', '/api/v1/stock/reconciliation');
     expect(reconciliation['balanced'], isTrue, reason: '${reconciliation['findings']}');
 
@@ -321,7 +330,14 @@ class _SyntheticCamera implements PhotoSource {
   Future<Uint8List?> capture(BuildContext context, String title) async {
     final frame = img.Image(width: 1280, height: 960);
     img.fill(frame, color: img.ColorRgb8(_random.nextInt(256), _random.nextInt(256), _random.nextInt(256)));
-    img.fillRect(frame, x1: 100, y1: 100, x2: 100 + _random.nextInt(900), y2: 100 + _random.nextInt(700), color: img.ColorRgb8(240, 240, 240));
+    img.fillRect(
+      frame,
+      x1: 100,
+      y1: 100,
+      x2: 100 + _random.nextInt(900),
+      y2: 100 + _random.nextInt(700),
+      color: img.ColorRgb8(240, 240, 240),
+    );
     return img.encodeJpg(frame, quality: 90);
   }
 }

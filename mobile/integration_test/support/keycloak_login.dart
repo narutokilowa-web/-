@@ -17,6 +17,9 @@ class KeycloakPkceLogin {
   final String redirectUri;
   final String password;
 
+  /// A stuck connection fails the sign-in (shown on the screen) instead of hanging the test.
+  static const _requestTimeout = Duration(seconds: 30);
+
   Future<Map<String, dynamic>> tokensFor(String username) async {
     final verifier = _random(64);
     final challenge = base64UrlEncode(sha256.convert(ascii.encode(verifier)).bytes).replaceAll('=', '');
@@ -47,16 +50,18 @@ class KeycloakPkceLogin {
       final code = location == null ? null : Uri.parse(location).queryParameters['code'];
       if (code == null) throw StateError('Login for $username failed (${redirect.statusCode}).');
 
-      final token = await client.post(
-        Uri.parse('$issuer/protocol/openid-connect/token'),
-        body: {
-          'grant_type': 'authorization_code',
-          'client_id': clientId,
-          'code': code,
-          'redirect_uri': redirectUri,
-          'code_verifier': verifier,
-        },
-      );
+      final token = await client
+          .post(
+            Uri.parse('$issuer/protocol/openid-connect/token'),
+            body: {
+              'grant_type': 'authorization_code',
+              'client_id': clientId,
+              'code': code,
+              'redirect_uri': redirectUri,
+              'code_verifier': verifier,
+            },
+          )
+          .timeout(_requestTimeout);
       if (token.statusCode != 200) throw StateError('Token exchange failed: ${token.statusCode} ${token.body}');
       return jsonDecode(token.body) as Map<String, dynamic>;
     } finally {
@@ -67,7 +72,7 @@ class KeycloakPkceLogin {
   static Future<http.Response> _send(http.Client client, http.Request request, Map<String, String> cookies) async {
     request.followRedirects = false;
     if (cookies.isNotEmpty) request.headers['cookie'] = cookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
-    final response = await http.Response.fromStream(await client.send(request));
+    final response = await http.Response.fromStream(await client.send(request).timeout(_requestTimeout)).timeout(_requestTimeout);
     final setCookie = response.headers['set-cookie'];
     if (setCookie != null) {
       for (final m in RegExp(r'(?:^|,\s*)([A-Za-z0-9_]+)=([^;,]*)').allMatches(setCookie)) {
