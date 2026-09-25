@@ -59,7 +59,7 @@ Scope followed: 11 §11.2 M3 (items 1–10) and the DEMO 1 Definition of Done (1
 | `Mfop.Api.Tests` (real PostGIS): full field flow + seal + verifier, **N2, N3, N4, N6, N7, N9, N10, N13, N14**, start-work guards, arrival tag rules, return/resubmit additions, custody over-consumption flags, checklist blocking/failed/not tested (→ UNKNOWN), preview/original authorization, upload ownership / non-JPEG / repeated upload, **rule setting change takes effect**, matrix now at M3 | 95 | ✅ |
 | `Mfop.GoldenPath.Tests`: DEMO 1 steps 2–19 on a `make seed` database, verifier OK at start and end | 1 | ✅ |
 | Web: lint, typecheck, build; Vitest (+ money/quantity, photo order, checklist mismatch, balances, audit query, recommendation banner, device in timeline) | 28 | ✅ |
-| Mobile: `flutter analyze` (no issues); `flutter test` (+ photo processing: size, EXIF stripped, hash; outbox order and upload-after-APPLIED; refused announcement; offline queue; returned task; widget-level field flow) | 27 | ✅ |
+| Mobile: `flutter analyze` (no issues); `flutter test` (+ photo processing: size, EXIF stripped, hash; outbox order and upload-after-APPLIED; refused announcement; offline queue; typed tag code normalised; returned task; widget-level field flow) | 28 | ✅ |
 | E2E (Playwright vs. Compose after `make seed`): 9 role sign-ins, wrong password, M1, M2 and **M3 / DEMO 1** flows | 13 | ✅ |
 | `make verify-audit` on the seeded DB, after all E2E, after `make tamper-demo` (fails as expected), after `make tamper-undo` | — | ✅ |
 
@@ -87,7 +87,18 @@ All are recorded in ADR-0008 (2026-09-25 entries). In short: the before-photos g
 
 ### CI results
 
-Pending: the CI run on the final head is in progress; results are added here when it completes.
+Run [36115603952](https://github.com/narutokilowa-web/-/actions/runs/36115603952) on code head `919f4b3`: **success**, all 6 jobs.
+
+| Job | Result |
+|---|---|
+| Secret scan (gitleaks CLI, full history) | ✅ |
+| Web (lint, typecheck, 28 unit tests, build, `npm audit`) | ✅ |
+| Backend (build `-warnaserror`, 285 tests: spec files, domain, architecture, API on Testcontainers PostGIS, **DEMO 1 golden path**; vulnerable-package check) | ✅ |
+| Mobile (analyze, 28 tests, **debug APK with the in-app camera** → artifact `mfop-field-debug-apk`) | ✅ |
+| E2E (Compose on a clean runner + `make seed`: 9 role sign-ins, wrong password, M1, M2 and **M3 / DEMO 1** flows, then `make verify-audit` OK) | ✅ |
+| **Android emulator** (Android 14, real app, stack via `adb reverse`, after `make seed`): sign-in → device approval → PIN → My tasks → label QR decoded on the device → asset card → **arrive, 2 before photos, diagnosis, start, material `M-0003` from custody, checklist, test photo, 2 after photos, submit** (on-device processing, hashing, encrypted queue, upload; nothing left waiting) → server: 5 photos VERIFIED, supervisor approves → `CLOSED` with a seal → the task leaves My tasks → revocation wipes only the app's own data | ✅ (screenshots: artifact `android-e2e-screenshots`) |
+
+One real bug was found by the emulator run on the way (previous head `9352938`): a tag code typed in the "damaged tag" field was sent as typed (a pasted label URL, upper-cased), so the server refused the arrival. The phone now normalises a typed code exactly like a scan; a regression test was added (`919f4b3`).
 
 ---
 
