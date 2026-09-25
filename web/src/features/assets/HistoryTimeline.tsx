@@ -4,8 +4,11 @@ import { formatDateTime } from '../../shared/format';
 
 const show = (v: ChangeValue) => (v === null ? '∅' : Array.isArray(v) ? v.join(', ') : String(v));
 
-/** Everything the audit log recorded about the asset, newest first: who, when, what (old → new), why, hash. */
-export function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {
+/**
+ * Everything the audit log recorded, newest first: who, from which device (phone commands), when, what (old → new), why,
+ * and the event's hash in the tamper-evident chain.
+ */
+export function HistoryTimeline({ entries, showEntity = false }: { entries: HistoryEntry[]; showEntity?: boolean }) {
   const { t, i18n } = useTranslation();
   const newestFirst = [...entries].sort((a, b) => b.seq - a.seq);
   return (
@@ -16,6 +19,8 @@ export function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {
             <strong>{t(`action.${e.action}`, { defaultValue: e.action })}</strong>
             <span>{formatDateTime(e.occurredAt, i18n.language)}</span>
             <span data-testid="actor">{e.actorName}{e.actorRoles.length > 0 ? ` (${e.actorRoles.map((r) => t(`roles.${r}`, { defaultValue: r })).join('، ')})` : ''}</span>
+            {e.deviceId && <span className="hint" data-testid="device" title={e.deviceId}>{t('history.device')}: <code>{e.deviceId.slice(0, 8)}</code></span>}
+            {showEntity && <span className="hint" data-testid="entity">{t(`entityType.${e.entityType}`, { defaultValue: e.entityType })} <code title={e.entityId}>{e.entityId.slice(0, 8)}</code></span>}
           </div>
           {e.reason && <p className="reason">{t('history.reason')}: {e.reason}</p>}
           {Object.keys(e.changes).length > 0 && (

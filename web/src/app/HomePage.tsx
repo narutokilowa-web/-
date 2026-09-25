@@ -12,6 +12,7 @@ export function HomePage() {
   const deviceApprover = hasRole(session, 'SUPERVISOR', 'ADMIN');
   const openFaults = useResource<Fault[]>(supervisor ? '/api/v1/faults?state=OPEN' : null);
   const newWorkOrders = useResource<WorkOrderListItem[]>(supervisor ? '/api/v1/work-orders?state=NEW' : null);
+  const pendingReview = useResource<WorkOrderListItem[]>(supervisor ? '/api/v1/work-orders?state=PENDING_REVIEW' : null);
   const pendingDevices = useResource<Device[]>(deviceApprover ? '/api/v1/devices?status=PENDING_APPROVAL' : null);
   const count = <T,>(r: { result: { ok: true; data: T[] } | { ok: false } | null }) => (r.result?.ok ? r.result.data.length : '…');
 
@@ -25,8 +26,23 @@ export function HomePage() {
         {supervisor && (
           <li><Link to="/work-orders?state=NEW" data-testid="home-unassigned">{t('home.unassignedWorkOrders')} <strong>{count(newWorkOrders)}</strong></Link></li>
         )}
+        {supervisor && (
+          <li><Link to="/work-orders?state=PENDING_REVIEW" data-testid="home-pending-review">{t('home.pendingReview')} <strong>{count(pendingReview)}</strong></Link></li>
+        )}
+        {hasRole(session, 'SUPERVISOR', 'AUDITOR') && (
+          <li><Link to="/dashboard" data-testid="home-dashboard">{t('home.dashboard')}</Link></li>
+        )}
         {deviceApprover && (
           <li><Link to="/devices?status=PENDING_APPROVAL" data-testid="home-pending-devices">{t('home.pendingDevices')} <strong>{count(pendingDevices)}</strong></Link></li>
+        )}
+        {hasRole(session, 'WAREHOUSE') && (
+          <li><Link to="/stock" data-testid="home-stock">{t('home.stock')}</Link></li>
+        )}
+        {hasRole(session, 'AUDITOR') && (
+          <li><Link to="/audit" data-testid="home-audit">{t('home.audit')}</Link></li>
+        )}
+        {hasRole(session, 'ADMIN') && (
+          <li><Link to="/settings/rules" data-testid="home-settings">{t('home.settings')}</Link></li>
         )}
         {hasRole(session, 'REGISTRAR') && (
           <li><Link to="/registrations/new">{t('home.register')}</Link></li>

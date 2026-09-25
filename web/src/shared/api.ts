@@ -56,3 +56,13 @@ export async function fetchMe(accessToken: string, fetchImpl: typeof fetch = fet
   if (result.status === 403) return { kind: 'forbidden', code: result.problem.code };
   return { kind: 'error', status: result.status };
 }
+
+/**
+ * Fetches a protected binary resource (e.g. an evidence preview) with the bearer token and returns an object URL.
+ * Images are never loaded by plain URL, so previews stay behind the same authorization as the rest of the API.
+ */
+export async function apiBlobUrl(accessToken: string, path: string, fetchImpl: typeof fetch = fetch): Promise<{ ok: true; url: string } | { ok: false; status: number }> {
+  const response = await fetchImpl(path, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!response.ok) return { ok: false, status: response.status };
+  return { ok: true, url: URL.createObjectURL(await response.blob()) };
+}

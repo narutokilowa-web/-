@@ -10,6 +10,11 @@ RUN dotnet restore backend/src/Mfop.Api/Mfop.Api.csproj \
  && dotnet restore backend/src/Mfop.Migrator/Mfop.Migrator.csproj
 RUN dotnet publish backend/src/Mfop.Api/Mfop.Api.csproj -c Release -o /out/api --no-restore \
  && dotnet publish backend/src/Mfop.Migrator/Mfop.Migrator.csproj -c Release -o /out/migrator --no-restore
+# The runtime image is Debian (glibc) on x64 or arm64: drop the native libraries (SkiaSharp etc.) for every other platform.
+RUN for d in /out/api/runtimes /out/migrator/runtimes; do \
+      find "$d" -mindepth 1 -maxdepth 1 -type d \( -name 'win*' -o -name 'osx*' -o -name 'linux-musl*' -o -name 'linux-bionic*' \
+        -o -name 'linux-arm' -o -name 'linux-x86' -o -name 'linux-riscv64' -o -name 'linux-loongarch64' \) -exec rm -rf {} +; \
+    done
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS api
 WORKDIR /app

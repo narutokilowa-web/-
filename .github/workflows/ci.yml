@@ -92,7 +92,7 @@ jobs:
           retention-days: 14
 
   e2e:
-    name: "E2E (Docker Compose stack; every role signs in; M1 and M2 web flows)"
+    name: "E2E (Docker Compose stack + make seed; every role signs in; M1, M2 and M3 / DEMO 1 web flows; verifier)"
     runs-on: ubuntu-latest
     needs: [backend, web]
     steps:
@@ -104,11 +104,18 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Start stack from a clean state (random secrets)
         run: make up
+      - name: Load DEMO 1 data (make seed)
+        run: make seed
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/global.json
       - name: Install Playwright Chromium
         working-directory: web
         run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
-      - name: Sign in as every seeded user
+      - name: Sign in as every seeded user; M1, M2 and M3 / DEMO 1 web flows
         run: make e2e
+      - name: Audit verifier on the demo database after the flows (chain, snapshots, seals, stock balances)
+        run: make verify-audit
       - name: Compose logs on failure
         if: failure()
         run: docker compose -f deploy/compose/docker-compose.yml --env-file .env logs --no-color --tail=200

@@ -7,8 +7,15 @@ import type { HistoryEntry, Technician, WorkOrder } from '../../shared/types';
 import { formatDateTime } from '../../shared/format';
 import { ProblemView } from '../../shared/ProblemView';
 import { HistoryTimeline } from '../assets/HistoryTimeline';
+import { ReviewSection } from './ReviewSection';
 
-/** Work-order page (supervisor): assign / reassign to a technician with an approved device, cancel; timeline from the audit log. */
+/** States in which there is field work to look at (arrival onwards). */
+const FIELD_STATES = ['ON_SITE', 'IN_PROGRESS', 'PENDING_REVIEW', 'RETURNED', 'CLOSED'];
+
+/**
+ * Work-order page (supervisor): assign / reassign to a technician with an approved device, cancel; review of the field work
+ * (approve / return) and the closure seal; timeline from the audit log.
+ */
 export function WorkOrderDetailPage() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
@@ -88,6 +95,10 @@ export function WorkOrderDetailPage() {
         </div>
       )}
       {problem && <ProblemView problem={problem} />}
+
+      {FIELD_STATES.includes(w.state) && (
+        <ReviewSection workOrderId={w.id} allowedCommands={w.allowedCommands} onChanged={() => { wo.reload(); timeline.reload(); }} />
+      )}
 
       <h2>{t('workOrder.assignments')}</h2>
       {w.assignments.length === 0 ? <p>{t('common.empty')}</p> : (

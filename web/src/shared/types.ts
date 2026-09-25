@@ -106,6 +106,9 @@ export interface HistoryEntry {
   facts: Record<string, ChangeValue> | null;
   reason: string | null;
   hash: string;
+  /** The phone that sent the command (M3: field commands). */
+  deviceId?: string | null;
+  commandId?: string | null;
 }
 
 /** Mirrors Mfop.Access.Contracts.DeviceDto. */
@@ -226,4 +229,264 @@ export interface Technician {
   displayName: string;
   username: string;
   hasActiveDevice: boolean;
+}
+
+// ---- M3: field execution, review, closure, dashboard, audit, stock, rules ----
+
+/** Mirrors Mfop.Inventory.Contracts.MoneyDto: an amount always carries its ISO currency and the date it is valid for. */
+export interface Money {
+  amount: number;
+  currency: string;
+  asOf: string;
+}
+
+export interface DiagnosisCode {
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  countsAsFailure: boolean;
+  requiresMaterial: boolean;
+  expectedItems: string[];
+  powerSources: string[];
+  path: string;
+}
+
+export interface ChecklistItem {
+  code: string;
+  textAr: string;
+  textEn: string;
+  expected: 'YES' | 'NO';
+  blocking: boolean;
+  testItem: boolean;
+}
+
+export interface ChecklistTemplate {
+  id: string;
+  code: string;
+  version: number;
+  powerSources: string[];
+  items: ChecklistItem[];
+  testMethods: { code: string; textAr: string; textEn: string }[];
+  evidenceRequirements: { beforeFirstArrival: number; beforeLaterArrival: number; after: number; test: number };
+}
+
+export interface ReviewEvidence {
+  id: string;
+  kind: 'BEFORE' | 'AFTER' | 'TEST';
+  state: 'ANNOUNCED' | 'UPLOADED' | 'VERIFIED' | 'HASH_MISMATCH' | 'DUPLICATE';
+  sha256Device: string;
+  sha256Server: string | null;
+  capturedAt: string | null;
+  announcedAt: string;
+  verifiedAt: string | null;
+  hasPreview: boolean;
+  duplicateOf: string | null;
+  supersededBy: string | null;
+  supersedeReason: string | null;
+  capturedByName: string;
+}
+
+export interface Movement {
+  id: string;
+  type: string;
+  itemId: string;
+  sku: string;
+  itemNameAr: string;
+  itemNameEn: string;
+  unit: string;
+  quantity: number;
+  serials: string[];
+  workOrderId: string | null;
+  assetId: string | null;
+  actorId: string;
+  occurredAt: string;
+  recordedAt: string;
+  exceedsCustody: boolean;
+  serialNotInCustody: boolean;
+  unitCost: Money | null;
+  totalCost: Money | null;
+}
+
+export interface Arrival {
+  id: string;
+  arrivalNo: number;
+  userName: string;
+  tagScanned: boolean;
+  scannedCode: string | null;
+  manualCode: string | null;
+  manualReason: string | null;
+  deviceTime: string | null;
+  recordedAt: string;
+}
+
+export interface ChecklistResult {
+  id: string;
+  templateId: string;
+  testMethod: string;
+  notTestedReason: string | null;
+  testResult: 'PASSED' | 'FAILED' | 'NOT_TESTED';
+  blocked: boolean;
+  answers: Record<string, string>;
+  recordedByName: string;
+  recordedAt: string;
+}
+
+export interface Submission {
+  id: string;
+  submissionNo: number;
+  submittedByName: string;
+  submittedAt: string;
+  payloadHash: string;
+  evidenceIds: string[];
+  materialIds: string[];
+  checklistId: string | null;
+  rootCauseNote: string | null;
+  noMaterialReason: string | null;
+  addedEvidenceIds: string[];
+  addedMaterialIds: string[];
+}
+
+export interface ReviewDecision {
+  id: string;
+  submissionNo: number;
+  reviewerName: string;
+  decision: 'APPROVED' | 'RETURNED';
+  reasons: string[];
+  note: string | null;
+  decidedAt: string;
+}
+
+export interface ReviewFlag {
+  id: string;
+  ruleCode: string;
+  severity: 'CRITICAL' | 'WARNING' | 'INFO';
+  state: string;
+  explanation: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** Mirrors Mfop.WorkOrders.Contracts.WorkOrderReviewDto. */
+export interface WorkOrderReview {
+  workOrderId: string;
+  code: string;
+  state: string;
+  diagnosis: DiagnosisCode | null;
+  diagnosisNote: string | null;
+  rootCauseNote: string | null;
+  noMaterialReason: string | null;
+  testMethod: string | null;
+  testResult: string | null;
+  firstArrivedAt: string | null;
+  workStartedAt: string | null;
+  submittedAt: string | null;
+  workMinutes: number | null;
+  arrivals: Arrival[];
+  evidence: ReviewEvidence[];
+  materials: Movement[];
+  expectedItemsMissing: string[];
+  template: ChecklistTemplate | null;
+  checklist: ChecklistResult | null;
+  submissions: Submission[];
+  reviews: ReviewDecision[];
+  flags: ReviewFlag[];
+  pendingEvidence: number;
+  blockedEvidence: number;
+  canApprove: boolean;
+  approveBlockedReason: string | null;
+  executors: string[];
+  sealHash: string | null;
+  closedAt: string | null;
+  closedByName: string | null;
+}
+
+export const RETURN_REASONS = ['MISSING_EVIDENCE', 'UNCLEAR_EVIDENCE', 'CHECKLIST_INCOMPLETE', 'MATERIAL_QUESTION', 'DIAGNOSIS_QUESTION', 'OTHER'] as const;
+
+export interface CountByKey {
+  key: string;
+  count: number;
+}
+
+export interface CompletedWorkOrder {
+  id: string;
+  code: string;
+  assetId: string;
+  assetCode: string | null;
+  assetAddress: string | null;
+  diagnosisCode: string | null;
+  closedAt: string;
+  closedByName: string;
+  sealHash: string | null;
+}
+
+export interface DashboardSummary {
+  lightsByOperationalStatus: CountByKey[];
+  openFaults: number;
+  openFaultsReportedWithoutPower: number;
+  openWorkOrdersByState: CountByKey[];
+  pendingReview: number;
+  recentlyCompleted: CompletedWorkOrder[];
+}
+
+export interface AuditSearchEntry {
+  seq: number;
+  occurredAt: string;
+  actorUserId: string | null;
+  actorName: string;
+  actorRoles: string[];
+  deviceId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string;
+  entityVersion: number | null;
+  changes: Record<string, { old: ChangeValue; new: ChangeValue }>;
+  facts: Record<string, ChangeValue> | null;
+  reason: string | null;
+  commandId: string;
+  prevHash: string;
+  hash: string;
+}
+
+export interface Balance {
+  locationId: string;
+  locationKind: 'WAREHOUSE' | 'CUSTODY' | 'SUPPLIER' | 'CONSUMED';
+  locationName: string;
+  custodianUserId: string | null;
+  custodianName: string | null;
+  itemId: string;
+  sku: string;
+  itemNameAr: string;
+  itemNameEn: string;
+  unit: string;
+  quantity: number;
+}
+
+export interface CountedFailure {
+  faultId: string;
+  workOrderId: string;
+  workOrderCode: string;
+  diagnosisCode: string;
+  resolvedAt: string;
+}
+
+export interface Recommendation {
+  id: string;
+  assetId: string;
+  code: 'FULL_INSPECTION';
+  ruleCode: string;
+  state: string;
+  count: number;
+  threshold: number;
+  windowDays: number;
+  countedFailures: CountedFailure[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RuleSetting {
+  ruleCode: string;
+  enabled: boolean;
+  params: { threshold?: number; window_days?: number };
+  changedBy: string | null;
+  changedAt: string;
+  version: number;
 }

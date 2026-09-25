@@ -44,7 +44,11 @@
     "assets": "الأصول",
     "faults": "الأعطال",
     "workOrders": "أوامر العمل",
-    "devices": "الأجهزة"
+    "devices": "الأجهزة",
+    "dashboard": "لوحة المتابعة",
+    "stock": "المخزون",
+    "audit": "سجل التدقيق",
+    "settings": "الإعدادات"
   },
   "home": {
     "register": "تسجيل عمود إنارة جديد",
@@ -54,14 +58,20 @@
     "openFaults": "أعطال بانتظار الفرز",
     "unassignedWorkOrders": "أوامر عمل غير مُسندة",
     "pendingDevices": "أجهزة بانتظار الموافقة",
-    "technicianUsesPhone": "مهامك تظهر في تطبيق الهاتف (مهامي)."
+    "technicianUsesPhone": "مهامك تظهر في تطبيق الهاتف (مهامي).",
+    "pendingReview": "أوامر عمل بانتظار المراجعة",
+    "dashboard": "لوحة المتابعة",
+    "stock": "أرصدة المخزون",
+    "audit": "البحث في سجل التدقيق",
+    "settings": "إعدادات القاعدة"
   },
   "common": {
     "notFound": "الصفحة غير موجودة",
     "all": "الكل",
     "empty": "لا توجد عناصر.",
     "search": "بحث",
-    "open": "فتح"
+    "open": "فتح",
+    "close": "إغلاق"
   },
   "field": {
     "reason": "سبب التسجيل",
@@ -196,7 +206,8 @@
     "field": "الحقل",
     "old": "القيمة السابقة",
     "new": "القيمة الجديدة",
-    "hashTitle": "بصمة الحدث في سلسلة التدقيق"
+    "hashTitle": "بصمة الحدث في سلسلة التدقيق",
+    "device": "الجهاز"
   },
   "action": {
     "registration.drafted": "إنشاء مسودة التسجيل",
@@ -231,7 +242,40 @@
     "work_order.reassigned": "إعادة إسناد أمر العمل",
     "work_order.cancelled": "إلغاء أمر العمل",
     "work_order_assignment.started": "بدء إسناد",
-    "work_order_assignment.ended": "انتهاء إسناد"
+    "work_order_assignment.ended": "انتهاء إسناد",
+    "work_order.arrived_on_site": "الوصول إلى الموقع",
+    "work_order_arrival.recorded": "تسجيل الوصول",
+    "work_order.evidence_added": "إضافة صورة",
+    "evidence.announced": "إعلان صورة وبصمتها",
+    "evidence.uploaded": "رفع صورة",
+    "evidence.verified": "التحقق من الصورة",
+    "evidence.hash_mismatch": "بصمة صورة غير مطابقة",
+    "evidence.duplicate": "صورة مكررة",
+    "evidence.superseded": "استبدال صورة",
+    "evidence.original_viewed": "عرض الصورة الأصلية",
+    "work_order.diagnosis_recorded": "تسجيل التشخيص",
+    "work_order.work_started": "بدء العمل",
+    "work_order.material_consumed": "تسجيل مادة",
+    "stock_movement.consume": "استهلاك مادة",
+    "stock_movement.receipt": "استلام مخزون",
+    "stock_movement.issue": "صرف لعهدة فني",
+    "stock_movement.reversal": "عكس حركة",
+    "stock_balance.changed": "تغيّر رصيد",
+    "work_order.checklist_recorded": "تسجيل قائمة الفحص",
+    "checklist_result.recorded": "نتيجة قائمة الفحص",
+    "work_order.submitted": "تقديم للمراجعة",
+    "work_order.resubmitted": "إعادة التقديم",
+    "work_order_submission.recorded": "تسجيل التقديم",
+    "work_order.returned": "إرجاع للفني",
+    "work_order.closed": "اعتماد وإغلاق (ختم)",
+    "work_order_review.recorded": "تسجيل قرار المراجعة",
+    "work_order_event.appended": "حدث أمر العمل",
+    "fault.resolved": "حل العطل",
+    "flag.raised": "تنبيه",
+    "recommendation.created": "توصية بفحص شامل",
+    "recommendation.refreshed": "تحديث التوصية",
+    "rule_setting.changed": "تعديل إعداد قاعدة",
+    "rule_setting.created": "إنشاء إعداد قاعدة"
   },
   "error": {
     "SOD_VIOLATION": "لا يمكن لمن سجّل العمود أن يتخذ القرار بشأنه.",
@@ -264,7 +308,14 @@
     "FAULT_NOT_FOUND": "العطل غير موجود.",
     "WORK_ORDER_NOT_FOUND": "أمر العمل غير موجود.",
     "NOT_ASSIGNEE": "أمر العمل غير مُسند إليك.",
-    "VALIDATION_FAILED": "بيانات غير صالحة."
+    "VALIDATION_FAILED": "بيانات غير صالحة.",
+    "EVIDENCE_NOT_VERIFIED": "لم يتم التحقق من كل الصور بعد.",
+    "RETURN_REASONS_REQUIRED": "اختر سببًا واحدًا على الأقل للإرجاع.",
+    "INVALID_RETURN_REASON": "سبب إرجاع غير صالح.",
+    "INVALID_THRESHOLD": "العتبة بين 1 و100.",
+    "INVALID_WINDOW": "المدة بين 1 و3650 يومًا.",
+    "RULE_SETTING_NOT_FOUND": "الإعداد غير موجود.",
+    "PREVIEW_NOT_READY": "المعاينة غير جاهزة بعد."
   },
   "device": {
     "title": "أجهزة الموظفين",
@@ -397,5 +448,179 @@
   "assignmentState": {
     "ACTIVE": "فعّال",
     "ENDED": "منتهٍ"
+  },
+  "review": {
+    "title": "العمل الميداني والمراجعة",
+    "sealTitle": "ختم إغلاق أمر العمل",
+    "closedBy": "أُغلق بواسطة {{name}} في {{at}}",
+    "sealHint": "بصمة SHA-256 لأمر العمل وأحداثه والصور والمواد وقائمة الفحص والتقديمات والمراجعات. يعيد المتحقق حسابها؛ أي تعديل لاحق في قاعدة البيانات يُكشف.",
+    "seal": "الختم",
+    "flags": "تنبيهات",
+    "diagnosis": "التشخيص",
+    "rootCause": "السبب الجذري",
+    "test": "الاختبار الوظيفي",
+    "arrived": "الوصول إلى الموقع",
+    "started": "بدء العمل",
+    "submitted": "التقديم",
+    "workMinutes": "مدة العمل (دقائق)",
+    "noMaterialReason": "سبب عدم استخدام مواد",
+    "photos": "الصور",
+    "superseded": "مستبدلة",
+    "materials": "المواد المستخدمة",
+    "noMaterials": "لم تُسجَّل مواد.",
+    "exceedsCustody": "أكثر من العهدة المعروفة",
+    "serialNotInCustody": "رقم تسلسلي خارج العهدة",
+    "expectedMissing": "مواد متوقعة لهذا التشخيص ولم تُسجَّل: {{items}}",
+    "checklist": "قائمة الفحص الوظيفي",
+    "checkItem": "البند",
+    "expected": "المتوقع",
+    "answer": "الإجابة",
+    "testItem": "بند اختبار",
+    "notTestedReason": "سبب عدم الاختبار",
+    "arrivals": "مرات الوصول",
+    "tagScanned": "بمسح الملصق",
+    "manualCode": "بإدخال الرمز يدويًا (السبب: {{reason}})",
+    "submissions": "التقديمات",
+    "submittedBy": "قدّمه",
+    "added": "ما أُضيف",
+    "addedCounts": "{{photos}} صورة، {{materials}} مادة",
+    "payloadHash": "بصمة التقديم",
+    "decisions": "قرارات المراجعة",
+    "decide": "قرار المشرف",
+    "returnReasons": "أسباب الإرجاع",
+    "note": "ملاحظة",
+    "approve": "اعتماد وإغلاق",
+    "return": "إرجاع للفني",
+    "previewUnavailable": "المعاينة غير متاحة",
+    "openPhoto": "فتح الصورة"
+  },
+  "severity": {
+    "CRITICAL": "حرج",
+    "WARNING": "تحذير",
+    "INFO": "معلومة"
+  },
+  "flag": {
+    "EVIDENCE_HASH_MISMATCH": "بصمة الصورة لا تطابق ما أعلنه الهاتف",
+    "EVIDENCE_DUPLICATE": "صورة مكررة (سبق استخدامها)",
+    "CONSUMPTION_EXCEEDS_CUSTODY": "استهلاك أكثر من عهدة الفني المعروفة",
+    "SERIAL_NOT_IN_CUSTODY": "رقم تسلسلي ليس في عهدة الفني"
+  },
+  "testMethod": {
+    "NIGHT": "اختبار ليلي",
+    "PHOTOCELL_COVERED": "تغطية الخلية الضوئية",
+    "BYPASS": "تشغيل مباشر (تجاوز)",
+    "NOT_TESTED": "لم يتم الاختبار (مع السبب)"
+  },
+  "testResult": {
+    "PASSED": "ناجح",
+    "FAILED": "فاشل",
+    "NOT_TESTED": "لم يُختبر"
+  },
+  "evidenceKind": {
+    "BEFORE": "قبل العمل",
+    "AFTER": "بعد العمل",
+    "TEST": "الاختبار"
+  },
+  "evidenceState": {
+    "ANNOUNCED": "بانتظار الرفع",
+    "UPLOADED": "قيد التحقق",
+    "VERIFIED": "متحقَّق منها",
+    "HASH_MISMATCH": "بصمة غير مطابقة",
+    "DUPLICATE": "مكررة"
+  },
+  "answer": {
+    "YES": "نعم",
+    "NO": "لا"
+  },
+  "reviewDecision": {
+    "APPROVED": "اعتُمد",
+    "RETURNED": "أُرجع"
+  },
+  "returnReason": {
+    "MISSING_EVIDENCE": "صور ناقصة",
+    "UNCLEAR_EVIDENCE": "صور غير واضحة",
+    "CHECKLIST_INCOMPLETE": "قائمة الفحص ناقصة",
+    "MATERIAL_QUESTION": "استفسار عن المواد",
+    "DIAGNOSIS_QUESTION": "استفسار عن التشخيص",
+    "OTHER": "سبب آخر"
+  },
+  "approveBlocked": {
+    "NOT_PENDING_REVIEW": "أمر العمل ليس بانتظار المراجعة.",
+    "SOD_VIOLATION": "شاركت في تنفيذ أمر العمل هذا؛ يجب أن يراجعه مشرف آخر.",
+    "EVIDENCE_NOT_VERIFIED": "الاعتماد معطّل حتى يتم التحقق من كل الصور ({{count}} قيد التحقق).",
+    "EVIDENCE_UNUSABLE": "توجد صور غير صالحة (بصمة غير مطابقة أو مكررة)؛ يجب إرجاع أمر العمل لاستبدالها."
+  },
+  "stock": {
+    "title": "أرصدة المخزون",
+    "hint": "الأرصدة ناتجة عن حركات المخزون المسجلة (استلام، صرف، استهلاك، عكس) ويعيد المتحقق حسابها.",
+    "warehouse": "المستودع: {{name}}",
+    "custodyOf": "عهدة: {{name}}",
+    "item": "المادة",
+    "quantity": "الكمية",
+    "serials": "الأرقام التسلسلية",
+    "unitCost": "سعر الوحدة",
+    "totalCost": "التكلفة"
+  },
+  "dashboard": {
+    "title": "لوحة المتابعة",
+    "lightsByStatus": "أعمدة الإنارة حسب الحالة التشغيلية",
+    "openFaults": "أعطال مفتوحة",
+    "withoutPower": "منها {{count}} بلاغ دون كهرباء وقت المعاينة",
+    "openWorkOrders": "أوامر عمل مفتوحة",
+    "pendingReview": "بانتظار المراجعة",
+    "recentlyCompleted": "أوامر العمل المنجزة مؤخرًا",
+    "closedAt": "أُغلق"
+  },
+  "diagnosis": {
+    "LED_MODULE_FAIL": "عطل وحدة الليد",
+    "DRIVER_FAIL": "عطل الدرايفر",
+    "PHOTOCELL_FAIL": "عطل الخلية الضوئية",
+    "CABLE_FAULT": "عطل في الكابل",
+    "FUSE": "فيوز محروق",
+    "BATTERY_FAIL": "عطل البطارية",
+    "PANEL_DAMAGE": "تلف اللوح الشمسي",
+    "CONTROLLER_FAIL": "عطل منظم الشحن",
+    "GRID_SUPPLY_OFF": "انقطاع كهرباء الشبكة",
+    "THEFT": "سرقة",
+    "VANDALISM": "تخريب",
+    "NO_FAULT_FOUND": "لا يوجد عطل",
+    "ASSET_NOT_FOUND": "العمود غير موجود",
+    "ASSET_MISMATCH": "أصل مختلف عن السجل"
+  },
+  "audit": {
+    "title": "البحث في سجل التدقيق",
+    "hint": "سجل تدقيق قابل للتحقق وكاشف للتلاعب: كل حدث مرتبط ببصمة الحدث السابق.",
+    "entityType": "نوع السجل",
+    "entityId": "معرّف السجل",
+    "action": "الإجراء",
+    "count": "{{count}} حدث"
+  },
+  "entityType": {
+    "work_order": "أمر عمل",
+    "street_light": "عمود إنارة",
+    "fault": "عطل",
+    "evidence": "صورة",
+    "stock_movement": "حركة مخزون",
+    "device": "جهاز",
+    "registration": "تسجيل",
+    "rule_setting": "إعداد قاعدة",
+    "recommendation": "توصية"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "repeatedFailure": "قاعدة الأعطال المتكررة",
+    "repeatedFailureHint": "توصية بفحص شامل عندما يبلغ عدد الأعطال المحسوبة لعمود واحد العتبة خلال المدة. لا تُحسب: لا يوجد عطل، انقطاع الشبكة، السرقة، التخريب.",
+    "lastChanged": "آخر تعديل {{at}} (النسخة {{version}})",
+    "threshold": "العتبة (عدد الأعطال)",
+    "windowDays": "المدة (أيام)",
+    "enabled": "مفعّلة",
+    "reason": "سبب التعديل (إلزامي)",
+    "save": "حفظ",
+    "saved": "تم الحفظ وتسجيله في سجل التدقيق."
+  },
+  "recommendation": {
+    "title": "عطل متكرر",
+    "FULL_INSPECTION": "توصية: يُنصح بفحص شامل للعمود",
+    "rule": "{{count}} أعطال محسوبة؛ العتبة {{threshold}} خلال {{days}} يومًا (من إعدادات القاعدة)"
   }
 }

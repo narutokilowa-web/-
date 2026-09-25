@@ -5,6 +5,8 @@ export interface RuntimeConfig {
   environment: string;
   /** Printed on QR labels. Configuration, not code: the pilot municipality is not decided yet. */
   organizationNameAr: string;
+  /** "local" = evidence on the local disk (DEMO 1): the banner says it is not WORM storage (WORM arrives in M8). */
+  storageMode?: string;
 }
 
 export async function loadConfig(): Promise<RuntimeConfig> {

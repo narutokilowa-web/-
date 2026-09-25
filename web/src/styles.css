@@ -91,3 +91,38 @@ button.danger { border-color: var(--danger); color: var(--danger); }
 .badge.device-PENDING_APPROVAL, .badge.wo-NEW, .badge.fault-OPEN { background: #fff4d6; color: #7a5300; }
 .badge.device-REVOKED, .badge.device-REJECTED, .badge.wo-CANCELLED, .badge.fault-DISMISSED { background: #f6e0e0; color: #8a1c1c; }
 fieldset { border: 1px solid var(--line); border-radius: 8px; }
+
+/* M3: review, evidence, seal, dashboard, recommendation */
+.evidence-groups { display: flex; flex-direction: column; gap: 12px; }
+.evidence-group h4 { margin: 4px 0; }
+.evidence-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.evidence-grid li { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.evidence-grid li.superseded { opacity: 0.55; }
+.evidence-thumb { padding: 0; border: none; background: none; min-height: 0; }
+.evidence-thumb img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
+.evidence-placeholder { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; background: #eef1ef; border-radius: 6px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+.evidence-grid .hash { text-align: start; }
+.badge.evidence-VERIFIED { background: #dcf3e1; }
+.badge.evidence-ANNOUNCED, .badge.evidence-UPLOADED { background: #e6effa; }
+.badge.evidence-HASH_MISMATCH, .badge.evidence-DUPLICATE, .badge.severity-CRITICAL { background: #fbe1df; color: #8a1c1c; }
+.badge.severity-WARNING { background: #fff4d6; color: #7a5300; }
+.badge.wo-PENDING_REVIEW, .badge.wo-ON_SITE, .badge.wo-IN_PROGRESS { background: #e6effa; color: #1d3f73; }
+.badge.wo-RETURNED { background: #fdf1d8; color: #7a5300; }
+.badge.wo-CLOSED { background: #dcf3e1; color: #1b5e20; }
+.status-UNDER_MAINTENANCE { background: #e6effa; color: #1d3f73; }
+.seal { border-color: var(--accent); }
+.hash-full { direction: ltr; text-align: start; overflow-wrap: anywhere; font-size: 0.85rem; margin: 0; }
+tr.unexpected td { background: #fff5f4; color: var(--danger); }
+td.negative { color: var(--danger); font-weight: 600; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.flags ul { margin: 0; padding-inline-start: 18px; }
+.reasons { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px; }
+.counts { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.counts li { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.big { font-size: 2rem; font-weight: 700; margin: 0; }
+.big a { text-decoration: none; }
+.recommendation { border: 2px solid #b45309; background: #fff7ed; border-radius: 10px; padding: 12px; margin-block: 12px; }
+.recommendation strong { color: #9a3412; font-size: 1.1rem; }
+.recommendation p { margin: 4px 0; }
+.lightbox { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 10; padding: 16px; }
+.lightbox img { max-width: 100%; max-height: 85vh; border-radius: 6px; }

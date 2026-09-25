@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { useResource } from '../../shared/useApi';
-import type { Asset, HistoryEntry } from '../../shared/types';
+import type { Asset, HistoryEntry, Recommendation } from '../../shared/types';
 import { formatDateTime } from '../../shared/format';
 import { AttributesView } from './AttributesView';
 import { HistoryTimeline } from './HistoryTimeline';
@@ -10,6 +10,7 @@ import { hasRole, useSession } from '../../app/MeContext';
 import type { Fault } from '../../shared/types';
 import { FaultTable } from '../faults/FaultTable';
 import { ReportFaultForm } from '../faults/ReportFaultForm';
+import { RecommendationBanner } from './RecommendationBanner';
 
 export function AssetPage() {
   const { id } = useParams();
@@ -19,6 +20,8 @@ export function AssetPage() {
   const session = useSession();
   const seesFaults = hasRole(session, 'SUPERVISOR', 'AUDITOR');
   const faults = useResource<Fault[]>(seesFaults ? `/api/v1/faults?assetId=${id}` : null);
+  const seesRecommendations = hasRole(session, 'TECHNICIAN', 'INSPECTOR', 'SUPERVISOR', 'REGISTRAR', 'APPROVER', 'AUDITOR');
+  const recommendations = useResource<Recommendation[]>(seesRecommendations ? `/api/v1/recommendations?assetId=${id}` : null);
 
   if (!asset.result) return <p>{t('auth.loading')}</p>;
   if (!asset.result.ok) return <p role="alert">{t(`error.${asset.result.problem.code}`, { defaultValue: asset.result.problem.code })}</p>;
@@ -31,6 +34,8 @@ export function AssetPage() {
         <span className={`badge state-${a.lifecycleState}`} data-testid="lifecycle-state">{t(`lifecycle.${a.lifecycleState}`)}</span>{' '}
         {a.operationalStatus && <span className={`badge status-${a.operationalStatus}`} data-testid="operational-status">{t(`status.${a.operationalStatus}`)}</span>}
       </h1>
+
+      {recommendations.result?.ok && <RecommendationBanner recommendations={recommendations.result.data} />}
 
       <div className="asset-top">
         {a.tag && (

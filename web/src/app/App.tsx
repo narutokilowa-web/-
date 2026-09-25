@@ -19,6 +19,10 @@ import { FaultListPage } from '../features/faults/FaultListPage';
 import { FaultDetailPage } from '../features/faults/FaultDetailPage';
 import { WorkOrderListPage } from '../features/workorders/WorkOrderListPage';
 import { WorkOrderDetailPage } from '../features/workorders/WorkOrderDetailPage';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { AuditSearchPage } from '../features/audit/AuditSearchPage';
+import { StockBalancesPage } from '../features/stock/StockBalancesPage';
+import { RuleSettingsPage } from '../features/settings/RuleSettingsPage';
 
 export const RETURN_PATH_KEY = 'mfop.returnPath';
 
@@ -43,7 +47,7 @@ export function App({ config }: { config: RuntimeConfig }) {
 
   if (!auth.isAuthenticated || !token) {
     return (
-      <Layout environment={config.environment}>
+      <Layout environment={config.environment} storageMode={config.storageMode}>
         {auth.error && <p role="alert">{t('auth.error')}</p>}
         <button
           type="button"
@@ -67,7 +71,7 @@ export function App({ config }: { config: RuntimeConfig }) {
   if (me === null) return <p className="page">{t('auth.loading')}</p>;
   if (me.kind !== 'ok') {
     return (
-      <Layout environment={config.environment}>
+      <Layout environment={config.environment} storageMode={config.storageMode}>
         <p role="alert">{me.kind === 'forbidden' ? t(`me.${me.code}`, { defaultValue: me.code }) : t('me.loadError', { status: me.status })}</p>
       </Layout>
     );
@@ -81,7 +85,7 @@ export function App({ config }: { config: RuntimeConfig }) {
           <Route
             path="*"
             element={
-              <Layout environment={config.environment} onLogout={() => void auth.signoutRedirect()}>
+              <Layout environment={config.environment} storageMode={config.storageMode} onLogout={() => void auth.signoutRedirect()}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/registrations" element={<RegistrationListPage />} />
@@ -96,6 +100,10 @@ export function App({ config }: { config: RuntimeConfig }) {
                   <Route path="/faults/:id" element={<FaultDetailPage />} />
                   <Route path="/work-orders" element={<WorkOrderListPage />} />
                   <Route path="/work-orders/:id" element={<WorkOrderDetailPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/audit" element={<AuditSearchPage />} />
+                  <Route path="/stock" element={<StockBalancesPage />} />
+                  <Route path="/settings/rules" element={<RuleSettingsPage />} />
                   <Route path="*" element={<p>{t('common.notFound')}</p>} />
                 </Routes>
               </Layout>
