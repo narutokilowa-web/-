@@ -101,7 +101,7 @@ flag; offboarding return as SR4/S12; YAML scope value `m5`; default `min_app_ver
 
 ### CI results
 
-Final run [36181297126](https://github.com/narutokilowa-web/-/actions/runs/36181297126) on head `a6b94f2`: **success, all 6 jobs** (Android emulator finished 20:12 UTC).
+Final run [36185677036](https://github.com/narutokilowa-web/-/actions/runs/36185677036) on head `e241eb7`: **success, all 6 jobs**. The first all-green M5 run was [36181297126](https://github.com/narutokilowa-web/-/actions/runs/36181297126) on `a6b94f2` (Android emulator finished 20:12 UTC); `e241eb7` only fixes a timing race in an M4 E2E spec (item 4 below).
 
 | Job | Result |
 |---|---|
