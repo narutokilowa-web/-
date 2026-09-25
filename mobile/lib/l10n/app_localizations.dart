@@ -119,7 +119,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyBody.
   ///
   /// In ar, this message translates to:
-  /// **'هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا لمسح رمز QR على أعمدة الإنارة فقط، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.'**
+  /// **'هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا داخل التطبيق فقط: لمسح رمز QR على أعمدة الإنارة ولالتقاط صور العمل. لا يحفظ الصور في معرض الهاتف، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر. تُحذف صور العمل من الهاتف بعد رفعها.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.'**
   String get privacyBody;
 
   /// No description provided for @privacyAccept.
@@ -535,6 +535,306 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'{value, select, ASSIGNED{مُسند} ON_SITE{في الموقع} IN_PROGRESS{قيد التنفيذ} PENDING_REVIEW{بانتظار المراجعة} RETURNED{مُعاد} other{{value}}}'**
   String workOrderStateName(String value);
+
+  /// No description provided for @fieldWorkTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'العمل الميداني'**
+  String get fieldWorkTitle;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقاط صورة'**
+  String get takePhoto;
+
+  /// No description provided for @photoUnreadable.
+  ///
+  /// In ar, this message translates to:
+  /// **'تعذّرت قراءة الصورة. التقطها مجددًا.'**
+  String get photoUnreadable;
+
+  /// No description provided for @evidenceKindName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{kind, select, BEFORE{صورة قبل العمل} AFTER{صورة بعد العمل} TEST{صورة الاختبار} other{{kind}}}'**
+  String evidenceKindName(String kind);
+
+  /// No description provided for @returnedTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'أُعيد أمر العمل إليك. أضف المطلوب ثم أعد التقديم:'**
+  String get returnedTitle;
+
+  /// No description provided for @returnReasonName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{reason, select, MISSING_EVIDENCE{صور ناقصة} UNCLEAR_EVIDENCE{صور غير واضحة} CHECKLIST_INCOMPLETE{قائمة الفحص ناقصة} MATERIAL_QUESTION{استفسار عن المواد} DIAGNOSIS_QUESTION{استفسار عن التشخيص} other{سبب آخر}}'**
+  String returnReasonName(String reason);
+
+  /// No description provided for @commandRejected.
+  ///
+  /// In ar, this message translates to:
+  /// **'رفض الخادم: {command} — {error}'**
+  String commandRejected(String command, String error);
+
+  /// No description provided for @commandName.
+  ///
+  /// In ar, this message translates to:
+  /// **'{type, select, ArriveOnSite{الوصول} AddEvidence{صورة} RecordDiagnosis{التشخيص} StartWork{بدء العمل} ConsumeMaterial{مادة} RecordChecklist{قائمة الفحص} SubmitWorkOrder{التقديم} Resubmit{إعادة التقديم} other{{type}}}'**
+  String commandName(String type);
+
+  /// No description provided for @photosWaiting.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} صورة بانتظار الرفع'**
+  String photosWaiting(int count);
+
+  /// No description provided for @submittedWaitingReview.
+  ///
+  /// In ar, this message translates to:
+  /// **'قُدّم العمل وهو بانتظار مراجعة المشرف.'**
+  String get submittedWaitingReview;
+
+  /// No description provided for @stepArrive.
+  ///
+  /// In ar, this message translates to:
+  /// **'الوصول وتأكيد الملصق'**
+  String get stepArrive;
+
+  /// No description provided for @arriveAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'وصلت'**
+  String get arriveAction;
+
+  /// No description provided for @stepBefore.
+  ///
+  /// In ar, this message translates to:
+  /// **'صور قبل العمل ({count}/{total})'**
+  String stepBefore(int count, int total);
+
+  /// No description provided for @stepDiagnosis.
+  ///
+  /// In ar, this message translates to:
+  /// **'التشخيص'**
+  String get stepDiagnosis;
+
+  /// No description provided for @chooseDiagnosis.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختيار'**
+  String get chooseDiagnosis;
+
+  /// No description provided for @stepStart.
+  ///
+  /// In ar, this message translates to:
+  /// **'بدء العمل'**
+  String get stepStart;
+
+  /// No description provided for @startWorkAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'ابدأ'**
+  String get startWorkAction;
+
+  /// No description provided for @startWorkNeeds.
+  ///
+  /// In ar, this message translates to:
+  /// **'يلزم صور قبل العمل والتشخيص أولًا.'**
+  String get startWorkNeeds;
+
+  /// No description provided for @stepMaterial.
+  ///
+  /// In ar, this message translates to:
+  /// **'المواد المستخدمة ({count})'**
+  String stepMaterial(int count);
+
+  /// No description provided for @addMaterial.
+  ///
+  /// In ar, this message translates to:
+  /// **'إضافة مادة'**
+  String get addMaterial;
+
+  /// No description provided for @stepChecklist.
+  ///
+  /// In ar, this message translates to:
+  /// **'قائمة الفحص الوظيفي'**
+  String get stepChecklist;
+
+  /// No description provided for @openChecklist.
+  ///
+  /// In ar, this message translates to:
+  /// **'فتح'**
+  String get openChecklist;
+
+  /// No description provided for @stepTestPhoto.
+  ///
+  /// In ar, this message translates to:
+  /// **'صورة الاختبار ({count}/{total})'**
+  String stepTestPhoto(int count, int total);
+
+  /// No description provided for @stepAfter.
+  ///
+  /// In ar, this message translates to:
+  /// **'صور بعد العمل ({count}/{total})'**
+  String stepAfter(int count, int total);
+
+  /// No description provided for @stepSubmit.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقديم للمراجعة'**
+  String get stepSubmit;
+
+  /// No description provided for @stepResubmit.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة التقديم'**
+  String get stepResubmit;
+
+  /// No description provided for @submitAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'تقديم'**
+  String get submitAction;
+
+  /// No description provided for @resubmitAction.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة التقديم'**
+  String get resubmitAction;
+
+  /// No description provided for @arriveWithCode.
+  ///
+  /// In ar, this message translates to:
+  /// **'تأكيد بالرمز المكتوب'**
+  String get arriveWithCode;
+
+  /// No description provided for @arriveHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'امسح ملصق QR على العمود {code}.'**
+  String arriveHint(String code);
+
+  /// No description provided for @damagedTagHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'الملصق تالف أو غير مقروء؟ اكتب الرمز واذكر السبب.'**
+  String get damagedTagHint;
+
+  /// No description provided for @manualReasonLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'سبب الإدخال اليدوي'**
+  String get manualReasonLabel;
+
+  /// No description provided for @manualReasonRequired.
+  ///
+  /// In ar, this message translates to:
+  /// **'اذكر سبب إدخال الرمز يدويًا.'**
+  String get manualReasonRequired;
+
+  /// No description provided for @noteOptional.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملاحظة (اختياري)'**
+  String get noteOptional;
+
+  /// No description provided for @referenceMissing.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم تُحمَّل رموز التشخيص بعد. زامن ثم حاول مجددًا.'**
+  String get referenceMissing;
+
+  /// No description provided for @custodyHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر من المواد الموجودة في عهدتك.'**
+  String get custodyHint;
+
+  /// No description provided for @custodyEmpty.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد مواد في عهدتك حسب آخر مزامنة.'**
+  String get custodyEmpty;
+
+  /// No description provided for @inCustody.
+  ///
+  /// In ar, this message translates to:
+  /// **'في العهدة: {quantity} {unit}'**
+  String inCustody(String quantity, String unit);
+
+  /// No description provided for @chooseSerials.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر الرقم التسلسلي للقطعة المركّبة:'**
+  String get chooseSerials;
+
+  /// No description provided for @quantityLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'الكمية ({unit})'**
+  String quantityLabel(String unit);
+
+  /// No description provided for @testMethodLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'طريقة الاختبار'**
+  String get testMethodLabel;
+
+  /// No description provided for @notTestedReason.
+  ///
+  /// In ar, this message translates to:
+  /// **'سبب عدم الاختبار'**
+  String get notTestedReason;
+
+  /// No description provided for @yes.
+  ///
+  /// In ar, this message translates to:
+  /// **'نعم'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا'**
+  String get no;
+
+  /// No description provided for @submitSummary.
+  ///
+  /// In ar, this message translates to:
+  /// **'قبل: {before} · بعد: {after} · اختبار: {test} · مواد: {materials}'**
+  String submitSummary(int before, int after, int test, int materials);
+
+  /// No description provided for @rootCauseLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'السبب الجذري للعطل'**
+  String get rootCauseLabel;
+
+  /// No description provided for @noMaterialReasonLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'لماذا لم تُستخدم أي مادة؟'**
+  String get noMaterialReasonLabel;
+
+  /// No description provided for @recurrentFailureTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'عطل متكرر'**
+  String get recurrentFailureTitle;
+
+  /// No description provided for @fullInspectionRecommended.
+  ///
+  /// In ar, this message translates to:
+  /// **'توصية: يُنصح بفحص شامل للعمود'**
+  String get fullInspectionRecommended;
+
+  /// No description provided for @recommendationRule.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} أعطال محسوبة؛ العتبة {threshold} خلال {days} يومًا'**
+  String recommendationRule(int count, int threshold, int days);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

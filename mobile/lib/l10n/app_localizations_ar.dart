@@ -24,7 +24,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get privacyBody =>
-      'هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا لمسح رمز QR على أعمدة الإنارة فقط، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.';
+      'هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا داخل التطبيق فقط: لمسح رمز QR على أعمدة الإنارة ولالتقاط صور العمل. لا يحفظ الصور في معرض الهاتف، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر. تُحذف صور العمل من الهاتف بعد رفعها.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.';
 
   @override
   String get privacyAccept => 'فهمت وأوافق';
@@ -314,5 +314,208 @@ class AppLocalizationsAr extends AppLocalizations {
       'other': '$value',
     });
     return '$_temp0';
+  }
+
+  @override
+  String get fieldWorkTitle => 'العمل الميداني';
+
+  @override
+  String get takePhoto => 'التقاط صورة';
+
+  @override
+  String get photoUnreadable => 'تعذّرت قراءة الصورة. التقطها مجددًا.';
+
+  @override
+  String evidenceKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'BEFORE': 'صورة قبل العمل',
+      'AFTER': 'صورة بعد العمل',
+      'TEST': 'صورة الاختبار',
+      'other': '$kind',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get returnedTitle => 'أُعيد أمر العمل إليك. أضف المطلوب ثم أعد التقديم:';
+
+  @override
+  String returnReasonName(String reason) {
+    String _temp0 = intl.Intl.selectLogic(reason, {
+      'MISSING_EVIDENCE': 'صور ناقصة',
+      'UNCLEAR_EVIDENCE': 'صور غير واضحة',
+      'CHECKLIST_INCOMPLETE': 'قائمة الفحص ناقصة',
+      'MATERIAL_QUESTION': 'استفسار عن المواد',
+      'DIAGNOSIS_QUESTION': 'استفسار عن التشخيص',
+      'other': 'سبب آخر',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String commandRejected(String command, String error) {
+    return 'رفض الخادم: $command — $error';
+  }
+
+  @override
+  String commandName(String type) {
+    String _temp0 = intl.Intl.selectLogic(type, {
+      'ArriveOnSite': 'الوصول',
+      'AddEvidence': 'صورة',
+      'RecordDiagnosis': 'التشخيص',
+      'StartWork': 'بدء العمل',
+      'ConsumeMaterial': 'مادة',
+      'RecordChecklist': 'قائمة الفحص',
+      'SubmitWorkOrder': 'التقديم',
+      'Resubmit': 'إعادة التقديم',
+      'other': '$type',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String photosWaiting(int count) {
+    return '$count صورة بانتظار الرفع';
+  }
+
+  @override
+  String get submittedWaitingReview => 'قُدّم العمل وهو بانتظار مراجعة المشرف.';
+
+  @override
+  String get stepArrive => 'الوصول وتأكيد الملصق';
+
+  @override
+  String get arriveAction => 'وصلت';
+
+  @override
+  String stepBefore(int count, int total) {
+    return 'صور قبل العمل ($count/$total)';
+  }
+
+  @override
+  String get stepDiagnosis => 'التشخيص';
+
+  @override
+  String get chooseDiagnosis => 'اختيار';
+
+  @override
+  String get stepStart => 'بدء العمل';
+
+  @override
+  String get startWorkAction => 'ابدأ';
+
+  @override
+  String get startWorkNeeds => 'يلزم صور قبل العمل والتشخيص أولًا.';
+
+  @override
+  String stepMaterial(int count) {
+    return 'المواد المستخدمة ($count)';
+  }
+
+  @override
+  String get addMaterial => 'إضافة مادة';
+
+  @override
+  String get stepChecklist => 'قائمة الفحص الوظيفي';
+
+  @override
+  String get openChecklist => 'فتح';
+
+  @override
+  String stepTestPhoto(int count, int total) {
+    return 'صورة الاختبار ($count/$total)';
+  }
+
+  @override
+  String stepAfter(int count, int total) {
+    return 'صور بعد العمل ($count/$total)';
+  }
+
+  @override
+  String get stepSubmit => 'التقديم للمراجعة';
+
+  @override
+  String get stepResubmit => 'إعادة التقديم';
+
+  @override
+  String get submitAction => 'تقديم';
+
+  @override
+  String get resubmitAction => 'إعادة التقديم';
+
+  @override
+  String get arriveWithCode => 'تأكيد بالرمز المكتوب';
+
+  @override
+  String arriveHint(String code) {
+    return 'امسح ملصق QR على العمود $code.';
+  }
+
+  @override
+  String get damagedTagHint => 'الملصق تالف أو غير مقروء؟ اكتب الرمز واذكر السبب.';
+
+  @override
+  String get manualReasonLabel => 'سبب الإدخال اليدوي';
+
+  @override
+  String get manualReasonRequired => 'اذكر سبب إدخال الرمز يدويًا.';
+
+  @override
+  String get noteOptional => 'ملاحظة (اختياري)';
+
+  @override
+  String get referenceMissing => 'لم تُحمَّل رموز التشخيص بعد. زامن ثم حاول مجددًا.';
+
+  @override
+  String get custodyHint => 'اختر من المواد الموجودة في عهدتك.';
+
+  @override
+  String get custodyEmpty => 'لا توجد مواد في عهدتك حسب آخر مزامنة.';
+
+  @override
+  String inCustody(String quantity, String unit) {
+    return 'في العهدة: $quantity $unit';
+  }
+
+  @override
+  String get chooseSerials => 'اختر الرقم التسلسلي للقطعة المركّبة:';
+
+  @override
+  String quantityLabel(String unit) {
+    return 'الكمية ($unit)';
+  }
+
+  @override
+  String get testMethodLabel => 'طريقة الاختبار';
+
+  @override
+  String get notTestedReason => 'سبب عدم الاختبار';
+
+  @override
+  String get yes => 'نعم';
+
+  @override
+  String get no => 'لا';
+
+  @override
+  String submitSummary(int before, int after, int test, int materials) {
+    return 'قبل: $before · بعد: $after · اختبار: $test · مواد: $materials';
+  }
+
+  @override
+  String get rootCauseLabel => 'السبب الجذري للعطل';
+
+  @override
+  String get noMaterialReasonLabel => 'لماذا لم تُستخدم أي مادة؟';
+
+  @override
+  String get recurrentFailureTitle => 'عطل متكرر';
+
+  @override
+  String get fullInspectionRecommended => 'توصية: يُنصح بفحص شامل للعمود';
+
+  @override
+  String recommendationRule(int count, int threshold, int days) {
+    return '$count أعطال محسوبة؛ العتبة $threshold خلال $days يومًا';
   }
 }

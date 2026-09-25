@@ -58,6 +58,21 @@ class LocalDb {
         entity_id TEXT
       );
       CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      -- M3: photos waiting for upload. The JPEG bytes stay inside this encrypted database (not loose files) and are
+      -- deleted as soon as the server has received them.
+      CREATE TABLE IF NOT EXISTS evidence (
+        evidence_id TEXT PRIMARY KEY,
+        work_order_id TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        sha256 TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        captured_at TEXT NOT NULL,
+        command_id TEXT NOT NULL,
+        state TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        error TEXT,
+        bytes BLOB
+      );
     ''');
   }
 

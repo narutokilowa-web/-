@@ -124,7 +124,7 @@ jobs:
         run: docker compose -f deploy/compose/docker-compose.yml --env-file .env down -v
 
   android:
-    name: "Android emulator (real app: sign-in, device approval, PIN, My tasks, QR, revocation)"
+    name: "Android emulator (real app: sign-in, device approval, PIN, My tasks, QR, field work, evidence upload, approval, revocation)"
     runs-on: ubuntu-latest
     needs: [backend, web, mobile]
     timeout-minutes: 50
@@ -152,9 +152,10 @@ jobs:
           flutter-version: 3.41.6
           channel: stable
           cache: true
-      - name: Start stack from a clean state (random secrets)
+      - name: Start stack from a clean state (random secrets) and load DEMO 1 data (tech1's custody)
         run: |
           make up
+          make seed
           docker builder prune -af   # build cache is not needed once the images exist
           df -h /
       - working-directory: mobile

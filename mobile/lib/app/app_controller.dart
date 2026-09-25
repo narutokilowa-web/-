@@ -6,13 +6,16 @@ import '../core/api_client.dart';
 import '../core/auth.dart';
 import '../core/config.dart';
 import '../core/device_info.dart';
+import '../core/field_work.dart';
 import '../core/local_db.dart';
 import '../core/models.dart';
 import '../core/outbox.dart';
+import '../core/photo_processing.dart';
 import '../core/pin.dart';
 import '../core/secure_store.dart';
 import '../core/sync_engine.dart';
 import '../core/tag_token.dart';
+import '../features/work/photo_source.dart';
 
 /// Screens of the app (docs/lean-pilot/08 §8.2 and §8.7).
 enum AppStage { starting, privacy, signedOut, waitingApproval, deviceRejected, deviceRevoked, setPin, locked, ready }
@@ -31,9 +34,11 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
     ApiClient Function(Future<String?> Function() deviceId)? apiFactory,
     PinService? pin,
     DateTime Function()? clock,
+    PhotoSource? photoSource,
   }) : _openDb = openDb,
        _clock = clock ?? DateTime.now,
-       pin = pin ?? PinService(store) {
+       pin = pin ?? PinService(store),
+       photoSource = photoSource ?? const CameraPhotoSource() {
     api = (apiFactory ?? (d) => ApiClient(config, auth, d))(() => store.read(SecureKeys.deviceId));
   }
 
@@ -45,6 +50,9 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   final DbOpener _openDb;
   final DateTime Function() _clock;
   late final ApiClient api;
+
+  /// In-app camera (never the gallery). Replaceable in tests.
+  final PhotoSource photoSource;
 
   LocalDb? _db;
   Outbox? outbox;
@@ -131,6 +139,93 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<WorkOrderTask> openTask(String id) => _call(() => api.task(id));
+
+  // ---- M3: field execution (docs/lean-pilot/08 §8.4). Every action is a command in the outbox; sync sends it. ----
+
+  FieldReference get reference => sync?.cachedReference ?? FieldReference(const [], const []);
+
+  List<CustodyItem> get custody => sync?.cachedCustody ?? const [];
+
+  /// The cached task (last pull), if it is still assigned to me.
+  WorkOrderTask? cachedTask(String id) => tasks.where((t) => t.id == id).firstOrNull;
+
+  WorkView workView(WorkOrderTask task) =>
+      WorkView.of(cachedTask(task.id) ?? task, reference, outbox?.all() ?? const [], sync?.evidence.forWorkOrder(task.id) ?? const []);
+
+  /// W5: the scanned tag must be this light's; a typed code needs a reason (damaged tag).
+  void arrive(WorkOrderTask task, {String? scanned, String? manualCode, String? manualReason}) => _enqueue('ArriveOnSite', {
+    'workOrderId': task.id,
+    'scannedToken': scanned,
+    'manualCode': manualCode?.trim().toUpperCase(),
+    'manualReason': manualReason?.trim(),
+  });
+
+  /// Announces the photo (hash first, docs/lean-pilot/06 §6.2) and keeps its bytes until the server has them.
+  void addPhoto(WorkOrderTask task, String kind, ProcessedPhoto photo, DateTime capturedAt) {
+    final evidenceId = Outbox.newId();
+    final commandId = outbox!.enqueue('AddEvidence', {
+      'workOrderId': task.id,
+      'evidenceId': evidenceId,
+      'kind': kind,
+      'sha256': photo.sha256,
+      'sizeBytes': photo.bytes.length,
+      'mime': 'image/jpeg',
+      'capturedAt': capturedAt.toUtc().toIso8601String(),
+    });
+    sync!.evidence.add(
+      evidenceId: evidenceId,
+      workOrderId: task.id,
+      kind: kind,
+      sha256: photo.sha256,
+      bytes: photo.bytes,
+      capturedAt: capturedAt,
+      commandId: commandId,
+    );
+    _afterEnqueue();
+  }
+
+  void recordDiagnosis(WorkOrderTask task, String code, String? note) =>
+      _enqueue('RecordDiagnosis', {'workOrderId': task.id, 'code': code, 'note': (note?.trim().isEmpty ?? true) ? null : note!.trim()});
+
+  void startWork(WorkOrderTask task) => _enqueue('StartWork', {'workOrderId': task.id});
+
+  void consume(WorkOrderTask task, CustodyItem item, double quantity, List<String> serials) => _enqueue('ConsumeMaterial', {
+    'workOrderId': task.id,
+    'movementId': Outbox.newId(),
+    'itemId': item.itemId,
+    'quantity': quantity,
+    'serials': serials.isEmpty ? null : serials,
+  });
+
+  void recordChecklist(WorkOrderTask task, String templateId, String testMethod, Map<String, String> answers, String? notTestedReason) =>
+      _enqueue('RecordChecklist', {
+        'workOrderId': task.id,
+        'checklistId': Outbox.newId(),
+        'templateId': templateId,
+        'testMethod': testMethod,
+        'notTestedReason': notTestedReason,
+        'answers': answers,
+      });
+
+  /// W9 (first submission) or W12 (after a return: additions only).
+  void submit(WorkOrderTask task, {required String rootCause, String? noMaterialReason, required bool resubmit}) =>
+      _enqueue(resubmit ? 'Resubmit' : 'SubmitWorkOrder', {
+        'workOrderId': task.id,
+        'rootCauseNote': rootCause.trim(),
+        'noMaterialReason': (noMaterialReason?.trim().isEmpty ?? true) ? null : noMaterialReason!.trim(),
+      });
+
+  void _enqueue(String type, Map<String, dynamic> payload) {
+    outbox!.enqueue(type, payload);
+    _afterEnqueue();
+  }
+
+  /// Queued: show it at once, then try to send (offline: it waits in the outbox).
+  void _afterEnqueue() {
+    syncStatus = sync?.status;
+    notifyListeners();
+    unawaited(_syncQuietly());
+  }
 
   Future<void> signOut() async {
     _stopTimers();

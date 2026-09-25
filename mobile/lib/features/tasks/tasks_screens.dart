@@ -5,13 +5,15 @@ import '../../core/api_client.dart';
 import '../../core/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets.dart';
+import '../work/work_screens.dart';
 import 'asset_summary_card.dart';
 
 /// "My tasks": work orders currently assigned to me, sorted by priority, then due time (docs/lean-pilot/08 §8.4 step 0).
 class MyTasksTab extends StatelessWidget {
-  const MyTasksTab({super.key, required this.controller});
+  const MyTasksTab({super.key, required this.controller, this.showCamera = true});
 
   final AppController controller;
+  final bool showCamera;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +46,7 @@ class MyTasksTab extends StatelessWidget {
                   ),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => TaskDetailScreen(controller: controller, cached: t),
+                      builder: (_) => TaskDetailScreen(controller: controller, cached: t, showCamera: showCamera),
                     ),
                   ),
                 );
@@ -56,10 +58,11 @@ class MyTasksTab extends StatelessWidget {
 
 /// One task, refreshed from the server when online (the server decides whether it is still mine).
 class TaskDetailScreen extends StatefulWidget {
-  const TaskDetailScreen({super.key, required this.controller, required this.cached});
+  const TaskDetailScreen({super.key, required this.controller, required this.cached, this.showCamera = true});
 
   final AppController controller;
   final WorkOrderTask cached;
+  final bool showCamera;
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -114,7 +117,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         const SizedBox(height: 16),
         AssetSummaryCard(asset: t.asset),
         const SizedBox(height: 16),
-        Text(l10n.taskNextSteps, style: Theme.of(context).textTheme.bodySmall),
+        Text(l10n.fieldWorkTitle, style: Theme.of(context).textTheme.titleMedium),
+        WorkSteps(controller: widget.controller, task: t, showCamera: widget.showCamera),
       ],
     );
   }

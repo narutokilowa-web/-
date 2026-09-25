@@ -24,7 +24,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyBody =>
-      'This app runs on your personal phone.\n\n• It uses the camera only to scan QR codes on street lights. It does not access your gallery, files, contacts or other apps.\n• It does not track your location. (In later versions the location is recorded only at the moment you capture work evidence, with the app open.)\n• Its data is encrypted inside the app\'s private storage and protected by a PIN.\n• The municipality cannot wipe or manage your phone. If your device is revoked, the server rejects it and the app deletes only its own data.\n• The work you record is kept in a verifiable audit log.';
+      'This app runs on your personal phone.\n\n• It uses the camera only inside the app: to scan QR codes on street lights and to take work photos. Photos are not saved to your gallery, and the app does not access your gallery, files, contacts or other apps. Work photos are deleted from the phone once uploaded.\n• It does not track your location. (In later versions the location is recorded only at the moment you capture work evidence, with the app open.)\n• Its data is encrypted inside the app\'s private storage and protected by a PIN.\n• The municipality cannot wipe or manage your phone. If your device is revoked, the server rejects it and the app deletes only its own data.\n• The work you record is kept in a verifiable audit log.';
 
   @override
   String get privacyAccept => 'I understand and agree';
@@ -315,5 +315,203 @@ class AppLocalizationsEn extends AppLocalizations {
       'other': '$value',
     });
     return '$_temp0';
+  }
+
+  @override
+  String get fieldWorkTitle => 'Field work';
+
+  @override
+  String get takePhoto => 'Take photo';
+
+  @override
+  String get photoUnreadable => 'The photo could not be read. Take it again.';
+
+  @override
+  String evidenceKindName(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {'BEFORE': 'Before photo', 'AFTER': 'After photo', 'TEST': 'Test photo', 'other': '$kind'});
+    return '$_temp0';
+  }
+
+  @override
+  String get returnedTitle => 'The work order was returned to you. Add what is needed, then resubmit:';
+
+  @override
+  String returnReasonName(String reason) {
+    String _temp0 = intl.Intl.selectLogic(reason, {
+      'MISSING_EVIDENCE': 'Missing photos',
+      'UNCLEAR_EVIDENCE': 'Unclear photos',
+      'CHECKLIST_INCOMPLETE': 'Checklist incomplete',
+      'MATERIAL_QUESTION': 'Question about materials',
+      'DIAGNOSIS_QUESTION': 'Question about the diagnosis',
+      'other': 'Other',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String commandRejected(String command, String error) {
+    return 'Refused by the server: $command — $error';
+  }
+
+  @override
+  String commandName(String type) {
+    String _temp0 = intl.Intl.selectLogic(type, {
+      'ArriveOnSite': 'Arrival',
+      'AddEvidence': 'Photo',
+      'RecordDiagnosis': 'Diagnosis',
+      'StartWork': 'Start work',
+      'ConsumeMaterial': 'Material',
+      'RecordChecklist': 'Checklist',
+      'SubmitWorkOrder': 'Submission',
+      'Resubmit': 'Resubmission',
+      'other': '$type',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String photosWaiting(int count) {
+    return '$count photos waiting to upload';
+  }
+
+  @override
+  String get submittedWaitingReview => 'Submitted; waiting for the supervisor\'s review.';
+
+  @override
+  String get stepArrive => 'Arrive and confirm the tag';
+
+  @override
+  String get arriveAction => 'I have arrived';
+
+  @override
+  String stepBefore(int count, int total) {
+    return 'Before photos ($count/$total)';
+  }
+
+  @override
+  String get stepDiagnosis => 'Diagnosis';
+
+  @override
+  String get chooseDiagnosis => 'Choose';
+
+  @override
+  String get stepStart => 'Start work';
+
+  @override
+  String get startWorkAction => 'Start';
+
+  @override
+  String get startWorkNeeds => 'Before photos and a diagnosis are needed first.';
+
+  @override
+  String stepMaterial(int count) {
+    return 'Materials used ($count)';
+  }
+
+  @override
+  String get addMaterial => 'Add material';
+
+  @override
+  String get stepChecklist => 'Functional-test checklist';
+
+  @override
+  String get openChecklist => 'Open';
+
+  @override
+  String stepTestPhoto(int count, int total) {
+    return 'Test photo ($count/$total)';
+  }
+
+  @override
+  String stepAfter(int count, int total) {
+    return 'After photos ($count/$total)';
+  }
+
+  @override
+  String get stepSubmit => 'Submit for review';
+
+  @override
+  String get stepResubmit => 'Resubmit';
+
+  @override
+  String get submitAction => 'Submit';
+
+  @override
+  String get resubmitAction => 'Resubmit';
+
+  @override
+  String get arriveWithCode => 'Confirm with the typed code';
+
+  @override
+  String arriveHint(String code) {
+    return 'Scan the QR tag on light $code.';
+  }
+
+  @override
+  String get damagedTagHint => 'Tag damaged or unreadable? Type the code and give the reason.';
+
+  @override
+  String get manualReasonLabel => 'Reason for typing the code';
+
+  @override
+  String get manualReasonRequired => 'Give the reason for typing the code.';
+
+  @override
+  String get noteOptional => 'Note (optional)';
+
+  @override
+  String get referenceMissing => 'Diagnosis codes are not loaded yet. Sync and try again.';
+
+  @override
+  String get custodyHint => 'Choose from the materials in your custody.';
+
+  @override
+  String get custodyEmpty => 'No materials in your custody as of the last sync.';
+
+  @override
+  String inCustody(String quantity, String unit) {
+    return 'In custody: $quantity $unit';
+  }
+
+  @override
+  String get chooseSerials => 'Choose the serial of the installed part:';
+
+  @override
+  String quantityLabel(String unit) {
+    return 'Quantity ($unit)';
+  }
+
+  @override
+  String get testMethodLabel => 'Test method';
+
+  @override
+  String get notTestedReason => 'Why it was not tested';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String submitSummary(int before, int after, int test, int materials) {
+    return 'Before: $before · After: $after · Test: $test · Materials: $materials';
+  }
+
+  @override
+  String get rootCauseLabel => 'Root cause of the fault';
+
+  @override
+  String get noMaterialReasonLabel => 'Why was no material used?';
+
+  @override
+  String get recurrentFailureTitle => 'Recurrent Failure';
+
+  @override
+  String get fullInspectionRecommended => 'Recommendation: Full inspection recommended';
+
+  @override
+  String recommendationRule(int count, int threshold, int days) {
+    return '$count counted failures; threshold $threshold within $days days';
   }
 }

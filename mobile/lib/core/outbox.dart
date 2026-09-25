@@ -39,6 +39,9 @@ class Outbox {
   final DateTime Function() _clock;
   static const _uuid = Uuid();
 
+  /// Ids created on the phone (evidence, movements, checklists) are UUIDv7, like command ids.
+  static String newId() => _uuid.v7();
+
   String enqueue(String type, Map<String, dynamic> payload) {
     final id = _uuid.v7();
     final next = (_db.db.select('SELECT COALESCE(MAX(seq), 0) + 1 AS n FROM outbox').first['n'] as int);

@@ -27,7 +27,7 @@ class _HomeShellState extends State<HomeShell> {
     final l10n = AppLocalizations.of(context);
     final c = widget.controller;
     final pages = [
-      MyTasksTab(controller: c),
+      MyTasksTab(controller: c, showCamera: widget.showCamera),
       ScanTab(controller: c, showCamera: widget.showCamera),
       MeTab(controller: c, onToggleLocale: widget.onToggleLocale),
     ];

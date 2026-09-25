@@ -71,7 +71,13 @@ class ApiClient {
   Future<WorkOrderTask> task(String id) async =>
       WorkOrderTask.fromJson((await _send('GET', '/sync/v1/work-orders/$id')) as Map<String, dynamic>);
 
-  Future<Object?> _send(String method, String path, {Object? body, bool withDevice = true, bool rawBlocked = false}) async {
+  /// Streams one photo's bytes; the server hashes them and compares with the announced SHA-256. Returns the evidence state.
+  Future<String> putEvidence(String evidenceId, List<int> bytes) async {
+    final result = await _send('PUT', '/sync/v1/evidence/$evidenceId/content', bytes: bytes);
+    return (result as Map<String, dynamic>?)?['state'] as String? ?? 'UPLOADED';
+  }
+
+  Future<Object?> _send(String method, String path, {Object? body, List<int>? bytes, bool withDevice = true, bool rawBlocked = false}) async {
     final token = await _auth.accessToken();
     if (token == null) throw NotSignedInException();
     final headers = {'Authorization': 'Bearer $token', 'Accept': 'application/json'};
@@ -85,6 +91,9 @@ class ApiClient {
     try {
       if (method == 'GET') {
         response = await _http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
+      } else if (method == 'PUT') {
+        headers['Content-Type'] = 'image/jpeg';
+        response = await _http.put(uri, headers: headers, body: bytes).timeout(const Duration(seconds: 120));
       } else {
         headers['Content-Type'] = 'application/json';
         response = await _http.post(uri, headers: headers, body: jsonEncode(body ?? {})).timeout(const Duration(seconds: 30));

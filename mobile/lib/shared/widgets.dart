@@ -57,6 +57,7 @@ class SyncStrip extends StatelessWidget {
         [
           online ? l10n.online : l10n.offline,
           if ((s?.pending ?? 0) > 0) l10n.waitingToSend(s!.pending),
+          if ((s?.photosWaiting ?? 0) > 0) l10n.photosWaiting(s!.photosWaiting),
           if (s?.lastSyncAt != null) l10n.lastSync(formatTime(context, s!.lastSyncAt!)) else l10n.neverSynced,
         ].join(' · '),
       ),

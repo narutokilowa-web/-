@@ -48,6 +48,7 @@ class WorkOrderTask {
     required this.faultPowerAtInspection,
     required this.assignedAt,
     required this.asset,
+    this.progress,
   });
 
   factory WorkOrderTask.fromJson(Map<String, dynamic> j) => WorkOrderTask(
@@ -62,6 +63,7 @@ class WorkOrderTask {
     faultPowerAtInspection: j['faultPowerAtInspection'] as String,
     assignedAt: DateTime.parse(j['assignedAt'] as String),
     asset: AssetSummary.fromJson(j['asset'] as Map<String, dynamic>),
+    progress: j['progress'] == null ? null : TaskProgress.fromJson(j['progress'] as Map<String, dynamic>),
   );
 
   final String id;
@@ -75,6 +77,222 @@ class WorkOrderTask {
   final String faultPowerAtInspection;
   final DateTime assignedAt;
   final AssetSummary asset;
+
+  /// What the server has already recorded for this work order (M3).
+  final TaskProgress? progress;
+}
+
+/// Server-side progress of a work order (Mfop.WorkOrders.Contracts.TaskProgress).
+class TaskProgress {
+  TaskProgress({
+    required this.checklistTemplateId,
+    required this.diagnosisCode,
+    required this.diagnosisNote,
+    required this.arrivals,
+    required this.beforePhotos,
+    required this.afterPhotos,
+    required this.testPhotos,
+    required this.materials,
+    required this.checklistRecorded,
+    required this.testMethod,
+    required this.submissions,
+    required this.lastReturnReasons,
+    required this.lastReturnNote,
+  });
+
+  factory TaskProgress.fromJson(Map<String, dynamic> j) => TaskProgress(
+    checklistTemplateId: j['checklistTemplateId'] as String?,
+    diagnosisCode: j['diagnosisCode'] as String?,
+    diagnosisNote: j['diagnosisNote'] as String?,
+    arrivals: j['arrivals'] as int? ?? 0,
+    beforePhotos: j['beforePhotos'] as int? ?? 0,
+    afterPhotos: j['afterPhotos'] as int? ?? 0,
+    testPhotos: j['testPhotos'] as int? ?? 0,
+    materials: j['materials'] as int? ?? 0,
+    checklistRecorded: j['checklistRecorded'] as bool? ?? false,
+    testMethod: j['testMethod'] as String?,
+    submissions: j['submissions'] as int? ?? 0,
+    lastReturnReasons: ((j['lastReturnReasons'] as List<dynamic>?) ?? const []).cast<String>(),
+    lastReturnNote: j['lastReturnNote'] as String?,
+  );
+
+  final String? checklistTemplateId;
+  final String? diagnosisCode;
+  final String? diagnosisNote;
+  final int arrivals;
+  final int beforePhotos;
+  final int afterPhotos;
+  final int testPhotos;
+  final int materials;
+  final bool checklistRecorded;
+  final String? testMethod;
+  final int submissions;
+  final List<String> lastReturnReasons;
+  final String? lastReturnNote;
+}
+
+class DiagnosisCode {
+  DiagnosisCode(this.code, this.nameAr, this.nameEn, this.requiresMaterial, this.powerSources, this.path);
+
+  factory DiagnosisCode.fromJson(Map<String, dynamic> j) => DiagnosisCode(
+    j['code'] as String,
+    j['nameAr'] as String,
+    j['nameEn'] as String,
+    j['requiresMaterial'] as bool? ?? false,
+    ((j['powerSources'] as List<dynamic>?) ?? const []).cast<String>(),
+    j['path'] as String? ?? 'REPAIR',
+  );
+
+  final String code;
+  final String nameAr;
+  final String nameEn;
+  final bool requiresMaterial;
+  final List<String> powerSources;
+
+  /// REPAIR codes are recorded in DEMO 1; NO_WORK codes (theft, grid off, …) arrive with ResolveNoWork (M6).
+  final String path;
+}
+
+class ChecklistItem {
+  ChecklistItem(this.code, this.textAr, this.textEn, this.expected, this.blocking, this.testItem);
+
+  factory ChecklistItem.fromJson(Map<String, dynamic> j) => ChecklistItem(
+    j['code'] as String,
+    j['textAr'] as String,
+    j['textEn'] as String,
+    j['expected'] as String,
+    j['blocking'] as bool? ?? false,
+    j['testItem'] as bool? ?? false,
+  );
+
+  final String code;
+  final String textAr;
+  final String textEn;
+
+  /// YES or NO.
+  final String expected;
+  final bool blocking;
+  final bool testItem;
+}
+
+class TestMethod {
+  TestMethod(this.code, this.textAr, this.textEn);
+
+  factory TestMethod.fromJson(Map<String, dynamic> j) => TestMethod(j['code'] as String, j['textAr'] as String, j['textEn'] as String);
+
+  final String code;
+  final String textAr;
+  final String textEn;
+}
+
+class EvidenceRequirements {
+  const EvidenceRequirements({required this.beforeFirstArrival, required this.beforeLaterArrival, required this.after, required this.test});
+
+  factory EvidenceRequirements.fromJson(Map<String, dynamic> j) => EvidenceRequirements(
+    beforeFirstArrival: j['beforeFirstArrival'] as int? ?? 2,
+    beforeLaterArrival: j['beforeLaterArrival'] as int? ?? 1,
+    after: j['after'] as int? ?? 2,
+    test: j['test'] as int? ?? 1,
+  );
+
+  final int beforeFirstArrival;
+  final int beforeLaterArrival;
+  final int after;
+  final int test;
+}
+
+class ChecklistTemplate {
+  ChecklistTemplate(this.id, this.code, this.version, this.items, this.testMethods, this.evidence);
+
+  factory ChecklistTemplate.fromJson(Map<String, dynamic> j) => ChecklistTemplate(
+    j['id'] as String,
+    j['code'] as String,
+    j['version'] as int? ?? 1,
+    ((j['items'] as List<dynamic>?) ?? const []).map((e) => ChecklistItem.fromJson(e as Map<String, dynamic>)).toList(),
+    ((j['testMethods'] as List<dynamic>?) ?? const []).map((e) => TestMethod.fromJson(e as Map<String, dynamic>)).toList(),
+    EvidenceRequirements.fromJson((j['evidenceRequirements'] as Map<String, dynamic>?) ?? const {}),
+  );
+
+  final String id;
+  final String code;
+  final int version;
+  final List<ChecklistItem> items;
+  final List<TestMethod> testMethods;
+  final EvidenceRequirements evidence;
+}
+
+/// Diagnosis codes and checklist templates, pulled and cached for offline use.
+class FieldReference {
+  FieldReference(this.diagnosisCodes, this.checklistTemplates);
+
+  factory FieldReference.fromJson(Map<String, dynamic>? j) => FieldReference(
+    ((j?['diagnosisCodes'] as List<dynamic>?) ?? const []).map((e) => DiagnosisCode.fromJson(e as Map<String, dynamic>)).toList(),
+    ((j?['checklistTemplates'] as List<dynamic>?) ?? const []).map((e) => ChecklistTemplate.fromJson(e as Map<String, dynamic>)).toList(),
+  );
+
+  final List<DiagnosisCode> diagnosisCodes;
+  final List<ChecklistTemplate> checklistTemplates;
+
+  ChecklistTemplate? template(String? id) => checklistTemplates.where((t) => t.id == id).firstOrNull;
+
+  /// Codes the technician may pick for this light: REPAIR path, matching its power source.
+  List<DiagnosisCode> repairCodesFor(String powerSource) =>
+      diagnosisCodes.where((d) => d.path == 'REPAIR' && d.powerSources.contains(powerSource)).toList();
+}
+
+/// One item in the technician's own custody (Mfop.Inventory.Contracts.CustodyItem).
+class CustodyItem {
+  CustodyItem(this.itemId, this.sku, this.nameAr, this.nameEn, this.unit, this.serialTracked, this.quantity, this.serials);
+
+  factory CustodyItem.fromJson(Map<String, dynamic> j) => CustodyItem(
+    j['itemId'] as String,
+    j['sku'] as String,
+    j['nameAr'] as String,
+    j['nameEn'] as String,
+    j['unit'] as String,
+    j['serialTracked'] as bool? ?? false,
+    (j['quantity'] as num).toDouble(),
+    ((j['serials'] as List<dynamic>?) ?? const []).cast<String>(),
+  );
+
+  final String itemId;
+  final String sku;
+  final String nameAr;
+  final String nameEn;
+  final String unit;
+  final bool serialTracked;
+  final double quantity;
+  final List<String> serials;
+}
+
+class CountedFailure {
+  CountedFailure(this.workOrderCode, this.diagnosisCode, this.resolvedAt);
+
+  factory CountedFailure.fromJson(Map<String, dynamic> j) =>
+      CountedFailure(j['workOrderCode'] as String, j['diagnosisCode'] as String, DateTime.parse(j['resolvedAt'] as String));
+
+  final String workOrderCode;
+  final String diagnosisCode;
+  final DateTime resolvedAt;
+}
+
+/// "Recurrent Failure — Full inspection recommended" with what the rule counted (docs/lean-pilot/11 §11.2 M3 item 10).
+class Recommendation {
+  Recommendation(this.code, this.count, this.threshold, this.windowDays, this.counted);
+
+  factory Recommendation.fromJson(Map<String, dynamic> j) => Recommendation(
+    j['code'] as String,
+    j['count'] as int,
+    j['threshold'] as int,
+    j['windowDays'] as int,
+    ((j['countedFailures'] as List<dynamic>?) ?? const []).map((e) => CountedFailure.fromJson(e as Map<String, dynamic>)).toList(),
+  );
+
+  final String code;
+  final int count;
+  final int threshold;
+  final int windowDays;
+  final List<CountedFailure> counted;
 }
 
 class AssetCardEvent {
@@ -89,15 +307,17 @@ class AssetCardEvent {
 }
 
 class AssetCard {
-  AssetCard({required this.asset, required this.openFaults, required this.myOpenTasks, required this.recentEvents});
+  AssetCard({required this.asset, required this.openFaults, required this.myOpenTasks, required this.recentEvents, this.recommendations = const []});
 
   factory AssetCard.fromJson(Map<String, dynamic> j) => AssetCard(
     asset: AssetSummary.fromJson(j['asset'] as Map<String, dynamic>),
     openFaults: j['openFaults'] as int,
     myOpenTasks: (j['myOpenTasks'] as List<dynamic>).map((e) => WorkOrderTask.fromJson(e as Map<String, dynamic>)).toList(),
     recentEvents: (j['recentEvents'] as List<dynamic>).map((e) => AssetCardEvent.fromJson(e as Map<String, dynamic>)).toList(),
+    recommendations: ((j['recommendations'] as List<dynamic>?) ?? const []).map((e) => Recommendation.fromJson(e as Map<String, dynamic>)).toList(),
   );
 
+  final List<Recommendation> recommendations;
   final AssetSummary asset;
   final int openFaults;
   final List<WorkOrderTask> myOpenTasks;

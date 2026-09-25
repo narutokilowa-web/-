@@ -1,14 +1,18 @@
 import 'dart:io';
+import 'dart:math';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:integration_test/integration_test.dart';
 import 'package:mfop_field/app/app_controller.dart';
 import 'package:mfop_field/app/mfop_app.dart';
 import 'package:mfop_field/core/config.dart';
 import 'package:mfop_field/core/device_info.dart';
 import 'package:mfop_field/core/secure_store.dart';
+import 'package:mfop_field/features/work/photo_source.dart';
 import 'package:mfop_field/main.dart' show openAppDatabase;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:path_provider/path_provider.dart';
@@ -17,14 +21,17 @@ import 'package:qr/qr.dart';
 import 'support/backoffice.dart';
 import 'support/keycloak_login.dart';
 
-/// DEMO 1 steps 6–9 (docs/lean-pilot/11 §M2) on a real Android system (emulator in CI), against the Docker Compose
-/// stack reached through `adb reverse`:
+/// DEMO 1 steps 6–17 (docs/lean-pilot/11 §M2, §M3) on a real Android system (emulator in CI), against the Docker
+/// Compose stack (after `make seed`, for tech1's custody) reached through `adb reverse`:
 /// sign in → device registration → approval on the server → app PIN → assigned task in "My tasks" → the printed
-/// label's QR decoded by the phone's scanner → asset card → revocation → the app deletes only its own data.
+/// label's QR decoded by the phone's scanner → asset card → field work (arrive, before photos, diagnosis, start,
+/// material from custody, checklist, test photo, after photos, submit) with on-device JPEG processing, hashing,
+/// outbox and upload → supervisor approval and seal on the server → revocation → the app deletes only its own data.
 ///
 /// Automation limits (covered by the manual checklist in docs/runbooks/android-field-test.md): Keycloak's login page
-/// in the system browser is replaced by the same PKCE flow over HTTP, and the QR is decoded from an image file by the
-/// on-device ML Kit scanner instead of the live camera.
+/// in the system browser is replaced by the same PKCE flow over HTTP, the QR is decoded from an image file by the
+/// on-device ML Kit scanner instead of the live camera, and camera frames come from [_SyntheticCamera] (the in-app
+/// camera screen itself is exercised manually on a phone).
 const technicianId = '0197c000-0000-7000-8000-000000000004'; // tech1 (deploy/seed/dev-users.json)
 const password = String.fromEnvironment('MFOP_TEST_PASSWORD');
 
@@ -50,6 +57,7 @@ void main() {
       ),
       deviceInfo: PlatformDeviceInfo(),
       openDb: openAppDatabase,
+      photoSource: _SyntheticCamera(),
     );
 
     await binding.convertFlutterSurfaceToImage();
@@ -150,18 +158,108 @@ void main() {
     await shot('07-asset-card-from-qr');
     await back(find.byKey(const Key('open-faults')));
 
+    // DEMO 1 steps 10–16 on the phone's screens.
+    Future<void> tapKey(String key, {Duration timeout = const Duration(seconds: 40)}) async {
+      final f = find.byKey(Key(key));
+      await until(f, timeout: timeout);
+      await tester.ensureVisible(f);
+      await tester.pumpAndSettle();
+      await tester.tap(f);
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.byKey(const Key('tab-tasks')));
+    await tapKey('task-$code');
+    await tapKey('step-arrive-action');
+    await tester.enterText(find.byKey(const Key('arrive-code')), decoded);
+    await tester.enterText(find.byKey(const Key('arrive-reason')), 'اختبار آلي على المحاكي');
+    await tapKey('arrive-manual');
+    await tapKey('step-before-action');
+    await until(find.text('صور قبل العمل (1/2)'));
+    await tapKey('step-before-action');
+    await until(find.text('صور قبل العمل (2/2)'));
+    await shot('08-before-photos');
+    await tapKey('step-diagnosis-action');
+    await tapKey('diagnosis-LED_MODULE_FAIL');
+    await tapKey('diagnosis-save');
+    await tapKey('step-start-action');
+    await tapKey('step-material-action');
+    await tapKey('custody-LED-MOD-50W');
+    await tapKey('serial-M-0003');
+    await tapKey('material-save');
+    await tapKey('step-checklist-action');
+    await tapKey('method-NIGHT');
+    // Every item answered with its expected value (the template is reference data pinned to this work order).
+    final template = controller.reference.template(controller.cachedTask(workOrder['id'] as String)!.progress!.checklistTemplateId)!;
+    for (final item in template.items) {
+      await tapKey('item-${item.code}-${item.expected}');
+    }
+    await shot('09-checklist');
+    await tapKey('checklist-save');
+    await tapKey('step-test-photo-action');
+    await until(find.text('صورة الاختبار (1/1)'));
+    await tapKey('step-after-action');
+    await until(find.text('صور بعد العمل (1/2)'));
+    await tapKey('step-after-action');
+    await until(find.text('صور بعد العمل (2/2)'));
+    await tapKey('step-submit-action');
+    await tester.enterText(find.byKey(const Key('root-cause')), 'احتراق وحدة الليد');
+    await tester.pumpAndSettle();
+    await tapKey('submit-confirm');
+    await until(find.byKey(const Key('submitted-banner')), timeout: const Duration(seconds: 90));
+    await shot('10-submitted');
+    expect(controller.sync!.evidence.waitingCount, 0); // every photo's bytes reached the server and left the phone
+
+    // Step 17 on the server: every photo VERIFIED, supervisor1 approves → CLOSED with a seal.
+    final woPath = '/api/v1/work-orders/${workOrder['id']}';
+    final end = DateTime.now().add(const Duration(seconds: 60));
+    while ((await office.call('supervisor1', 'GET', '$woPath/review'))['pendingEvidence'] != 0) {
+      if (DateTime.now().isAfter(end)) throw TestFailure('evidence not verified in time');
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    final review = await office.call('supervisor1', 'GET', '$woPath/review');
+    expect((review['evidence'] as List<dynamic>).length, 5);
+    expect((review['materials'] as List<dynamic>).single['serials'], ['M-0003']);
+    expect(review['canApprove'], isTrue);
+    await office.call('supervisor1', 'POST', '$woPath/approve', {'note': 'android e2e'});
+    final closed = await office.call('supervisor1', 'GET', '$woPath/review');
+    expect(closed['state'], 'CLOSED');
+    expect(closed['sealHash'], matches(RegExp(r'^[0-9a-f]{64}$')));
+    await back(find.byKey(const Key('submitted-banner')));
+    await tester.tap(find.byKey(const Key('tab-me')));
+    await until(find.byKey(const Key('sync-now')));
+    await tester.tap(find.byKey(const Key('sync-now')));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.tap(find.byKey(const Key('tab-tasks')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(Key('task-$code')), findsNothing); // closed work orders leave My tasks
+
     // Revocation (server-side only): the phone is refused on its next request and deletes only the app's own data.
     await office.call('admin1', 'POST', '/api/v1/devices/$deviceId/revoke', {'reason': 'نهاية اختبار أندرويد'});
     await tester.tap(find.byKey(const Key('tab-me')));
     await until(find.byKey(const Key('sync-now')));
     await tester.tap(find.byKey(const Key('sync-now')));
     await until(find.byKey(const Key('device-revoked')));
-    await shot('08-device-revoked');
+    await shot('11-device-revoked');
     expect(controller.stage, AppStage.deviceRevoked);
     expect(await store.read(SecureKeys.refreshToken), isNull);
     expect(await store.read(SecureKeys.deviceId), isNull);
     expect(await store.read(SecureKeys.pinHash), isNull);
   });
+}
+
+/// Camera frames for the automated run: a unique 1280×960 JPEG per shot. Everything after the shutter (re-encode,
+/// EXIF removal, stamp, SHA-256, AddEvidence, encrypted queue, upload) is the app's real code.
+class _SyntheticCamera implements PhotoSource {
+  final _random = Random();
+
+  @override
+  Future<Uint8List?> capture(BuildContext context, String title) async {
+    final frame = img.Image(width: 1280, height: 960);
+    img.fill(frame, color: img.ColorRgb8(_random.nextInt(256), _random.nextInt(256), _random.nextInt(256)));
+    img.fillRect(frame, x1: 100, y1: 100, x2: 100 + _random.nextInt(900), y2: 100 + _random.nextInt(700), color: img.ColorRgb8(240, 240, 240));
+    return img.encodeJpg(frame, quality: 90);
+  }
 }
 
 /// Renders the label QR (same payload as the printed A6 label) to a PNG file inside the app's cache directory.

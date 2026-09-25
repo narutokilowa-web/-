@@ -49,7 +49,7 @@ class _ScanTabState extends State<ScanTab> {
       if (!mounted || card == null) return;
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => AssetCardScreen(controller: widget.controller, card: card),
+          builder: (_) => AssetCardScreen(controller: widget.controller, card: card, showCamera: widget.showCamera),
         ),
       );
     } on OfflineException {
@@ -113,10 +113,11 @@ class _ScanTabState extends State<ScanTab> {
 }
 
 class AssetCardScreen extends StatelessWidget {
-  const AssetCardScreen({super.key, required this.controller, required this.card});
+  const AssetCardScreen({super.key, required this.controller, required this.card, this.showCamera = true});
 
   final AppController controller;
   final AssetCard card;
+  final bool showCamera;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +125,24 @@ class AssetCardScreen extends StatelessWidget {
     return ActionScaffold(
       title: card.asset.assetCode ?? l10n.assetTypeStreetLight,
       children: [
+        for (final r in card.recommendations)
+          Card(
+            key: const Key('recommendation'),
+            color: const Color(0xFFFFF7ED),
+            shape: RoundedRectangleBorder(side: const BorderSide(color: Color(0xFFB45309), width: 2), borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.recurrentFailureTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF9A3412))),
+                  Text(l10n.fullInspectionRecommended),
+                  Text(l10n.recommendationRule(r.count, r.threshold, r.windowDays), key: const Key('recommendation-rule')),
+                  for (final f in r.counted) Text('• ${f.workOrderCode} · ${formatTime(context, f.resolvedAt)}', style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ),
         AssetSummaryCard(asset: card.asset),
         Text(l10n.openFaultsLabel(card.openFaults), key: const Key('open-faults')),
         for (final task in card.myOpenTasks)
@@ -136,7 +155,7 @@ class AssetCardScreen extends StatelessWidget {
               trailing: TextButton(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => TaskDetailScreen(controller: controller, cached: task),
+                    builder: (_) => TaskDetailScreen(controller: controller, cached: task, showCamera: showCamera),
                   ),
                 ),
                 child: Text(l10n.openTask),

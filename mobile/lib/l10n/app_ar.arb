@@ -11,7 +11,7 @@
   },
   "languageToggle": "English",
   "privacyTitle": "قبل البدء: خصوصيتك",
-  "privacyBody": "هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا لمسح رمز QR على أعمدة الإنارة فقط، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.",
+  "privacyBody": "هذا التطبيق يعمل على هاتفك الشخصي.\n\n• يستخدم الكاميرا داخل التطبيق فقط: لمسح رمز QR على أعمدة الإنارة ولالتقاط صور العمل. لا يحفظ الصور في معرض الهاتف، ولا يصل إلى معرض الصور أو الملفات أو جهات الاتصال أو أي تطبيق آخر. تُحذف صور العمل من الهاتف بعد رفعها.\n• لا يتتبع موقعك. (في مراحل لاحقة يُسجَّل الموقع فقط لحظة التقاط دليل عمل، والتطبيق مفتوح أمامك.)\n• بياناته مشفّرة داخل مساحة التطبيق الخاصة ومحميّة برمز PIN.\n• البلدية لا تستطيع مسح هاتفك أو إدارته. إذا أُلغي جهازك، يرفضه الخادم، ويحذف التطبيق بياناته هو فقط.\n• ما تسجّله من أعمال يُحفظ في سجل تدقيق يمكن التحقق منه.",
   "privacyAccept": "فهمت وأوافق",
   "signInTitle": "تسجيل الدخول",
   "signInBody": "سيُفتح متصفح الهاتف لتسجيل الدخول بحسابك في البلدية.",
@@ -204,6 +204,184 @@
     "placeholders": {
       "value": {
         "type": "String"
+      }
+    }
+  },
+  "fieldWorkTitle": "العمل الميداني",
+  "takePhoto": "التقاط صورة",
+  "photoUnreadable": "تعذّرت قراءة الصورة. التقطها مجددًا.",
+  "evidenceKindName": "{kind, select, BEFORE{صورة قبل العمل} AFTER{صورة بعد العمل} TEST{صورة الاختبار} other{{kind}}}",
+  "@evidenceKindName": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "returnedTitle": "أُعيد أمر العمل إليك. أضف المطلوب ثم أعد التقديم:",
+  "returnReasonName": "{reason, select, MISSING_EVIDENCE{صور ناقصة} UNCLEAR_EVIDENCE{صور غير واضحة} CHECKLIST_INCOMPLETE{قائمة الفحص ناقصة} MATERIAL_QUESTION{استفسار عن المواد} DIAGNOSIS_QUESTION{استفسار عن التشخيص} other{سبب آخر}}",
+  "@returnReasonName": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "commandRejected": "رفض الخادم: {command} — {error}",
+  "@commandRejected": {
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "commandName": "{type, select, ArriveOnSite{الوصول} AddEvidence{صورة} RecordDiagnosis{التشخيص} StartWork{بدء العمل} ConsumeMaterial{مادة} RecordChecklist{قائمة الفحص} SubmitWorkOrder{التقديم} Resubmit{إعادة التقديم} other{{type}}}",
+  "@commandName": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "photosWaiting": "{count} صورة بانتظار الرفع",
+  "@photosWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "submittedWaitingReview": "قُدّم العمل وهو بانتظار مراجعة المشرف.",
+  "stepArrive": "الوصول وتأكيد الملصق",
+  "arriveAction": "وصلت",
+  "stepBefore": "صور قبل العمل ({count}/{total})",
+  "@stepBefore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "stepDiagnosis": "التشخيص",
+  "chooseDiagnosis": "اختيار",
+  "stepStart": "بدء العمل",
+  "startWorkAction": "ابدأ",
+  "startWorkNeeds": "يلزم صور قبل العمل والتشخيص أولًا.",
+  "stepMaterial": "المواد المستخدمة ({count})",
+  "@stepMaterial": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addMaterial": "إضافة مادة",
+  "stepChecklist": "قائمة الفحص الوظيفي",
+  "openChecklist": "فتح",
+  "stepTestPhoto": "صورة الاختبار ({count}/{total})",
+  "@stepTestPhoto": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "stepAfter": "صور بعد العمل ({count}/{total})",
+  "@stepAfter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "stepSubmit": "التقديم للمراجعة",
+  "stepResubmit": "إعادة التقديم",
+  "submitAction": "تقديم",
+  "resubmitAction": "إعادة التقديم",
+  "arriveWithCode": "تأكيد بالرمز المكتوب",
+  "arriveHint": "امسح ملصق QR على العمود {code}.",
+  "@arriveHint": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "damagedTagHint": "الملصق تالف أو غير مقروء؟ اكتب الرمز واذكر السبب.",
+  "manualReasonLabel": "سبب الإدخال اليدوي",
+  "manualReasonRequired": "اذكر سبب إدخال الرمز يدويًا.",
+  "noteOptional": "ملاحظة (اختياري)",
+  "referenceMissing": "لم تُحمَّل رموز التشخيص بعد. زامن ثم حاول مجددًا.",
+  "custodyHint": "اختر من المواد الموجودة في عهدتك.",
+  "custodyEmpty": "لا توجد مواد في عهدتك حسب آخر مزامنة.",
+  "inCustody": "في العهدة: {quantity} {unit}",
+  "@inCustody": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseSerials": "اختر الرقم التسلسلي للقطعة المركّبة:",
+  "quantityLabel": "الكمية ({unit})",
+  "@quantityLabel": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "testMethodLabel": "طريقة الاختبار",
+  "notTestedReason": "سبب عدم الاختبار",
+  "yes": "نعم",
+  "no": "لا",
+  "submitSummary": "قبل: {before} · بعد: {after} · اختبار: {test} · مواد: {materials}",
+  "@submitSummary": {
+    "placeholders": {
+      "before": {
+        "type": "int"
+      },
+      "after": {
+        "type": "int"
+      },
+      "test": {
+        "type": "int"
+      },
+      "materials": {
+        "type": "int"
+      }
+    }
+  },
+  "rootCauseLabel": "السبب الجذري للعطل",
+  "noMaterialReasonLabel": "لماذا لم تُستخدم أي مادة؟",
+  "recurrentFailureTitle": "عطل متكرر",
+  "fullInspectionRecommended": "توصية: يُنصح بفحص شامل للعمود",
+  "recommendationRule": "{count} أعطال محسوبة؛ العتبة {threshold} خلال {days} يومًا",
+  "@recommendationRule": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "threshold": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
       }
     }
   }
