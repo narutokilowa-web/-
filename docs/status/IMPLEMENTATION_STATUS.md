@@ -91,7 +91,7 @@ flag; offboarding return as SR4/S12; YAML scope value `m5`; default `min_app_ver
 | 2 | Flags raised by M5 are shown on the documents; the auditor's review/decide workflow is M6. Material left with a disabled user stays visible (reconciliation finding + flags) until then. | By plan |
 | 3 | The dispute photo is supported by the API (owned by the issue); the phone sends the reason only. | Documented |
 | 4 | Real-phone checks M5 steps 20–24 (with M4 steps 13–19) are required before a real municipal field pilot. | Owner checklist |
-| 5 | CI: the emulator job on a85304d (docs-only) failed twice on runner infrastructure (emulator service crash; runner shutdown during APK install), no test assertion reached; the job now builds the test APK before booting the emulator. | Verified by the M5 CI run |
+| 5 | CI: the emulator job on a85304d (docs-only) failed twice on runner infrastructure (emulator service crash; runner shutdown during APK install), no test assertion reached. The first M5 run (36171956916 on 783f89f) tried installing a prebuilt test APK right after the emulator booted; sign-in then stalled for 40 s with no error (5 of 6 jobs green). The job is back to the M4-proven `flutter drive` invocation (build while the emulator settles), and a wait timeout now saves a `timeout` screenshot. | Verified by the next M5 CI run |
 
 ### Decisions needed from the owner
 

@@ -162,9 +162,6 @@ jobs:
         run: flutter pub get
       # Build the test app before the emulator boots: building it next to a running emulator starved the runner
       # (QEMU "hanging thread" errors, then a runner shutdown on a85304d). The emulator then only installs and runs it.
-      - name: Build the field-app test APK (integration test entry point)
-        working-directory: mobile
-        run: flutter build apk --debug --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
       - name: "Field-app flow on an Android 14 emulator (the phone reaches the stack as localhost via adb reverse)"
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -176,7 +173,7 @@ jobs:
           # Each line runs in its own shell.
           script: |
             adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080
-            cd mobile && flutter drive --use-application-binary=build/app/outputs/flutter-apk/app-debug.apk --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart
+            cd mobile && flutter drive --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
       - name: Screenshots from the device
         if: always()
         uses: actions/upload-artifact@v4

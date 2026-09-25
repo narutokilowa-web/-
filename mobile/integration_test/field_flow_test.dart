@@ -74,10 +74,14 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    // On a timeout the screen is captured first (uploaded with the other screenshots), so a stuck step shows its state.
     Future<void> until(Finder finder, {Duration timeout = const Duration(seconds: 40)}) async {
       final end = DateTime.now().add(timeout);
       while (finder.evaluate().isEmpty) {
-        if (DateTime.now().isAfter(end)) throw TestFailure('Timed out waiting for $finder');
+        if (DateTime.now().isAfter(end)) {
+          await binding.takeScreenshot('timeout');
+          throw TestFailure('Timed out waiting for $finder');
+        }
         await tester.pump(const Duration(milliseconds: 200));
       }
     }
