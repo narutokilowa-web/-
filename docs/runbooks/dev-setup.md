@@ -29,14 +29,24 @@ make up        # creates .env with random secrets (first time), builds images, s
 
 ```bash
 make test          # backend + web + mobile tests (no running stack needed; backend tests use Docker)
-make e2e           # browser tests (needs `make up`): every dev user signs in; M1 registration flow; M2 device/fault/work-order flow
+make e2e           # browser tests (needs `make up && make seed`): every dev user signs in; M1 registration; M2 device/fault/work-order; M3 / DEMO 1 review, seal, recommendation, dashboard, audit
 make android-e2e   # field app on a connected Android phone/emulator (needs `make up`, local Flutter + adb)
 make verify-audit  # independent audit verifier against the running DB (as mfop_readonly); exit 0 = OK, 1 = findings, 2 = error
-make seed          # re-apply the dev bootstrap (idempotent)
+make seed          # DEMO 1 data (idempotent): dev users, reference data, synthetic items/stock/lights, the repeat-failure light
+make tamper-demo   # DEV ONLY, DEMO 1 step 20: change a consumed quantity as the DB owner; `make verify-audit` then fails
+make tamper-undo   # put the recorded quantity back
 make demo-reset    # wipe volumes, start from scratch
 make down          # stop
 make apk           # Android debug APK → mobile/build/app/outputs/flutter-apk/app-debug.apk
 ```
+
+## Added in M3
+
+- **Evidence store:** named volume `objects` mounted at `/var/lib/mfop/objects` in the `api` and `migrate` containers (`Storage__Mode=local`, `Storage__Root`). Local disk, **not WORM** (the web banner says so); WORM / Object Lock arrives in M8. `make demo-reset` wipes it with the database.
+- **`make seed`** runs the migrator twice: `migrate --reference-data --seed-dev` (diagnosis codes, checklist templates, dev users, rule defaults) and `seed-demo deploy/seed/demo-data.json` (items with SYP costs, opening stock received and issued by `warehouse1`, 10 synthetic lights, and the repeat-failure light with two earlier repairs). All values are synthetic.
+- **Rule settings:** the repeated-failure threshold and window live in `rules.rule_settings` (admin → **الإعدادات**), not in configuration files.
+- **API settings (appsettings / env):** `Evidence:MaxBytes` (15 MB), `Evidence:VerifyIntervalSeconds` (2), `Evidence:PreviewMaxPixels` (1280), `Evidence:ThumbnailMaxPixels` (320), `WorkOrders:ReworkWindowDays` (30).
+- DEMO 1 click-by-click script: `docs/runbooks/demo-1.md`.
 
 ## Configuration added in M1
 

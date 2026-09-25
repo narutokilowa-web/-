@@ -7,7 +7,7 @@ FLUTTER_DOCKER_ARGS ?=
 # Use a local Flutter SDK if present, otherwise the pinned Docker image (includes the Android SDK).
 FLUTTER := $(shell command -v flutter >/dev/null 2>&1 && echo flutter || echo docker run --rm $(FLUTTER_DOCKER_ARGS) -v $(CURDIR)/mobile:/app -v mfop-flutter-pub-cache:/root/.pub-cache -v mfop-gradle-cache:/root/.gradle -w /app $(FLUTTER_IMAGE) flutter)
 
-.PHONY: help env up down ps logs migrate seed verify-audit demo-reset test test-backend test-web test-mobile e2e android-e2e apk clean
+.PHONY: help env up down ps logs migrate seed verify-audit tamper-demo tamper-undo demo-reset test test-backend test-web test-mobile e2e android-e2e apk clean
 
 help:
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -37,6 +37,22 @@ seed: env ## load DEMO 1 data: dev users, reference data, synthetic lights/stock
 
 verify-audit: env ## verify the audit chain, approved snapshots and active assets (read-only DB role)
 	set -a && source .env && set +a && dotnet run --project tools/audit-verify -- --db "Host=localhost;Port=$${DB_PORT:-5432};Database=mfop;Username=mfop_readonly;Password=$${MFOP_READONLY_PASSWORD}"
+
+# DEMO 1 step 20 (DEV ONLY): a privileged database user changes a consumed quantity of the most recently closed work
+# order. The append-only trigger must be disabled first, which only the table owner can do; the verifier then names
+# the broken seal and stock balances. `make tamper-undo` puts the recorded value back.
+TAMPER_SQL = ALTER TABLE inventory.stock_movements DISABLE TRIGGER stock_movements_no_update_delete; \
+	UPDATE inventory.stock_movements SET quantity = $(1) WHERE type = 'CONSUME' AND work_order_id = \
+	(SELECT id FROM workorders.work_orders WHERE state = 'CLOSED' ORDER BY closed_at DESC LIMIT 1); \
+	ALTER TABLE inventory.stock_movements ENABLE TRIGGER stock_movements_no_update_delete; \
+	SELECT w.code, m.quantity FROM inventory.stock_movements m JOIN workorders.work_orders w ON w.id = m.work_order_id \
+	WHERE w.id = (SELECT id FROM workorders.work_orders WHERE state = 'CLOSED' ORDER BY closed_at DESC LIMIT 1);
+
+tamper-demo: env ## DEV ONLY, DEMO 1 step 20: as mfop_owner, set the latest closed work order's consumed quantity to 3
+	set -a && source .env && set +a && $(COMPOSE) exec -T -e PGPASSWORD="$${MFOP_OWNER_PASSWORD}" db psql -h localhost -U mfop_owner -d mfop -c "$(call TAMPER_SQL,3)"
+
+tamper-undo: env ## DEV ONLY: put the recorded quantity (1) back after the tamper demonstration
+	set -a && source .env && set +a && $(COMPOSE) exec -T -e PGPASSWORD="$${MFOP_OWNER_PASSWORD}" db psql -h localhost -U mfop_owner -d mfop -c "$(call TAMPER_SQL,1)"
 
 demo-reset: env ## wipe dev volumes and start again from scratch
 	$(COMPOSE) down -v

@@ -4,10 +4,90 @@
 |---|---|---|
 | M0 — Foundations | ✅ **approved by the owner** | 2026-09-24 |
 | M1 — Audit core + register / approve / QR (web) | ✅ **approved by the owner** | 2026-09-24 |
-| M2 — Android scan + faults + work-order creation | ✅ **PASS — awaiting owner approval before M3** | 2026-09-24 |
-| M3 — Field execution + review + dashboard → DEMO 1 | — | — |
+| M2 — Android scan + faults + work-order creation | ✅ **approved by the owner** | 2026-09-25 |
+| M3 — Field execution + review + dashboard → DEMO 1 | ✅ **PASS — awaiting owner approval; M4 not started** | 2026-09-25 |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
+
+---
+
+## M3 — Field execution + review + dashboard → DEMO 1
+
+Scope followed: 11 §11.2 M3 (items 1–10) and the DEMO 1 Definition of Done (11 §11.3). Nothing from M4 has been started (no offline grants, trusted time, resumable uploads, device signing or offboarding). The M2 web UI and its visual direction are unchanged; new screens reuse the same styles, Arabic RTL first. Keycloak protections are unchanged (no security work was removed or weakened).
+
+### Deliverables vs. specification
+
+| # | Deliverable | Status | Where |
+|---|---|---|---|
+| 1 | **Evidence pipeline:** in-app camera only; on-device re-encode (≤ 2048 px, JPEG q80, **EXIF removed**, stamp) + SHA-256; `AddEvidence` announces the hash; `PUT /sync/v1/evidence/{id}/content` streams to the local object store while hashing; hosted verifier → `VERIFIED` / `HASH_MISMATCH` / `DUPLICATE` (+ CRITICAL flags); EXIF-free previews; previews only for authorized roles (bearer-token fetch), originals auditor-only and audited | ✅ | `Modules/Mfop.Evidence`, `Mfop.Infrastructure/Storage`, `mobile/lib/core/photo_processing.dart`, `web/src/features/workorders/EvidenceImage.tsx` |
+| 2 | **Technician flow on the phone:** arrive (tag scan must match; typed code needs a reason) → 2 before photos → diagnosis (seeded codes, power-source filtered) → **Start work** → **one material from own custody** with serial → checklist of the pinned template + test method + test photo → ≥ 2 after photos → **Submit** (W9 guards, core return excluded); returned tasks show reasons and **Resubmit** (additions only) | ✅ | `mobile/lib/features/work`, `Modules/Mfop.WorkOrders/Application/FieldExecutionService.cs` |
+| 3 | **Minimal inventory:** 8 seeded items with **SYP** costs (Money = amount + currency + date); `RECEIPT` of opening stock and one-step `ISSUE` to `tech1`/`tech2` by `warehouse1` in `make seed`; `CONSUME` linked to work order + asset; consumption beyond known custody applied and flagged on the review screen; **stock balances page** (warehouse + custody) | ✅ | `Modules/Mfop.Inventory`, `web/src/features/stock` |
+| 4 | **Review and closure (web, supervisor ≠ executor):** photos, diagnosis, material with cost, checklist (unexpected answers highlighted), arrivals, submissions (what each resubmission added), flags; **Approve disabled until every photo is VERIFIED**; approve → `CLOSED` + **work-order seal**; return (reasons) → resubmit; light → `OPERATIONAL` (`UNKNOWN` if not tested); fault → `RESOLVED` | ✅ | `ReviewService.cs`, `WorkOrderSeal.cs`, `web/src/features/workorders/ReviewSection.tsx` |
+| 5 | **Dashboard:** lights by operational status, open faults (and how many reported without power), open work orders by state, pending review, **recently completed work orders** linking to each (with seal) | ✅ | `web/src/features/dashboard` |
+| 6 | **Audit history:** work-order and asset timelines show every command with actor, **device**, time, reason, old → new, event hash; **auditor search by entity** (`GET /api/v1/audit/events`) | ✅ | `Modules/Mfop.Audit/Api`, `web/src/features/audit` |
+| 7 | **Verifier extended:** recomputes each `CLOSED` work order's seal from operational tables (independent code in `tools/audit-verify`), compares it with the seal in the audit chain, and recomputes stock balances from movements | ✅ | `tools/audit-verify/WorkOrderSeals.cs` |
+| 8 | **Golden path + demo:** `Mfop.GoldenPath.Tests` runs DEMO 1 steps 2–19 through the public API on a `make seed` database; `docs/runbooks/demo-1.md` click-by-click incl. the tamper step (`make tamper-demo` → `make verify-audit` names the seal mismatch) | ✅ | `backend/tests/Mfop.GoldenPath.Tests`, `docs/runbooks/demo-1.md` |
+| 9 | **Tests:** YAML tests for WorkOrder (incl. new `in_state_commands`), Evidence and StockLedger machines; N2–N4, N6, N7, N9, N10, N13, N14 | ✅ | see below |
+| 10 | **Minimal repeated-failure rule:** evaluated when a fault becomes RESOLVED; counts RESOLVED faults whose resolving work order's diagnosis has `counts_as_failure`, within the window; non-counting codes ignored; `threshold` 3 / `window_days` 180 **from `rule_settings`** (admin settings page, audited, reason required); asset page and phone asset card show **"عطل متكرر — توصية: يُنصح بفحص شامل"** with the counted work orders, threshold and window; `make seed` creates the light with 2 earlier repairs | ✅ | `Modules/Mfop.Rules`, `web/src/features/assets/RecommendationBanner.tsx`, `web/src/features/settings` |
+
+### DEMO 1 Definition of Done (11 §11.3)
+
+| Item | Result |
+|---|---|
+| Clean clone → `make up && make seed` on one laptop, ≤ 15 min, no government/foreign-cloud dependency | ✅ `make demo-reset` + `make seed` ≈ 6 min with images cached (seed itself ≈ 10 s); first build downloads base images. Running stack ≈ 1.0 GB RAM (Keycloak 0.72, API 0.18, DB 0.09 GB) |
+| Real Android phone with `adb reverse` + debug APK | ⚠️ Not available to me. Covered by the Android **emulator** job in CI (real APK) and the owner checklist `docs/runbooks/android-field-test.md` |
+| No secrets committed; `.env.example` complete | ✅ gitleaks (full history) green; no new variables needed in `.env` for M3 |
+| Steps 1–20 performed following `docs/runbooks/demo-1.md` | ✅ on the Compose stack: steps 2–19 by the golden-path test (API), the M3 Playwright spec (web screens) and the emulator test (phone screens); step 20 by `make tamper-demo` + `make verify-audit` |
+| Every command writes its audit event in the same transaction (actor, device, time, reason, old/new) | ✅ UnitOfWork refuses a change without an audit record; audit-action tests per command |
+| `make verify-audit` exits 0 on the untouched demo DB | ✅ (seeded DB, and again after all E2E flows) |
+| After step 20 the verifier exits non-zero and names the tampered entity | ✅ `SEAL_MISMATCH … WO-2026-000004` + two `STOCK_BALANCE_MISMATCH` findings; exit code non-zero |
+| Step 17a recommendation with counted faults, threshold and window from `rule_settings` | ✅ golden path, Playwright, and a test that a changed setting takes effect |
+| Maker ≠ checker (N1, N2) | ✅ |
+| "Tamper-evident / verifiable", never "immutable" | ✅ locale test forbids the word; code comments and seed text reworded |
+| Golden path test green in CI; YAML tests; matrix tests; audit-in-transaction tests; N1–N7, N9–N15 | ✅ (see CI results) |
+| Web and mobile main flows in Arabic RTL; remaining English strings listed | ✅ Arabic by default on both. English that remains visible: SKU codes, serials, hashes, asset/work-order codes, the ASCII photo stamp, and server error codes shown inside the generic Arabic error message |
+| Phone flow on a low-to-mid Android device without crashes; interaction time recorded | ⚠️ Emulator only; interaction time to be recorded in the real-phone checklist |
+| ADR-0008 updated with deviations | ✅ |
+
+### Tests run (local, final)
+
+| Suite | Tests | Result |
+|---|---|---|
+| `Mfop.SpecFiles.Tests`: + Evidence and StockLedger machines, work-order `in_state_commands` == code | 105 | ✅ |
+| `Mfop.Domain.Tests`: + repeated-failure rule (threshold − 1, threshold, outside window, excluded codes, changed/disabled setting), evidence E1–E5, stock ledger, in-state commands, seal formats | 46 | ✅ |
+| `Mfop.Architecture.Tests`: + Rules, Inventory, Evidence modules | 38 | ✅ |
+| `Mfop.Api.Tests` (real PostGIS): full field flow + seal + verifier, **N2, N3, N4, N6, N7, N9, N10, N13, N14**, start-work guards, arrival tag rules, return/resubmit additions, custody over-consumption flags, checklist blocking/failed/not tested (→ UNKNOWN), preview/original authorization, upload ownership / non-JPEG / repeated upload, **rule setting change takes effect**, matrix now at M3 | 95 | ✅ |
+| `Mfop.GoldenPath.Tests`: DEMO 1 steps 2–19 on a `make seed` database, verifier OK at start and end | 1 | ✅ |
+| Web: lint, typecheck, build; Vitest (+ money/quantity, photo order, checklist mismatch, balances, audit query, recommendation banner, device in timeline) | 28 | ✅ |
+| Mobile: `flutter analyze` (no issues); `flutter test` (+ photo processing: size, EXIF stripped, hash; outbox order and upload-after-APPLIED; refused announcement; offline queue; returned task; widget-level field flow) | 27 | ✅ |
+| E2E (Playwright vs. Compose after `make seed`): 9 role sign-ins, wrong password, M1, M2 and **M3 / DEMO 1** flows | 13 | ✅ |
+| `make verify-audit` on the seeded DB, after all E2E, after `make tamper-demo` (fails as expected), after `make tamper-undo` | — | ✅ |
+
+### Deviations from the specification
+
+All are recorded in ADR-0008 (2026-09-25 entries). In short: the before-photos guard is on StartWork (W6), not arrival (W5); location/presence capture, the NO_WORK path and the flag workflow stay in M6; photo replacement exists in the API but not yet on the phone; review "opened at" not recorded; SLA hours still unconfigured; the verifier and previews run inside the API process (worker container in M8); the emulator test uses synthetic camera frames.
+
+### Warnings and known limitations
+
+| # | What | Status |
+|---|---|---|
+| 1 | No physical phone here: browser login, **live in-app camera**, FLAG_SECURE and interaction time need the real-phone checklist (`docs/runbooks/android-field-test.md`, now with steps 10a–10e). | Owner checklist |
+| 2 | This sandbox can no longer reach Google's Maven (`dl.google.com` returns 403 at the proxy), so the debug APK with the new `camera` plugin could not be built **locally**; it is built by the CI Mobile and Android jobs. Network settings were not changed. | CI builds it |
+| 3 | Evidence is on the laptop's disk (local object store, banner "not WORM"); signed checkpoints are not implemented. Both are mandatory before a real pilot (M8). | By plan |
+| 4 | The in-process verifier polls every 2 s; approve becomes available a few seconds after the last upload. | Acceptable for DEMO 1 |
+| 5 | The API image grew by ~40 MB (SkiaSharp native library for previews); non-Linux native libraries are removed from the image. | Accepted |
+| 6 | The migrator prints "Cannot load library libgssapi_krb5.so.2" (Npgsql's optional Kerberos probe). Harmless, as in M1/M2. | Unchanged |
+| 7 | Harmless build warning: web bundle > 500 kB (Vite chunk-size hint). | Unchanged |
+
+### Decisions needed from the owner
+
+1. **Approve M3 / DEMO 1** (M4 will not start before that).
+2. **Run the real-phone checklist** (`docs/runbooks/android-field-test.md`, ≈ 20 min) or accept the emulator result for the phone steps.
+3. SLA hours per priority (still open from M2).
+
+### CI results
+
+CI_RESULTS_PLACEHOLDER
 
 ---
 
