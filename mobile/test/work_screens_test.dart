@@ -44,9 +44,21 @@ void main() {
     }
 
     Future<void> photo(String step) async {
-      await tap('$step-action');
-      // on-device processing runs in a background isolate
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 1500)));
+      final f = find.byKey(Key('$step-action'));
+      await tester.ensureVisible(f);
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await tester.tap(f);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      // On-device processing runs in a background isolate in real time and a progress bar animates meanwhile, so
+      // pumpAndSettle only once it is gone (a slow machine may need several seconds).
+      for (var i = 0; i < 200 && (i == 0 || find.byType(LinearProgressIndicator).evaluate().isNotEmpty); i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+
+      expect(find.byType(LinearProgressIndicator), findsNothing, reason: 'photo processing did not finish');
       await settle();
     }
 
