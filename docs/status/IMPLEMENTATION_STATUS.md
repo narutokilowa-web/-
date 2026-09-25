@@ -6,7 +6,7 @@
 | M1 — Audit core + register / approve / QR (web) | ✅ **approved by the owner** | 2026-09-24 |
 | M2 — Android scan + faults + work-order creation | ✅ **approved by the owner** | 2026-09-25 |
 | M3 — Field execution + review + dashboard → DEMO 1 | ✅ **approved by the owner** (APK also installed on a real phone) | 2026-09-25 |
-| M4 — Offline and BYOD hardening | 🟡 **implemented; local suites green; CI run pending — see below; M5 not started** | 2026-09-25 |
+| M4 — Offline and BYOD hardening | ✅ **PASS — CI green on all 6 jobs incl. Android emulator; awaiting owner approval; M5 not started** | 2026-09-25 |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
 
@@ -42,7 +42,7 @@ deletes only its own data and its own Keystore key when the server refuses it.
 | Suite | Tests | Result |
 |---|---|---|
 | `Mfop.SpecFiles.Tests` (+ User and SyncQuarantine machines == code; realm: `mfop-backend` is a service account with user management only, no committed secret) | 127 | ✅ |
-| `Mfop.Domain.Tests` (+ app versions, policy ranges and defaults, user disable/enable SoD and reason, IdP back-off and alert, quarantine decision guards) | 70 | ✅ |
+| `Mfop.Domain.Tests` (+ app versions, policy ranges and defaults, user disable/enable SoD and reason, IdP back-off and alert, quarantine decision guards, grant key loads from PKCS#8 and SEC1, other curves refused) | 73 | ✅ |
 | `Mfop.Architecture.Tests` (audit-exempt allow-list: nonces, clock samples, IdP outbox) | 38 | ✅ |
 | `Mfop.Api.Tests` — **OfflineTrustTests** (11): signature required / stolen key / tampered body / old timestamp / replayed nonce; public key required; 426 and changing `min_app_version`; policy validation, reason, audit; grant signature verifies and its lifetime follows the policy; grant required / foreign grant flagged; **offline inside the grant, synced 30 h later → applied (HIGH, placed at +2 h)**; **made after expiry → `GRANT_EXPIRED` + flag**; made after revocation → `GRANT_REVOKED`; **double reboot → quarantined, author cannot decide, supervisor applies (author's audit, supervisor's decision), discard reported on resend**; phone clock 3 days back → one `CLOCK_SKEW`, time unaffected | 11 | ✅ |
 | `Mfop.Api.Tests` — **SyncScenarioTests** (7): **reassigned while offline** (B's diagnosis stands; A's photo + material kept and flagged; stranger refused); **stale view** → `WORK_ORDER_CHANGED` then OK after refresh; own batch never conflicts; missing version refused; **cancelled while offline → quarantined**, apply → `APPLY_FAILED`, discard; **revoked phone** (push, pull, task, grant, upload all refused; grants revoked; Keycloak field-app logout); **complete offboarding** (one audited transaction, devices revoked/rejected, flags, push refused, held command discard-only, needs-reassignment queue, Keycloak retries + alert, enable keeps devices revoked); **interrupted upload resumes**; **lost response → resend DUPLICATE** | 7 | ✅ |
@@ -80,7 +80,23 @@ YAML scope value `m4`.
 
 ### CI results
 
-Pending — filled in after the CI run on the pushed head.
+Final run [36142939863](https://github.com/narutokilowa-web/-/actions/runs/36142939863) on head `88e103b`: **success, all 6 jobs** (Android emulator finished 14:13 UTC).
+
+| Job | Result |
+|---|---|
+| Secret scan (gitleaks CLI, full history) | ✅ |
+| Web (lint, typecheck, 30 unit tests, build, `npm audit`) | ✅ |
+| Backend (build `-warnaserror`, 352 tests: spec files, domain, architecture, API on Testcontainers PostGIS incl. the device-trust and sync scenario suites, **DEMO 1 golden path**; vulnerable-package check) | ✅ |
+| Mobile (analyze, 39 tests, **debug APK 0.4.0** → artifact `mfop-field-debug-apk`) | ✅ |
+| E2E (Compose on a clean runner with freshly generated secrets and grant key + `make seed`: 9 role sign-ins, wrong password, M1, M2, **M3 / DEMO 1** and **M4** flows — security policies changed with a reason, **inspector1 offboarded → Keycloak sign-in refused → enabled again → sign-in works** — then `make verify-audit` OK) | ✅ |
+| **Android emulator** (Android 14, real app, stack via `adb reverse`, after `make seed`): sign-in → **Keystore device key registered** (`hasKey`) → device approval → PIN → **server-signed offline grant received and verified** → My tasks → label QR decoded → arrive, photos, diagnosis, start, material, checklist, test and after photos, submit — **every command signed with the Keystore key, carrying grant and version, all accepted** → photos VERIFIED, supervisor approves → `CLOSED` with a seal → revocation: the app deletes its own data **and its own device key** (a new start creates a different key) | ✅ (screenshots: artifact `android-e2e-screenshots`) |
+
+**Issues found by CI on the way (both M4, both fixed):**
+
+1. **Grant signing key format** (run [36141306809](https://github.com/narutokilowa-web/-/actions/runs/36141306809), head `0c07fbf`, E2E job): `make env` generated `MFOP_GRANT_SIGNING_KEY` with `openssl genpkey -outform DER`, which writes a SEC1 `ECPrivateKey`, not PKCS#8; the API could not import it ("ASN1 corrupted data") and the Compose stack never became healthy. Fix `11a0a62`: `tools/dev/init-env.sh` converts with `openssl pkcs8 -topk8`; `GrantSigner` also accepts SEC1 (keys already in `.env` files keep working) and refuses keys that are not P-256; regression tests for both formats and a P-384 key. The local API tests had not caught it because they use an ephemeral key.
+2. **Widget-test timing** (run [36142502826](https://github.com/narutokilowa-web/-/actions/runs/36142502826), head `11a0a62`, Mobile job): `work_screens_test` called `pumpAndSettle` ~200 ms after tapping a photo step while the photo was still being processed in a background isolate (a progress bar animates meanwhile); on a slow runner `pumpAndSettle` timed out. Fix `88e103b` (test only): the helper pumps until the progress bar is gone (bounded, then asserted) before settling. App behaviour unchanged.
+
+The run on `0c07fbf` was cancelled by GitHub when `11a0a62` was pushed; the run on `11a0a62` was superseded by `88e103b`.
 
 ---
 
