@@ -157,6 +157,14 @@ void main() {
       expect(c.syncStatus!.photosWaiting, 0);
     });
 
+    test('a typed code is sent as the tag token, even if the label URL was pasted', () async {
+      final h = await readyTechnician();
+      final c = h.controller;
+      c.arrive(c.tasks.single, manualCode: 'http://localhost:5173/t/7K3M92QX.4F', manualReason: 'الملصق ممزق');
+      await c.syncNow();
+      expect(pushedCommands(h).single['payload']['manualCode'], '7K3M92QX.4F');
+    });
+
     test('a returned task offers additions and Resubmit', () async {
       final h = await readyTechnician(task: {
         ...taskJson(),

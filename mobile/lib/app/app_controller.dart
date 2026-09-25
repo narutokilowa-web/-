@@ -156,7 +156,8 @@ class AppController extends ChangeNotifier with WidgetsBindingObserver {
   void arrive(WorkOrderTask task, {String? scanned, String? manualCode, String? manualReason}) => _enqueue('ArriveOnSite', {
     'workOrderId': task.id,
     'scannedToken': scanned,
-    'manualCode': manualCode?.trim().toUpperCase(),
+    // A typed code is normalised like a scan (a pasted label URL, lower case, missing dot) → the tag token.
+    'manualCode': manualCode == null ? null : (tagTokenFrom(manualCode) ?? manualCode.trim().toUpperCase()),
     'manualReason': manualReason?.trim(),
   });
 
