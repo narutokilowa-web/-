@@ -29,7 +29,7 @@ jobs:
       - name: Build (warnings are errors)
         working-directory: backend
         run: dotnet build -warnaserror
-      - name: Test (spec files, architecture, API + real PostGIS via Testcontainers)
+      - name: Test (spec files, domain, architecture, API + DEMO 1 golden path on real PostGIS via Testcontainers)
         working-directory: backend
         run: dotnet test --no-build --logger "console;verbosity=normal"
       - name: Vulnerable package check

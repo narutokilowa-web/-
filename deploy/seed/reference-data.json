@@ -1,0 +1,61 @@
+{
+  "_comment": "Field vocabulary of the Lean Pilot (docs/lean-pilot/02 §2.2 diagnosis codes; 04 §4.8 checklist; 06 §6.2 evidence requirements). Loaded by the migrator through an audited command (actor SYSTEM). Not municipality policy: the pilot's own reference data. A changed template must get a new version (published versions are append-only and never edited in place).",
+  "diagnosis_codes": [
+    {"code": "LED_MODULE_FAIL", "name_ar": "عطل وحدة الليد", "name_en": "LED module failure", "counts_as_failure": true, "requires_material": true, "expected_items": ["LED-MOD-50W"], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "REPAIR"},
+    {"code": "DRIVER_FAIL", "name_ar": "عطل الدرايفر", "name_en": "Driver failure", "counts_as_failure": true, "requires_material": true, "expected_items": ["LED-DRV-50W"], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "REPAIR"},
+    {"code": "PHOTOCELL_FAIL", "name_ar": "عطل الخلية الضوئية", "name_en": "Photocell failure", "counts_as_failure": true, "requires_material": true, "expected_items": ["PHOTOCELL"], "power_sources": ["GRID", "HYBRID"], "path": "REPAIR"},
+    {"code": "CABLE_FAULT", "name_ar": "عطل في الكابل", "name_en": "Cable fault", "counts_as_failure": true, "requires_material": true, "expected_items": ["CABLE-2.5"], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "REPAIR"},
+    {"code": "FUSE", "name_ar": "فيوز محروق", "name_en": "Blown fuse", "counts_as_failure": true, "requires_material": true, "expected_items": ["FUSE-10A"], "power_sources": ["GRID", "HYBRID"], "path": "REPAIR"},
+    {"code": "BATTERY_FAIL", "name_ar": "عطل البطارية", "name_en": "Battery failure", "counts_as_failure": true, "requires_material": true, "expected_items": ["SOLAR-BATT-100AH"], "power_sources": ["SOLAR", "HYBRID"], "path": "REPAIR"},
+    {"code": "PANEL_DAMAGE", "name_ar": "تلف اللوح الشمسي", "name_en": "Solar panel damage", "counts_as_failure": true, "requires_material": true, "expected_items": ["SOLAR-PANEL-100W"], "power_sources": ["SOLAR", "HYBRID"], "path": "REPAIR"},
+    {"code": "CONTROLLER_FAIL", "name_ar": "عطل منظم الشحن", "name_en": "Charge controller failure", "counts_as_failure": true, "requires_material": true, "expected_items": ["SOLAR-CTRL"], "power_sources": ["SOLAR", "HYBRID"], "path": "REPAIR"},
+    {"code": "GRID_SUPPLY_OFF", "name_ar": "انقطاع كهرباء الشبكة", "name_en": "No public-grid power", "counts_as_failure": false, "requires_material": false, "expected_items": [], "power_sources": ["GRID", "HYBRID"], "path": "NO_WORK"},
+    {"code": "THEFT", "name_ar": "سرقة", "name_en": "Theft", "counts_as_failure": false, "requires_material": false, "expected_items": [], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "NO_WORK"},
+    {"code": "VANDALISM", "name_ar": "تخريب", "name_en": "Vandalism", "counts_as_failure": false, "requires_material": false, "expected_items": [], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "NO_WORK"},
+    {"code": "NO_FAULT_FOUND", "name_ar": "لا يوجد عطل", "name_en": "No fault found", "counts_as_failure": false, "requires_material": false, "expected_items": [], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "NO_WORK"},
+    {"code": "ASSET_NOT_FOUND", "name_ar": "العمود غير موجود", "name_en": "Asset not found", "counts_as_failure": false, "requires_material": false, "expected_items": [], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "NO_WORK"},
+    {"code": "ASSET_MISMATCH", "name_ar": "أصل مختلف عن السجل", "name_en": "Different asset", "counts_as_failure": false, "requires_material": false, "expected_items": [], "power_sources": ["GRID", "SOLAR", "HYBRID"], "path": "NO_WORK"}
+  ],
+  "checklist_templates": [
+    {
+      "code": "STREET_LIGHT_REPAIR_GRID",
+      "version": 1,
+      "power_sources": ["GRID"],
+      "test_methods": [
+        {"code": "NIGHT", "text_ar": "اختبار ليلي", "text_en": "At night"},
+        {"code": "PHOTOCELL_COVERED", "text_ar": "تغطية الخلية الضوئية", "text_en": "Photocell covered"},
+        {"code": "BYPASS", "text_ar": "تشغيل مباشر (تجاوز)", "text_en": "Bypass"},
+        {"code": "NOT_TESTED", "text_ar": "لم يتم الاختبار (مع السبب)", "text_en": "Not tested (reason)"}
+      ],
+      "items": [
+        {"code": "LAMP_ON", "text_ar": "المصباح يضيء بعد الإصلاح", "text_en": "The lamp is on after the repair", "expected": "YES", "blocking": true, "test_item": true},
+        {"code": "CONNECTIONS_TIGHT", "text_ar": "التوصيلات محكمة ومعزولة", "text_en": "Connections are tight and insulated", "expected": "YES", "blocking": true, "test_item": false},
+        {"code": "EXPOSED_WIRES", "text_ar": "توجد أسلاك مكشوفة", "text_en": "Exposed wires remain", "expected": "NO", "blocking": true, "test_item": false},
+        {"code": "POLE_DOOR_CLOSED", "text_ar": "باب العمود والغطاء مغلقان", "text_en": "Pole door and cover are closed", "expected": "YES", "blocking": true, "test_item": false},
+        {"code": "LUMINAIRE_FIXED", "text_ar": "الكشاف مثبت بإحكام", "text_en": "The luminaire is firmly fixed", "expected": "YES", "blocking": false, "test_item": false},
+        {"code": "SITE_CLEAN", "text_ar": "الموقع نظيف بعد العمل", "text_en": "The site is clean", "expected": "YES", "blocking": false, "test_item": false}
+      ],
+      "evidence_requirements": {"before_first_arrival": 2, "before_later_arrival": 1, "after": 2, "test": 1}
+    },
+    {
+      "code": "STREET_LIGHT_REPAIR_SOLAR",
+      "version": 1,
+      "power_sources": ["SOLAR", "HYBRID"],
+      "test_methods": [
+        {"code": "NIGHT", "text_ar": "اختبار ليلي", "text_en": "At night"},
+        {"code": "PHOTOCELL_COVERED", "text_ar": "تغطية الحساس الضوئي", "text_en": "Light sensor covered"},
+        {"code": "BYPASS", "text_ar": "تشغيل مباشر (تجاوز)", "text_en": "Bypass"},
+        {"code": "NOT_TESTED", "text_ar": "لم يتم الاختبار (مع السبب)", "text_en": "Not tested (reason)"}
+      ],
+      "items": [
+        {"code": "LAMP_ON", "text_ar": "المصباح يضيء بعد الإصلاح", "text_en": "The lamp is on after the repair", "expected": "YES", "blocking": true, "test_item": true},
+        {"code": "CONTROLLER_OK", "text_ar": "مؤشرات منظم الشحن سليمة", "text_en": "Charge controller indicators are normal", "expected": "YES", "blocking": false, "test_item": false},
+        {"code": "CONNECTIONS_TIGHT", "text_ar": "التوصيلات محكمة ومعزولة", "text_en": "Connections are tight and insulated", "expected": "YES", "blocking": true, "test_item": false},
+        {"code": "EXPOSED_WIRES", "text_ar": "توجد أسلاك مكشوفة", "text_en": "Exposed wires remain", "expected": "NO", "blocking": true, "test_item": false},
+        {"code": "PANEL_CLEAN", "text_ar": "اللوح الشمسي نظيف وغير مظلل", "text_en": "The panel is clean and not shaded", "expected": "YES", "blocking": false, "test_item": false},
+        {"code": "BOX_CLOSED", "text_ar": "صندوق البطارية مغلق", "text_en": "The battery box is closed", "expected": "YES", "blocking": true, "test_item": false}
+      ],
+      "evidence_requirements": {"before_first_arrival": 2, "before_later_arrival": 1, "after": 2, "test": 1}
+    }
+  ]
+}

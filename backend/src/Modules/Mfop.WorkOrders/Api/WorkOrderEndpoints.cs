@@ -29,9 +29,21 @@ public static class WorkOrderEndpoints
         wo.MapPost("/{id:guid}/reassign", async (Guid id, AssignRequest body, HttpContext http, WorkOrderService s, CancellationToken ct) =>
                 (await s.ReassignAsync(http.Command("Reassign", body.Reason), id, body, ct)).ToHttp(Ok))
             .RequirePermission("workorder.assign");
+        wo.MapGet("/{id:guid}/review", async (Guid id, CurrentActor actor, WorkOrderQueries q, CancellationToken ct) => (await q.ReviewAsync(id, actor.Required, ct)).ToHttp())
+            .RequirePermission("workorder.read");
+        wo.MapPost("/{id:guid}/approve", async (Guid id, ApproveRequest body, HttpContext http, ReviewService s, CancellationToken ct) =>
+                (await s.ApproveAsync(http.Command("ApproveWorkOrder", body.Note), id, body, ct)).ToHttp(Ok))
+            .RequirePermission("workorder.review");
+        wo.MapPost("/{id:guid}/return", async (Guid id, ReturnRequest body, HttpContext http, ReviewService s, CancellationToken ct) =>
+                (await s.ReturnAsync(http.Command("ReturnWorkOrder", body.Note), id, body, ct)).ToHttp(Ok))
+            .RequirePermission("workorder.review");
         wo.MapPost("/{id:guid}/cancel", async (Guid id, CancelRequest body, HttpContext http, WorkOrderService s, CancellationToken ct) =>
                 (await s.CancelAsync(http.Command("Cancel", body.Reason), id, body, ct)).ToHttp(Ok))
             .RequirePermission("workorder.cancel");
+
+        app.MapGet("/api/v1/dashboard/summary", async (WorkOrderQueries q, CancellationToken ct) => Results.Ok(await q.DashboardAsync(ct)))
+            .WithTags("Dashboard")
+            .RequirePermission("dashboard.read");
 
         app.MapGet("/api/v1/technicians", async (IAssigneeDirectory d, CancellationToken ct) => Results.Ok(await d.TechniciansAsync(ct)))
             .WithTags("WorkOrders")

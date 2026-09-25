@@ -14,9 +14,13 @@ using Npgsql;
 namespace Mfop.Api.Tests;
 
 [Collection(nameof(DatabaseCollection))]
-public class AuditCoreTests(DatabaseFixture db)
+public class AuditCoreTests(DatabaseFixture db) : IAsyncLifetime
 {
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     private async Task<string[]> ActionsForCommandAsync(Guid commandId)
     {

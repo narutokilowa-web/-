@@ -13,11 +13,15 @@ namespace Mfop.Api.Tests;
 /// the role is not allowed. Record-level policies (maker ≠ checker, own records) are tested in RegistrationFlowTests.
 /// </summary>
 [Collection(nameof(DatabaseCollection))]
-public class AuthorizationMatrixTests(DatabaseFixture db)
+public class AuthorizationMatrixTests(DatabaseFixture db) : IAsyncLifetime
 {
-    private const string CurrentMilestone = "M2";
+    private const string CurrentMilestone = "M3";
 
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     private static Dictionary<string, (HashSet<string> Roles, string Milestone)> YamlActions()
     {
@@ -64,10 +68,14 @@ public class AuthorizationMatrixTests(DatabaseFixture db)
     }
 
     [Fact]
-    public void Every_action_promised_up_to_this_milestone_has_an_endpoint_and_no_endpoint_is_early()
+    public async Task Every_action_promised_up_to_this_milestone_has_an_endpoint_and_no_endpoint_is_early()
     {
         var yaml = YamlActions();
-        var used = ApiEndpoints().Where(x => x.Action is not null).Select(x => x.Action!).ToHashSet();
+        // Phone commands are authorized per command inside POST /sync/v1/push, so a sync handler's permission counts as used.
+        await using var scope = App.Services.CreateAsyncScope();
+        var used = ApiEndpoints().Where(x => x.Action is not null).Select(x => x.Action!)
+            .Concat(scope.ServiceProvider.GetServices<Mfop.Kernel.Commands.ISyncCommandHandler>().Select(h => h.Permission))
+            .ToHashSet();
         var promised = yaml.Where(a => string.CompareOrdinal(a.Value.Milestone, CurrentMilestone) <= 0 && a.Key != "me.read").Select(a => a.Key).ToHashSet();
         Assert.Empty(promised.Except(used));
         Assert.DoesNotContain(used, a => string.CompareOrdinal(yaml[a].Milestone, CurrentMilestone) > 0);
@@ -85,10 +93,14 @@ public class AuthorizationMatrixTests(DatabaseFixture db)
         {
             var url = endpoint.RoutePattern.RawText!
                 .Replace("{id:guid}", Guid.NewGuid().ToString())
+                .Replace("{movementId:guid}", Guid.NewGuid().ToString())
                 .Replace("{token}", "00000000.00");
-            using var response = method == "GET"
-                ? await client.GetAsync(url)
-                : await client.PostAsJsonAsync(url, SampleBody(url));
+            using var response = method switch
+            {
+                "GET" => await client.GetAsync(url + "?assetId=" + Guid.NewGuid()),
+                "PUT" => await client.PutAsync(url, new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0])),
+                _ => await client.PostAsJsonAsync(url, SampleBody(url)),
+            };
 
             var allowed = PermissionMatrix.Allows(action!, [role]);
             var forbiddenByRole = response.StatusCode == HttpStatusCode.Forbidden && await response.ProblemCodeAsync() == ErrorCodesHttp.Forbidden;

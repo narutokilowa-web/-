@@ -1,5 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\..\Mfop.Kernel\Mfop.Kernel.csproj" />
+    <ProjectReference Include="..\..\Mfop.Infrastructure\Mfop.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Mfop.Http\Mfop.Http.csproj" />
+    <ProjectReference Include="..\Mfop.Rules\Mfop.Rules.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
 </Project>

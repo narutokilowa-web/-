@@ -16,17 +16,27 @@ transitions:
      effects: [assignment_ended, assignment_started]}
   - {id: W4, from: [NEW, ASSIGNED], command: Cancel, to: CANCELLED, actor: SUPERVISOR,
      requires: [no_evidence_and_no_consumption, reason], effects: [fault_open_again]}
+  # M3: the before photos are taken after ArriveOnSite (AddEvidence is allowed only from ON_SITE), so the before-photo
+  # requirement is checked when work starts (W6). Location and presence score are deferred to M6 (presence), see ADR-0008.
   - {id: W5, from: [ASSIGNED, RETURNED], command: ArriveOnSite, to: ON_SITE, actor: assignee,
-     requires: [device_active, tag_scan_matches_asset_or_manual_reason, location, before_photos]}
+     requires: [device_active, tag_scan_matches_asset_or_manual_reason]}
   - {id: W6, from: [ON_SITE], command: StartWork, to: IN_PROGRESS, actor: assignee,
-     requires: [diagnosis_recorded], effects: [asset_status_under_maintenance, work_timer_started]}
+     requires: [diagnosis_recorded, before_photos], effects: [asset_status_under_maintenance, work_timer_started]}
   - {id: W9, from: [IN_PROGRESS], command: SubmitWorkOrder, to: PENDING_REVIEW, actor: assignee,
      requires: [checklist_complete, materials_recorded_or_explicit_none, after_photos_min_2, test_photo_or_not_tested_reason, root_cause_note],
      effects: [submission_recorded]}
   - {id: W10, from: [PENDING_REVIEW], command: ApproveWorkOrder, to: CLOSED, actor: SUPERVISOR,
      policies: [reviewer_not_executor], requires: [all_evidence_verified],
-     effects: [seal_computed, asset_status_from_test_result, fault_resolved]}
+     effects: [seal_computed, asset_status_from_test_result, fault_resolved, assignment_ended, evaluate_repeated_failure_rule]}
   - {id: W11, from: [PENDING_REVIEW], command: ReturnWorkOrder, to: RETURNED, actor: SUPERVISOR,
      policies: [reviewer_not_executor], requires: [return_reasons]}
   - {id: W12, from: [RETURNED], command: Resubmit, to: PENDING_REVIEW, actor: assignee,
      requires: [additions_only, submit_requirements_reevaluated], effects: [submission_recorded]}
+
+# Non-transition commands (04 §4.8): allowed only in the listed states, by the assignee; the state does not change.
+# ON_HOLD is deferred with W8 (M6), so it is not listed here yet.
+in_state_commands:
+  - {command: AddEvidence, in: [ON_SITE, IN_PROGRESS, RETURNED], actor: assignee}
+  - {command: RecordDiagnosis, in: [ON_SITE, IN_PROGRESS], actor: assignee}
+  - {command: ConsumeMaterial, in: [IN_PROGRESS, RETURNED], actor: assignee}
+  - {command: RecordChecklist, in: [IN_PROGRESS, RETURNED], actor: assignee}

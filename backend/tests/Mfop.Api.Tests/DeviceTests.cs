@@ -6,9 +6,13 @@ namespace Mfop.Api.Tests;
 
 /// <summary>BYOD device trust (docs/lean-pilot/05): registration, approval by another user, server-side revocation.</summary>
 [Collection(nameof(DatabaseCollection))]
-public class DeviceTests(DatabaseFixture db)
+public class DeviceTests(DatabaseFixture db) : IAsyncLifetime
 {
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     private async Task<JsonElement> DeviceAsync(Guid id)
     {

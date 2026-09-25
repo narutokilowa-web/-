@@ -45,6 +45,7 @@ public sealed record AssetDto(
 
 public sealed record AssetListItem(Guid Id, string? AssetCode, string LifecycleState, string? OperationalStatus, string PowerSource, string? AddressText, decimal Latitude, decimal Longitude);
 
+/// <summary>One audit event in a timeline: actor, device (for phone commands), time, reason, old → new values, and its hash.</summary>
 public sealed record HistoryEntry(
     long Seq,
     DateTimeOffset OccurredAt,
@@ -57,4 +58,6 @@ public sealed record HistoryEntry(
     JsonElement Changes,
     JsonElement? Facts,
     string? Reason,
-    string Hash);
+    string Hash,
+    Guid? DeviceId = null,
+    Guid? CommandId = null);

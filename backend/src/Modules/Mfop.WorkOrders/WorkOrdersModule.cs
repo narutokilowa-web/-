@@ -1,6 +1,7 @@
 using Mfop.Assets.Contracts;
 using Mfop.Infrastructure;
 using Mfop.Kernel;
+using Mfop.Kernel.Commands;
 using Mfop.WorkOrders.Application;
 using Mfop.WorkOrders.Contracts;
 using Mfop.WorkOrders.Infrastructure;
@@ -23,8 +24,22 @@ public static class WorkOrdersModule
         services.Configure<WorkOrderOptions>(configuration.GetSection("WorkOrders"));
         services.AddScoped<WorkOrderService>();
         services.AddScoped<WorkOrderQueries>();
+        services.AddScoped<WorkOrderRelatedEntities>();
         services.AddScoped<IWorkOrderTasks>(sp => sp.GetRequiredService<WorkOrderQueries>());
         services.AddScoped<IAssetRelatedHistory, WorkOrderAssetHistory>();
+        services.AddScoped<WorkOrderReferenceData>();
+        services.AddScoped<IWorkOrderReference>(sp => sp.GetRequiredService<WorkOrderReferenceData>());
+        services.AddScoped<ReferenceDataLoader>();
+        services.AddScoped<FieldExecutionService>();
+        services.AddScoped<ReviewService>();
+        services.AddScoped<ISyncCommandHandler, ArriveOnSiteHandler>();
+        services.AddScoped<ISyncCommandHandler, AddEvidenceHandler>();
+        services.AddScoped<ISyncCommandHandler, RecordDiagnosisHandler>();
+        services.AddScoped<ISyncCommandHandler, StartWorkHandler>();
+        services.AddScoped<ISyncCommandHandler, ConsumeMaterialHandler>();
+        services.AddScoped<ISyncCommandHandler, RecordChecklistHandler>();
+        services.AddScoped<ISyncCommandHandler, SubmitWorkOrderHandler>();
+        services.AddScoped<ISyncCommandHandler, ResubmitHandler>();
         return services;
     }
 }

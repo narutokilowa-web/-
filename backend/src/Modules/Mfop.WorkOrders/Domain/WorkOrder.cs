@@ -24,7 +24,16 @@ public static class WorkOrderCommands
     public const string ApproveWorkOrder = nameof(ApproveWorkOrder);
     public const string ReturnWorkOrder = nameof(ReturnWorkOrder);
     public const string Resubmit = nameof(Resubmit);
+
+    // Non-transition commands (04 §4.8): allowed only in listed states, by the assignee; the state does not change.
+    public const string AddEvidence = nameof(AddEvidence);
+    public const string RecordDiagnosis = nameof(RecordDiagnosis);
+    public const string ConsumeMaterial = nameof(ConsumeMaterial);
+    public const string RecordChecklist = nameof(RecordChecklist);
 }
+
+/// <summary>A non-transition command and the states in which the assignee may issue it (docs/state-machines/work-order.yaml in_state_commands).</summary>
+public sealed record InStateCommand(string Command, IReadOnlyList<string> In, string Actor);
 
 public static class AssignmentStates
 {
@@ -38,8 +47,7 @@ public static class Priorities
 
 /// <summary>
 /// Transition tables. MUST equal docs/state-machines/{work-order,assignment}.yaml (StateMachineConformanceTests).
-/// M2 implements the supervisor commands W1–W4; the technician commands (W5, W6, W9, W12) and review (W10, W11) come in M3,
-/// but the table is complete so that every unlisted (state, command) pair is already rejected.
+/// W1–W4 are supervisor commands (M2); W5, W6, W9, W12 are technician commands and W10, W11 the review (M3).
 /// </summary>
 public static class WorkOrderStateMachines
 {
@@ -63,6 +71,22 @@ public static class WorkOrderStateMachines
             new("W11", [WorkOrderStates.PendingReview], WorkOrderCommands.ReturnWorkOrder, WorkOrderStates.Returned, ["SUPERVISOR"]),
             new("W12", [WorkOrderStates.Returned], WorkOrderCommands.Resubmit, WorkOrderStates.PendingReview, ["assignee"]),
         ]);
+
+    /// <summary>MUST equal the in_state_commands table of docs/state-machines/work-order.yaml (StateMachineConformanceTests).</summary>
+    public static readonly IReadOnlyList<InStateCommand> InStateCommands =
+    [
+        new(WorkOrderCommands.AddEvidence, [WorkOrderStates.OnSite, WorkOrderStates.InProgress, WorkOrderStates.Returned], "assignee"),
+        new(WorkOrderCommands.RecordDiagnosis, [WorkOrderStates.OnSite, WorkOrderStates.InProgress], "assignee"),
+        new(WorkOrderCommands.ConsumeMaterial, [WorkOrderStates.InProgress, WorkOrderStates.Returned], "assignee"),
+        new(WorkOrderCommands.RecordChecklist, [WorkOrderStates.InProgress, WorkOrderStates.Returned], "assignee"),
+    ];
+
+    /// <summary>Non-transition command guard: INVALID_TRANSITION outside its states (the state does not change).</summary>
+    public static Result<bool> AllowedInState(string state, string command)
+    {
+        var entry = InStateCommands.Single(c => c.Command == command);
+        return entry.In.Contains(state) ? true : Error.InvalidTransition("WorkOrder", state, command);
+    }
 
     public static readonly StateMachine Assignment = new(
         "Assignment",
@@ -111,9 +135,119 @@ public sealed class WorkOrder : IAuditable
     public string? CancelReason { get; private set; }
     public Guid? CancelledBy { get; private set; }
     public DateTimeOffset? CancelledAt { get; private set; }
+
+    /// <summary>Checklist template version pinned at creation (W1) from the light's power source.</summary>
+    public Guid? ChecklistTemplateId { get; private set; }
+
+    /// <summary>Set when the asset had a work order closed as REPAIRED within the rework window (W1 effect).</summary>
+    public Guid? ReworkOfId { get; private set; }
+    public string? DiagnosisCode { get; private set; }
+    public string? DiagnosisNote { get; private set; }
+    public string? RootCauseNote { get; private set; }
+
+    /// <summary>The explicit "no materials" statement of the submission (W9), with its justification.</summary>
+    public string? NoMaterialReason { get; private set; }
+
+    /// <summary>NIGHT, PHOTOCELL_COVERED, BYPASS or NOT_TESTED (from the latest checklist).</summary>
+    public string? TestMethod { get; private set; }
+
+    /// <summary>PASS or NOT_TESTED.</summary>
+    public string? TestResult { get; private set; }
+
+    /// <summary>REPAIRED in DEMO 1 (NO_WORK arrives with ResolveNoWork, M6).</summary>
+    public string? Outcome { get; private set; }
+    public DateTimeOffset? FirstArrivedAt { get; private set; }
+    public DateTimeOffset? WorkStartedAt { get; private set; }
+    public DateTimeOffset? SubmittedAt { get; private set; }
+    public DateTimeOffset? ClosedAt { get; private set; }
+    public Guid? ClosedBy { get; private set; }
+
+    /// <summary>Work-order seal (docs/lean-pilot/06 §6.1): SHA-256 over the canonical record of everything that happened.</summary>
+    public string? SealHash { get; private set; }
+    public int LastEventSeq { get; private set; }
+    public int SubmissionCount { get; private set; }
     public int Version { get; private set; }
 
     public bool IsTerminal => WorkOrderStates.Terminal.Contains(State);
+
+    public void PinChecklistTemplate(Guid templateId) => ChecklistTemplateId ??= templateId;
+
+    public void MarkReworkOf(Guid previousWorkOrderId) => ReworkOfId = previousWorkOrderId;
+
+    /// <summary>Next per-work-order event number (wo_events.seq). Touching the row also serializes concurrent commands.</summary>
+    public int NextEventSeq() => ++LastEventSeq;
+
+    /// <summary>W5.</summary>
+    public Result<Transition> Arrive(DateTimeOffset now)
+    {
+        var t = WorkOrderStateMachines.WorkOrder.Resolve(State, WorkOrderCommands.ArriveOnSite);
+        if (!t.IsSuccess) return t;
+        State = t.Value.To;
+        FirstArrivedAt ??= now;
+        return t;
+    }
+
+    /// <summary>Non-transition command (ON_SITE, IN_PROGRESS).</summary>
+    public Result<bool> RecordDiagnosis(string code, string? note)
+    {
+        var allowed = WorkOrderStateMachines.AllowedInState(State, WorkOrderCommands.RecordDiagnosis);
+        if (!allowed.IsSuccess) return allowed;
+        DiagnosisCode = code;
+        DiagnosisNote = note;
+        return true;
+    }
+
+    /// <summary>W6. Guards (diagnosis, before photos) are checked by the service.</summary>
+    public Result<Transition> StartWork(DateTimeOffset now)
+    {
+        var t = WorkOrderStateMachines.WorkOrder.Resolve(State, WorkOrderCommands.StartWork);
+        if (!t.IsSuccess) return t;
+        State = t.Value.To;
+        WorkStartedAt ??= now;
+        return t;
+    }
+
+    public void RecordTest(string method, string result)
+    {
+        TestMethod = method;
+        TestResult = result;
+    }
+
+    /// <summary>W9 (first submission) or W12 (resubmission after RETURNED). Guards are checked by the service.</summary>
+    public Result<Transition> Submit(string command, string rootCauseNote, string? noMaterialReason, DateTimeOffset now)
+    {
+        var t = WorkOrderStateMachines.WorkOrder.Resolve(State, command);
+        if (!t.IsSuccess) return t;
+        State = t.Value.To;
+        RootCauseNote = rootCauseNote;
+        NoMaterialReason = noMaterialReason;
+        Outcome = "REPAIRED";
+        SubmittedAt = now;
+        SubmissionCount++;
+        return t;
+    }
+
+    /// <summary>W10: closed and sealed. Nothing changes a CLOSED work order afterwards.</summary>
+    public Result<Transition> Close(Guid reviewerId, DateTimeOffset now)
+    {
+        var t = WorkOrderStateMachines.WorkOrder.Resolve(State, WorkOrderCommands.ApproveWorkOrder);
+        if (!t.IsSuccess) return t;
+        State = t.Value.To;
+        ClosedAt = now;
+        ClosedBy = reviewerId;
+        return t;
+    }
+
+    public void Seal(string sealHash) => SealHash = sealHash;
+
+    /// <summary>W11.</summary>
+    public Result<Transition> ReturnForRework()
+    {
+        var t = WorkOrderStateMachines.WorkOrder.Resolve(State, WorkOrderCommands.ReturnWorkOrder);
+        if (!t.IsSuccess) return t;
+        State = t.Value.To;
+        return t;
+    }
 
     /// <summary>W2 / W3: guard checks on the assignee are done by the service (roles, user status, active device).</summary>
     public Result<Transition> AssignTo(string command, Guid assigneeId)

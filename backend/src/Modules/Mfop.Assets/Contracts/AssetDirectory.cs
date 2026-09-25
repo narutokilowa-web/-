@@ -22,6 +22,9 @@ public static class AssetLifecycle
 public static class AssetStatusCommands
 {
     public const string OnFaultReported = "OnFaultReported";
+    public const string OnWorkStarted = "OnWorkStarted";
+    public const string OnWorkOrderClosedTestPassed = "OnWorkOrderClosedTestPassed";
+    public const string OnWorkOrderClosedNotTested = "OnWorkOrderClosedNotTested";
 }
 
 /// <param name="TransitionId">e.g. OS4.</param>
@@ -38,6 +41,9 @@ public interface IAssetDirectory
 
     /// <summary>Newest audit-history entries of the asset (for the compact card on the phone).</summary>
     Task<IReadOnlyList<HistoryEntry>> RecentHistoryAsync(Guid assetId, int take, CancellationToken ct);
+
+    /// <summary>Dashboard: ACTIVE street lights by operational status.</summary>
+    Task<IReadOnlyDictionary<string, int>> CountActiveByOperationalStatusAsync(CancellationToken ct);
 }
 
 /// <summary>

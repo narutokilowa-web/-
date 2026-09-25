@@ -107,7 +107,7 @@ public sealed class AssetQueries(
         return events.Select(e => new HistoryEntry(
             e.Seq, e.OccurredAt, e.ActorUserId,
             e.ActorUserId is { } u ? names.GetValueOrDefault(u, "?") : "SYSTEM",
-            e.ActorRoles, e.Action, e.EntityType, e.EntityId, e.Changes, e.Facts, e.Reason, e.Hash)).ToList();
+            e.ActorRoles, e.Action, e.EntityType, e.EntityId, e.Changes, e.Facts, e.Reason, e.Hash, e.DeviceId, e.CommandId)).ToList();
     }
 
     public async Task<Result<Guid>> ResolveTagAsync(string token, CancellationToken ct)

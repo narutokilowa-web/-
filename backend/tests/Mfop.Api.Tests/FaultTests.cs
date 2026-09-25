@@ -6,9 +6,13 @@ namespace Mfop.Api.Tests;
 
 /// <summary>Faults (docs/state-machines/fault.yaml) and their effect on the asset's operational status (OS4).</summary>
 [Collection(nameof(DatabaseCollection))]
-public class FaultTests(DatabaseFixture db)
+public class FaultTests(DatabaseFixture db) : IAsyncLifetime
 {
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     private async Task<string?> StatusOfAsync(Guid assetId)
     {

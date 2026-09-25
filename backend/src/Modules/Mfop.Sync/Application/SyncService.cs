@@ -4,6 +4,8 @@ using Mfop.Access.Contracts;
 using Mfop.Assets.Contracts;
 using Mfop.Faults.Contracts;
 using Mfop.Http;
+using Mfop.Inventory.Contracts;
+using Mfop.Rules.Contracts;
 using Mfop.Infrastructure.Persistence;
 using Mfop.Kernel;
 using Mfop.Kernel.Commands;
@@ -30,7 +32,10 @@ public sealed class SyncService(
     IUserDirectory users,
     IWorkOrderTasks tasks,
     IAssetDirectory assets,
-    IFaultWorkflow faults)
+    IFaultWorkflow faults,
+    IWorkOrderReference reference,
+    IInventoryLedger inventory,
+    IRecommendations recommendations)
 {
     public const int MaxBatch = 100;
 
@@ -63,7 +68,9 @@ public sealed class SyncService(
         var state = await DeviceStateAsync(deviceId, userId, ct);
         state.Pulled(now);
         await db.SaveChangesAsync(ct);
-        return new PullResponse(now, now.ToString("O"), new PullUser(userId, names.GetValueOrDefault(userId, "?"), actor.Roles), deviceId, open);
+        var custody = PermissionMatrix.Allows("stock.custody.read_own", actor.Roles) ? await inventory.CustodyOfAsync(userId, ct) : [];
+        return new PullResponse(now, now.ToString("O"), new PullUser(userId, names.GetValueOrDefault(userId, "?"), actor.Roles), deviceId, open,
+            await reference.ReferenceAsync(ct), custody, await inventory.ItemsAsync(ct));
     }
 
     /// <summary>Online tag resolution for the Scan tab: the asset card (docs/lean-pilot/08 §8.3).</summary>
@@ -78,7 +85,8 @@ public sealed class SyncService(
             asset!,
             await faults.CountOpenForAssetAsync(assetId.Value, ct),
             mine,
-            recent.Select(e => new AssetCardEvent(e.OccurredAt, e.Action, e.ActorName)).ToList());
+            recent.Select(e => new AssetCardEvent(e.OccurredAt, e.Action, e.ActorName)).ToList(),
+            await recommendations.OpenForAssetAsync(assetId.Value, ct));
     }
 
     private async Task<PushCommandResult> ProcessAsync(ActorContext actor, Guid deviceId, PushCommand command, string? correlationId, CancellationToken ct)
@@ -108,7 +116,7 @@ public sealed class SyncService(
             return await RejectAsync(actor, deviceId, command, payload, payloadHash, ErrorCodesHttp.Forbidden, $"Your roles do not allow '{handler.Permission}'.", ct);
         }
 
-        var envelope = CommandEnvelope.For(command.Type, actor, null, command.CommandId, correlationId);
+        var envelope = CommandEnvelope.For(command.Type, actor, null, command.CommandId, correlationId, command.DeviceTime?.ToUniversalTime());
         Result<SyncCommandOutcome> outcome;
         try
         {

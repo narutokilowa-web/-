@@ -115,6 +115,10 @@ public sealed class Fault : IAuditable
     public Guid? DismissedBy { get; private set; }
     public DateTimeOffset? DismissedAt { get; private set; }
     public int ConfirmationCount { get; private set; }
+
+    /// <summary>When the work order that repaired it was closed (F6); input of the repeated-failure rule.</summary>
+    public DateTimeOffset? ResolvedAt { get; private set; }
+    public Guid? ResolvedByWorkOrderId { get; private set; }
     public int Version { get; private set; }
 
     /// <summary>"Power was unavailable at report time" badge: shown, never used to auto-dismiss.</summary>
@@ -156,6 +160,17 @@ public sealed class Fault : IAuditable
         if (!t.IsSuccess) return t;
         State = t.Value.To;
         WorkOrderId = workOrderId;
+        return t;
+    }
+
+    /// <summary>F6: the work order was approved and closed.</summary>
+    public Result<Transition> OnWorkOrderClosed(Guid workOrderId, DateTimeOffset now)
+    {
+        var t = FaultStateMachines.Fault.Resolve(State, FaultCommands.OnWorkOrderClosed);
+        if (!t.IsSuccess) return t;
+        State = t.Value.To;
+        ResolvedAt = now;
+        ResolvedByWorkOrderId = workOrderId;
         return t;
     }
 

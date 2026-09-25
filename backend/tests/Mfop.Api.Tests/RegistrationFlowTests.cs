@@ -7,9 +7,13 @@ namespace Mfop.Api.Tests;
 
 /// <summary>DEMO 1 steps 2–5 through the public API: register → separate approval → asset code, tag, version, history.</summary>
 [Collection(nameof(DatabaseCollection))]
-public class RegistrationFlowTests(DatabaseFixture db)
+public class RegistrationFlowTests(DatabaseFixture db) : IAsyncLifetime
 {
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     [Fact]
     public async Task Register_submit_approve_issues_code_tag_version_and_history()

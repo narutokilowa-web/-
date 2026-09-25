@@ -169,6 +169,21 @@ public sealed class FaultWorkflow(FaultsDbContext db, IAuditTrail audit) : IFaul
         return Result.Success();
     }
 
+    public async Task<Result> OnWorkOrderClosedAsync(Guid faultId, Guid workOrderId, DateTimeOffset now, CancellationToken ct)
+    {
+        var fault = await db.Faults.SingleAsync(f => f.Id == faultId, ct);
+        var t = fault.OnWorkOrderClosed(workOrderId, now);
+        if (!t.IsSuccess) return t.Error!;
+        audit.Record(fault, "fault.resolved", extra: new Dictionary<string, object?> { ["work_order_id"] = workOrderId.ToString("D") });
+        return Result.Success();
+    }
+
+    public async Task<(int Open, int ReportedWithoutPower)> CountOpenAsync(CancellationToken ct)
+    {
+        var open = db.Faults.AsNoTracking().Where(f => f.State == FaultStates.Open || f.State == FaultStates.InWorkOrder);
+        return (await open.CountAsync(ct), await open.CountAsync(f => f.PowerAtInspection == FaultVocabulary.PowerUnavailable, ct));
+    }
+
     public Task<int> CountOpenForAssetAsync(Guid assetId, CancellationToken ct) =>
         db.Faults.CountAsync(f => f.AssetId == assetId && (f.State == FaultStates.Open || f.State == FaultStates.InWorkOrder), ct);
 }

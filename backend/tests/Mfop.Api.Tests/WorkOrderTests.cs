@@ -7,9 +7,13 @@ namespace Mfop.Api.Tests;
 
 /// <summary>Work orders W1–W4 and assignments A1–A3 (docs/state-machines), plus N5 and N15.</summary>
 [Collection(nameof(DatabaseCollection))]
-public class WorkOrderTests(DatabaseFixture db)
+public class WorkOrderTests(DatabaseFixture db) : IAsyncLifetime
 {
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     private async Task<JsonElement> WorkOrderAsync(Guid id)
     {
@@ -32,7 +36,7 @@ public class WorkOrderTests(DatabaseFixture db)
         var response = await supervisor.PostAsJsonAsync("/api/v1/work-orders", new { faultId, priority = "P1", note = "عاجل" });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var id = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
-        Assert.Equal(["work_order.created", "fault.in_work_order"], await db.AuditActionsForCommandAsync(key));
+        Assert.Equal(["work_order.created", "work_order_event.appended", "fault.in_work_order"], await db.AuditActionsForCommandAsync(key));
 
         var wo = await WorkOrderAsync(id);
         Assert.Equal("NEW", wo.GetProperty("state").GetString());
@@ -89,7 +93,7 @@ public class WorkOrderTests(DatabaseFixture db)
         var key = Guid.NewGuid();
         using var keyed = App.ClientFor(DevUsers.Supervisor, key);
         (await keyed.PostAsJsonAsync($"/api/v1/work-orders/{id}/assign", new { assigneeId = tech })).EnsureSuccessStatusCode();
-        Assert.Equal(["work_order.assigned", "work_order_assignment.started"], await db.AuditActionsForCommandAsync(key));
+        Assert.Equal(["work_order.assigned", "work_order_assignment.started", "work_order_event.appended"], await db.AuditActionsForCommandAsync(key));
         var wo = await WorkOrderAsync(id);
         Assert.Equal("ASSIGNED", wo.GetProperty("state").GetString());
         Assert.Equal(tech, wo.GetProperty("assigneeId").GetString());
@@ -124,7 +128,7 @@ public class WorkOrderTests(DatabaseFixture db)
         var key = Guid.NewGuid();
         using var keyed = App.ClientFor(DevUsers.Supervisor, key);
         (await keyed.PostAsJsonAsync($"/api/v1/work-orders/{id}/reassign", new { assigneeId = techB, reason = "الفني في إجازة" })).EnsureSuccessStatusCode();
-        Assert.Equal(["work_order_assignment.ended", "work_order.reassigned", "work_order_assignment.started"], await db.AuditActionsForCommandAsync(key));
+        Assert.Equal(["work_order_assignment.ended", "work_order.reassigned", "work_order_assignment.started", "work_order_event.appended"], await db.AuditActionsForCommandAsync(key));
 
         var wo = await WorkOrderAsync(id);
         var assignments = wo.GetProperty("assignments").EnumerateArray().ToList();
@@ -150,7 +154,7 @@ public class WorkOrderTests(DatabaseFixture db)
         var key = Guid.NewGuid();
         using var keyed = App.ClientFor(DevUsers.Supervisor, key);
         (await keyed.PostAsJsonAsync($"/api/v1/work-orders/{id}/cancel", new { reason = "أنشئ بالخطأ" })).EnsureSuccessStatusCode();
-        Assert.Equal(["work_order.cancelled", "work_order_assignment.ended", "fault.reopened_after_cancellation"], await db.AuditActionsForCommandAsync(key));
+        Assert.Equal(["work_order.cancelled", "work_order_event.appended", "work_order_assignment.ended", "fault.reopened_after_cancellation"], await db.AuditActionsForCommandAsync(key));
 
         var wo = await WorkOrderAsync(id);
         Assert.Equal("CANCELLED", wo.GetProperty("state").GetString());

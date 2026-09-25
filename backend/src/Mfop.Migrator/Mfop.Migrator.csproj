@@ -9,6 +9,11 @@
     <ProjectReference Include="..\Modules\Mfop.Faults\Mfop.Faults.csproj" />
     <ProjectReference Include="..\Modules\Mfop.WorkOrders\Mfop.WorkOrders.csproj" />
     <ProjectReference Include="..\Modules\Mfop.Sync\Mfop.Sync.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Rules\Mfop.Rules.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Inventory\Mfop.Inventory.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Evidence\Mfop.Evidence.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

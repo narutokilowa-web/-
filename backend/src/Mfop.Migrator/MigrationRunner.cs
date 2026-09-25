@@ -6,11 +6,19 @@ using Mfop.Assets;
 using Mfop.Assets.Infrastructure;
 using Mfop.Audit;
 using Mfop.Audit.Infrastructure;
+using Mfop.Evidence;
+using Mfop.Evidence.Infrastructure;
 using Mfop.Faults;
 using Mfop.Faults.Infrastructure;
+using Mfop.Inventory;
+using Mfop.Inventory.Infrastructure;
+using Mfop.Rules;
+using Mfop.Rules.Application;
+using Mfop.Rules.Infrastructure;
 using Mfop.Sync;
 using Mfop.Sync.Infrastructure;
 using Mfop.WorkOrders;
+using Mfop.WorkOrders.Application;
 using Mfop.WorkOrders.Infrastructure;
 using Mfop.Infrastructure;
 using Mfop.Infrastructure.Persistence;
@@ -29,13 +37,15 @@ public sealed class MigrationRunner(string ownerConnectionString, TextWriter log
     private static readonly string[] ModuleSchemas =
     [
         AccessModule.Info.Schema, AuditModule.Info.Schema, AssetsModule.Info.Schema, FaultsModule.Info.Schema,
-        WorkOrdersModule.Info.Schema, SyncModule.Info.Schema,
+        WorkOrdersModule.Info.Schema, SyncModule.Info.Schema, RulesModule.Info.Schema, InventoryModule.Info.Schema, EvidenceModule.Info.Schema,
     ];
 
     /// <summary>Tables whose rows are never updated. mfop_app gets no UPDATE and a trigger rejects UPDATE/DELETE.</summary>
     public static readonly string[] AppendOnlyTables =
     [
         "audit.audit_events", "assets.asset_versions", "assets.asset_status_events", "faults.fault_confirmations", "sync.sync_commands",
+        "inventory.stock_movements", "inventory.item_costs", "workorders.wo_events", "workorders.wo_arrivals", "workorders.checklist_templates",
+        "workorders.checklist_results", "workorders.wo_submissions", "workorders.wo_reviews",
     ];
 
     public async Task MigrateAsync(CancellationToken ct)
@@ -70,8 +80,56 @@ public sealed class MigrationRunner(string ownerConnectionString, TextWriter log
             await sync.Database.MigrateAsync(ct);
         }
 
-        log.WriteLine("migrations applied: access, audit, assets, faults, workorders, sync");
+        await using (var rules = new RulesDbContext(Options<RulesDbContext>(RulesModule.Info.Schema)))
+        {
+            await rules.Database.MigrateAsync(ct);
+        }
+
+        await using (var inventory = new InventoryDbContext(Options<InventoryDbContext>(InventoryModule.Info.Schema)))
+        {
+            await inventory.Database.MigrateAsync(ct);
+        }
+
+        await using (var evidence = new EvidenceDbContext(Options<EvidenceDbContext>(EvidenceModule.Info.Schema)))
+        {
+            await evidence.Database.MigrateAsync(ct);
+        }
+
+        log.WriteLine("migrations applied: access, audit, assets, faults, workorders, sync, rules, inventory, evidence");
         await ApplyGrantsAsync(ct);
+        await EnsureRuleDefaultsAsync(ct);
+    }
+
+    /// <summary>Rule settings are data: the defaults (REPEATED_FAILURE threshold 3, window 180 days) are written once, audited (SYSTEM).</summary>
+    private async Task EnsureRuleDefaultsAsync(CancellationToken ct)
+    {
+        await using var provider = CoreServices().BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var result = await scope.ServiceProvider.GetRequiredService<RuleSettingsService>().EnsureDefaultsAsync(ct);
+        if (!result.IsSuccess) throw new InvalidOperationException($"Rule defaults: {result.Error!.Code}");
+        log.WriteLine("rule settings: defaults ensured (audited)");
+    }
+
+    /// <summary>Loads the field reference data (diagnosis codes, checklist templates) through an audited command. Idempotent.</summary>
+    public async Task LoadReferenceDataAsync(string path, CancellationToken ct)
+    {
+        await using var provider = CoreServices().BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var result = await scope.ServiceProvider.GetRequiredService<ReferenceDataLoader>().LoadAsync(await File.ReadAllTextAsync(path, ct), ct);
+        if (!result.IsSuccess) throw new InvalidOperationException($"Reference data: {result.Error!.Code} {result.Error.Message}");
+        log.WriteLine($"reference data: {result.Value} new diagnosis codes / checklist templates (audited)");
+    }
+
+    private ServiceCollection CoreServices()
+    {
+        var services = new ServiceCollection();
+        services.AddMfopPersistence(ownerConnectionString);
+        services.AddAuditModule();
+        services.AddModuleDbContext<RulesDbContext>(RulesModule.Info.Schema);
+        services.AddScoped<RuleSettingsService>();
+        services.AddModuleDbContext<WorkOrdersDbContext>(WorkOrdersModule.Info.Schema);
+        services.AddScoped<ReferenceDataLoader>();
+        return services;
     }
 
     private async Task ApplyGrantsAsync(CancellationToken ct)

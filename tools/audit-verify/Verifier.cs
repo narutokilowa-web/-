@@ -14,6 +14,8 @@ public sealed class VerificationReport
     public long EventsChecked { get; set; }
     public long VersionsChecked { get; set; }
     public long AssetsChecked { get; set; }
+    public long WorkOrdersChecked { get; set; }
+    public long MovementsChecked { get; set; }
     public bool Ok => Findings.Count == 0;
 }
 
@@ -23,6 +25,8 @@ public sealed class VerificationReport
 ///     previous hash; each hash = SHA-256(prev || payload || seq).
 ///  2. approved asset versions: snapshot_hash matches the stored snapshot and the value recorded in the audit log.
 ///  3. active street lights: the current row still equals its latest approved snapshot.
+///  4. closed work orders: the seal recomputed from the operational rows equals the stored and the audited seal (M3).
+///  5. stock balances equal the sum of the append-only movements (M3).
 /// Limitation (documented, ADR-0007): deleting the most recent events leaves a shorter but valid chain; that is
 /// detected by signed checkpoints stored outside the database (M8), and partially by check 2 when approvals disappear.
 /// </summary>
@@ -37,13 +41,17 @@ public static class Verifier
         await conn.OpenAsync(ct);
         await using var tx = await conn.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead, ct); // one consistent snapshot
 
-        var versionAuditHashes = await CheckChainAsync(conn, tx, report, ct);
+        var auditedSeals = new Dictionary<string, string?>();
+        var versionAuditHashes = await CheckChainAsync(conn, tx, report, auditedSeals, ct);
         var latestSnapshots = await CheckVersionsAsync(conn, tx, report, versionAuditHashes, ct);
         await CheckActiveAssetsAsync(conn, tx, report, latestSnapshots, ct);
+        await WorkOrderSeals.CheckAsync(conn, tx, report, auditedSeals, ct);
+        await WorkOrderSeals.CheckBalancesAsync(conn, tx, report, ct);
         return report;
     }
 
-    private static async Task<Dictionary<string, string?>> CheckChainAsync(NpgsqlConnection conn, NpgsqlTransaction tx, VerificationReport report, CancellationToken ct)
+    private static async Task<Dictionary<string, string?>> CheckChainAsync(NpgsqlConnection conn, NpgsqlTransaction tx, VerificationReport report,
+        Dictionary<string, string?> auditedSeals, CancellationToken ct)
     {
         var versionHashes = new Dictionary<string, string?>();
         await using var cmd = new NpgsqlCommand(
@@ -96,6 +104,12 @@ public static class Verifier
             {
                 using var doc = JsonDocument.Parse(changes);
                 versionHashes[entityId] = doc.RootElement.TryGetProperty("snapshot_hash", out var sh) && sh.TryGetProperty("new", out var v) ? v.GetString() : null;
+            }
+
+            if (entityType == "work_order" && action == "work_order.closed" && !r.IsDBNull(11))
+            {
+                using var facts = JsonDocument.Parse(r.GetString(11));
+                auditedSeals[entityId] = facts.RootElement.TryGetProperty("seal_hash", out var seal) ? seal.GetString() : null;
             }
 
             previousHash = storedHash;

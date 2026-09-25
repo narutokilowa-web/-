@@ -7,11 +7,17 @@ using Npgsql;
 namespace Mfop.Api.Tests;
 
 [Collection(nameof(DatabaseCollection))]
-public class MeEndpointTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>
+public class MeEndpointTests(DatabaseFixture db) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
+    private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
+
     private HttpClient Client(string? sub = null)
     {
-        var client = new TestApp(db).CreateClient();
+        var client = App.CreateClient();
         if (sub is not null)
         {
             client.DefaultRequestHeaders.Add(TestApp.SubHeader, sub);

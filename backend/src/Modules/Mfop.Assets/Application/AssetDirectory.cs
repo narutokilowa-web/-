@@ -25,6 +25,13 @@ public sealed class AssetDirectory(AssetsDbContext db, AssetQueries queries) : I
         return resolved.IsSuccess ? resolved.Value : null;
     }
 
+    public async Task<IReadOnlyDictionary<string, int>> CountActiveByOperationalStatusAsync(CancellationToken ct) =>
+        await db.StreetLights.AsNoTracking()
+            .Where(a => a.LifecycleState == LifecycleStates.Active)
+            .GroupBy(a => a.OperationalStatus ?? OperationalStatuses.Unknown)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+
     public async Task<IReadOnlyList<HistoryEntry>> RecentHistoryAsync(Guid assetId, int take, CancellationToken ct)
     {
         var history = await queries.HistoryAsync(assetId, ct);

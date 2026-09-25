@@ -97,6 +97,14 @@ namespace Mfop.Faults.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("reported_by");
 
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedByWorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_work_order_id");
+
                     b.Property<string>("ResponsibleEntityName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")

@@ -1,7 +1,9 @@
 using Mfop.Access.Contracts;
 using Mfop.Access.Domain;
 using Mfop.Assets.Domain;
+using Mfop.Evidence.Domain;
 using Mfop.Faults.Domain;
+using Mfop.Inventory.Domain;
 using Mfop.WorkOrders.Domain;
 using Mfop.Kernel.StateMachines;
 
@@ -16,7 +18,7 @@ public class StateMachineConformanceTests
     public static TheoryData<string> Implemented() => new(
     [
         "registration.yaml", "asset-lifecycle.yaml", "asset-operational-status.yaml",
-        "device.yaml", "fault.yaml", "work-order.yaml", "assignment.yaml",
+        "device.yaml", "fault.yaml", "work-order.yaml", "assignment.yaml", "evidence.yaml", "stock-ledger.yaml",
     ]);
 
     private static StateMachine CodeFor(string file) => file switch
@@ -28,6 +30,8 @@ public class StateMachineConformanceTests
         "fault.yaml" => FaultStateMachines.Fault,
         "work-order.yaml" => WorkOrderStateMachines.WorkOrder,
         "assignment.yaml" => WorkOrderStateMachines.Assignment,
+        "evidence.yaml" => EvidenceStateMachines.Evidence,
+        "stock-ledger.yaml" => InventoryStateMachines.StockLedger,
         _ => throw new ArgumentException(file),
     };
 
@@ -88,13 +92,33 @@ public class StateMachineConformanceTests
         foreach (var code in new[]
                  {
                      AssetStateMachines.Registration, AssetStateMachines.AssetLifecycle, AccessStateMachines.Device, FaultStateMachines.Fault,
-                     WorkOrderStateMachines.WorkOrder, WorkOrderStateMachines.Assignment,
+                     WorkOrderStateMachines.WorkOrder, WorkOrderStateMachines.Assignment, EvidenceStateMachines.Evidence,
+                     InventoryStateMachines.StockLedger,
                  })
         {
             foreach (var terminal in code.Terminal)
             {
                 Assert.All(code.Transitions.Select(t => t.Command).Distinct(), command => Assert.False(code.Resolve(terminal, command).IsSuccess));
             }
+        }
+    }
+
+    [Fact]
+    public void Work_order_in_state_commands_in_code_equal_yaml()
+    {
+        var yaml = Yaml.Load<StateMachineSpec>(RepoPaths.Path("docs", "state-machines", "work-order.yaml"));
+        Assert.Equal(yaml.InStateCommands.Select(c => c.Command).Order(), WorkOrderStateMachines.InStateCommands.Select(c => c.Command).Order());
+        foreach (var y in yaml.InStateCommands)
+        {
+            var c = WorkOrderStateMachines.InStateCommands.Single(x => x.Command == y.Command);
+            Assert.True(y.In.Order().SequenceEqual(c.In.Order()), $"{y.Command}: states differ");
+            Assert.Equal(y.Actor, c.Actor);
+            foreach (var state in yaml.States)
+            {
+                Assert.Equal(y.In.Contains(state), WorkOrderStateMachines.AllowedInState(state, y.Command).IsSuccess);
+            }
+
+            Assert.All(y.In, s => Assert.DoesNotContain(s, yaml.Terminal));
         }
     }
 

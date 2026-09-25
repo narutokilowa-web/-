@@ -19,6 +19,7 @@ public class ModuleBoundaryTests
         typeof(Mfop.Inventory.InventoryModule).Assembly,
         typeof(Mfop.Audit.AuditModule).Assembly,
         typeof(Mfop.Sync.SyncModule).Assembly,
+        typeof(Mfop.Rules.RulesModule).Assembly,
     ];
 
     /// <summary>
@@ -57,7 +58,7 @@ public class ModuleBoundaryTests
     {
         var result = Types.InAssembly(typeof(Mfop.Kernel.ModuleInfo).Assembly)
             .ShouldNot().HaveDependencyOnAny(
-                "Mfop.Access", "Mfop.Assets", "Mfop.Faults", "Mfop.WorkOrders", "Mfop.Evidence", "Mfop.Inventory", "Mfop.Audit", "Mfop.Sync",
+                "Mfop.Access", "Mfop.Assets", "Mfop.Faults", "Mfop.WorkOrders", "Mfop.Evidence", "Mfop.Inventory", "Mfop.Audit", "Mfop.Sync", "Mfop.Rules",
                 "Mfop.Infrastructure", "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
             .GetResult();
         Assert.True(result.IsSuccessful, Failing(result));

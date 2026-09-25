@@ -55,6 +55,12 @@ public interface IFaultWorkflow
 
     Task<Mfop.Kernel.Results.Result> OnWorkOrderCancelledAsync(Guid faultId, CancellationToken ct);
 
+    /// <summary>F6: the work order was approved and closed; the fault becomes RESOLVED.</summary>
+    Task<Mfop.Kernel.Results.Result> OnWorkOrderClosedAsync(Guid faultId, Guid workOrderId, DateTimeOffset now, CancellationToken ct);
+
+    /// <summary>Dashboard: open faults (OPEN or IN_WORK_ORDER) and how many of them were reported with power unavailable.</summary>
+    Task<(int Open, int ReportedWithoutPower)> CountOpenAsync(CancellationToken ct);
+
     /// <summary>Open (OPEN or IN_WORK_ORDER) faults of an asset, for the phone's asset card.</summary>
     Task<int> CountOpenForAssetAsync(Guid assetId, CancellationToken ct);
 }

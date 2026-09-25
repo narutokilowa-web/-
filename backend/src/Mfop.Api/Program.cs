@@ -5,9 +5,16 @@ using Mfop.Api;
 using Mfop.Assets;
 using Mfop.Assets.Api;
 using Mfop.Audit;
+using Mfop.Audit.Api;
+using Mfop.Evidence;
+using Mfop.Evidence.Api;
 using Mfop.Faults;
 using Mfop.Faults.Api;
 using Mfop.Infrastructure;
+using Mfop.Inventory;
+using Mfop.Inventory.Api;
+using Mfop.Rules;
+using Mfop.Rules.Api;
 using Mfop.Sync;
 using Mfop.Sync.Api;
 using Mfop.WorkOrders;
@@ -28,6 +35,9 @@ builder.Services.AddAccessModule(builder.Configuration);
 builder.Services.AddAssetsModule(builder.Configuration);
 builder.Services.AddFaultsModule();
 builder.Services.AddWorkOrdersModule(builder.Configuration);
+builder.Services.AddRulesModule();
+builder.Services.AddInventoryModule();
+builder.Services.AddEvidenceModule(builder.Configuration);
 builder.Services.AddSyncModule();
 
 builder.Services.AddHealthChecks()
@@ -53,6 +63,10 @@ app.MapAccessEndpoints();
 app.MapAssetEndpoints();
 app.MapFaultEndpoints();
 app.MapWorkOrderEndpoints();
+app.MapRulesEndpoints();
+app.MapInventoryEndpoints();
+app.MapEvidenceEndpoints();
+app.MapAuditEndpoints();
 app.MapSyncEndpoints();
 
 app.Run();

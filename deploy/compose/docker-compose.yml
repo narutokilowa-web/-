@@ -1,5 +1,6 @@
 # DEMO 1 topology (docs/lean-pilot/11 §11.2 M0): db, keycloak, migrate (one-shot), api, web.
 # Local development only. No TLS proxy, no WORM storage (those arrive in M8; required before any field pilot).
+# Evidence photos are kept in the named volume `objects` (local filesystem object store, ADR-0005).
 name: mfop
 
 services:
@@ -59,11 +60,17 @@ services:
       dockerfile: backend/Dockerfile
       target: migrator
     image: mfop/migrator:dev
-    command: ["migrate", "--seed-dev", "/seed/dev-users.json"]
+    command: ["migrate", "--reference-data", "/seed/reference-data.json", "--seed-dev", "/seed/dev-users.json"]
     environment:
       ConnectionStrings__Owner: Host=db;Database=mfop;Username=mfop_owner;Password=${MFOP_OWNER_PASSWORD:?}
+      # used by `make seed` (seed-demo): same tag key and evidence store as the API
+      Tags__BaseUrl: http://localhost:${WEB_PORT:-5173}/t
+      Tags__CheckKey: ${MFOP_TAG_CHECK_KEY:?}
+      Storage__Mode: local
+      Storage__Root: /var/lib/mfop/objects
     volumes:
       - ../seed:/seed:ro
+      - objects:/var/lib/mfop/objects
     depends_on:
       db: { condition: service_healthy }
     restart: "no"
@@ -83,6 +90,11 @@ services:
       Auth__RequireHttpsMetadata: "false"
       Tags__BaseUrl: http://localhost:${WEB_PORT:-5173}/t
       Tags__CheckKey: ${MFOP_TAG_CHECK_KEY:?run make env (new variable in M1)}
+      # DEMO 1: local filesystem evidence store (NOT write-once; S3 with Object Lock arrives in M8)
+      Storage__Mode: local
+      Storage__Root: /var/lib/mfop/objects
+    volumes:
+      - objects:/var/lib/mfop/objects
     ports:
       - "${API_PORT:-5080}:8080"
     depends_on:
@@ -111,3 +123,4 @@ services:
 
 volumes:
   db-data:
+  objects:

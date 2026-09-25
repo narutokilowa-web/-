@@ -1,0 +1,47 @@
+{
+  "_comment": "DEV ONLY. Synthetic demo data for DEMO 1 (docs/lean-pilot/02 §2.3, 07 §7.1, 11 §11.2 M3). Nothing here is a municipality fact: names, coordinates, quantities and costs are invented for the demo. Loaded by `make seed` through the application's own audited commands, acting as the seeded users.",
+  "center": {"latitude": 33.5000, "longitude": 36.3000},
+  "street": "شارع العرض التجريبي",
+  "lights": 10,
+  "solar_every": 3,
+  "items": [
+    {"sku": "LED-MOD-50W", "name_ar": "وحدة ليد 50 واط", "name_en": "LED module 50 W", "unit": "EA", "serial_tracked": true, "core_return_required": true, "cost": {"amount": 350000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "LED-DRV-50W", "name_ar": "درايفر 50 واط", "name_en": "LED driver 50 W", "unit": "EA", "serial_tracked": true, "core_return_required": true, "cost": {"amount": 185000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "PHOTOCELL", "name_ar": "خلية ضوئية", "name_en": "Photocell", "unit": "EA", "serial_tracked": false, "core_return_required": false, "cost": {"amount": 45000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "FUSE-10A", "name_ar": "فيوز 10 أمبير", "name_en": "Fuse 10 A", "unit": "EA", "serial_tracked": false, "core_return_required": false, "cost": {"amount": 5000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "CABLE-2.5", "name_ar": "كابل 2.5 مم", "name_en": "Cable 2.5 mm²", "unit": "M", "serial_tracked": false, "core_return_required": false, "cost": {"amount": 12000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "SOLAR-BATT-100AH", "name_ar": "بطارية 100 أمبير", "name_en": "Battery 100 Ah", "unit": "EA", "serial_tracked": true, "core_return_required": true, "cost": {"amount": 1200000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "SOLAR-CTRL", "name_ar": "منظم شحن", "name_en": "Charge controller", "unit": "EA", "serial_tracked": true, "core_return_required": true, "cost": {"amount": 400000, "currency": "SYP", "as_of": "2026-01-01"}},
+    {"sku": "SOLAR-PANEL-100W", "name_ar": "لوح شمسي 100 واط", "name_en": "Solar panel 100 W", "unit": "EA", "serial_tracked": true, "core_return_required": true, "cost": {"amount": 900000, "currency": "SYP", "as_of": "2026-01-01"}}
+  ],
+  "opening_stock": [
+    {"sku": "LED-MOD-50W", "quantity": 10, "serial_prefix": "M-"},
+    {"sku": "LED-DRV-50W", "quantity": 10, "serial_prefix": "D-"},
+    {"sku": "PHOTOCELL", "quantity": 20},
+    {"sku": "FUSE-10A", "quantity": 50},
+    {"sku": "CABLE-2.5", "quantity": 200},
+    {"sku": "SOLAR-BATT-100AH", "quantity": 4, "serial_prefix": "B-"},
+    {"sku": "SOLAR-CTRL", "quantity": 4, "serial_prefix": "C-"},
+    {"sku": "SOLAR-PANEL-100W", "quantity": 2, "serial_prefix": "P-"}
+  ],
+  "issues": [
+    {"technician": "tech1", "lines": [
+      {"sku": "LED-MOD-50W", "serials": ["M-0001", "M-0002", "M-0003", "M-0004"]},
+      {"sku": "LED-DRV-50W", "serials": ["D-0001", "D-0002"]},
+      {"sku": "PHOTOCELL", "quantity": 3},
+      {"sku": "FUSE-10A", "quantity": 5},
+      {"sku": "CABLE-2.5", "quantity": 20}
+    ]},
+    {"technician": "tech2", "lines": [
+      {"sku": "LED-DRV-50W", "serials": ["D-0003"]},
+      {"sku": "FUSE-10A", "quantity": 2}
+    ]}
+  ],
+  "repeat_failure_light": {
+    "address": "شارع العرض التجريبي — العمود المتكرر العطل",
+    "earlier_repairs": [
+      {"diagnosis": "LED_MODULE_FAIL", "sku": "LED-MOD-50W", "serial": "M-0001", "root_cause": "وحدة الليد محترقة", "test_method": "BYPASS"},
+      {"diagnosis": "LED_MODULE_FAIL", "sku": "LED-MOD-50W", "serial": "M-0002", "root_cause": "وحدة الليد محترقة مجددًا", "test_method": "BYPASS"}
+    ]
+  }
+}

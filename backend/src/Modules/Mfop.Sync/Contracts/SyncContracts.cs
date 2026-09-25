@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Mfop.Assets.Contracts;
+using Mfop.Inventory.Contracts;
+using Mfop.Rules.Contracts;
 using Mfop.WorkOrders.Contracts;
 
 namespace Mfop.Sync.Contracts;
@@ -18,14 +20,18 @@ public sealed record PushResponse(DateTimeOffset ServerTime, IReadOnlyList<PushC
 
 public sealed record PullUser(Guid Id, string DisplayName, IReadOnlyList<string> Roles);
 
-/// <param name="Cursor">Opaque. M2 pull always returns the full current task set; incremental pull arrives with M4.</param>
-public sealed record PullResponse(DateTimeOffset ServerTime, string Cursor, PullUser User, Guid DeviceId, IReadOnlyList<WorkOrderTask> WorkOrders);
+/// <param name="Cursor">Opaque. Pull always returns the full current task set; incremental pull arrives with M4.</param>
+/// <param name="Reference">Diagnosis codes and checklist templates (M3), so the wizard works offline.</param>
+/// <param name="Custody">The technician's custody (items, quantities, serials); empty for other roles.</param>
+public sealed record PullResponse(DateTimeOffset ServerTime, string Cursor, PullUser User, Guid DeviceId, IReadOnlyList<WorkOrderTask> WorkOrders,
+    FieldReferenceData? Reference = null, IReadOnlyList<CustodyItem>? Custody = null, IReadOnlyList<ItemDto>? Items = null);
 
 /// <summary>What the phone shows after scanning a tag (docs/lean-pilot/08 §8.3).</summary>
 public sealed record AssetCard(
     AssetSummary Asset,
     int OpenFaults,
     IReadOnlyList<WorkOrderTask> MyOpenTasks,
-    IReadOnlyList<AssetCardEvent> RecentEvents);
+    IReadOnlyList<AssetCardEvent> RecentEvents,
+    IReadOnlyList<RecommendationDto>? Recommendations = null);
 
 public sealed record AssetCardEvent(DateTimeOffset At, string Action, string ActorName);

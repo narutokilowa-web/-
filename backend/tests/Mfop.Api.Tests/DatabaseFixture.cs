@@ -30,15 +30,30 @@ public sealed class DatabaseFixture : IAsyncLifetime
 
     public static string DevUsersPath => RepoPaths.Path("deploy", "seed", "dev-users.json");
 
+    public static string ReferenceDataPath => RepoPaths.Path("deploy", "seed", "reference-data.json");
+
+    public static string DemoDataPath => RepoPaths.Path("deploy", "seed", "demo-data.json");
+
+    /// <summary>Local evidence store of this test run (the API and the demo seeder share it, as in Compose).</summary>
+    public string ObjectStoreRoot { get; } = Path.Combine(Path.GetTempPath(), "mfop-tests-objects-" + Guid.NewGuid().ToString("N"));
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
         var runner = new MigrationRunner(OwnerConnectionString, TextWriter.Null);
         await runner.MigrateAsync(CancellationToken.None);
+        await runner.LoadReferenceDataAsync(ReferenceDataPath, CancellationToken.None);
         await runner.SeedDevUsersAsync(DevUsersPath, CancellationToken.None);
     }
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public async Task DisposeAsync()
+    {
+        await _container.DisposeAsync();
+        if (Directory.Exists(ObjectStoreRoot))
+        {
+            Directory.Delete(ObjectStoreRoot, recursive: true);
+        }
+    }
 
     public async Task ExecuteAsOwnerAsync(string sql)
     {

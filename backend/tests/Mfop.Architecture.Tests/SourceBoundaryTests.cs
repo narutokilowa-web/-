@@ -8,7 +8,7 @@ namespace Mfop.Architecture.Tests;
 /// </summary>
 public partial class SourceBoundaryTests
 {
-    private static readonly string[] Modules = ["Access", "Assets", "Audit", "Evidence", "Faults", "Inventory", "Sync", "WorkOrders"];
+    private static readonly string[] Modules = ["Access", "Assets", "Audit", "Evidence", "Faults", "Inventory", "Rules", "Sync", "WorkOrders"];
 
     private static string ModulesRoot()
     {

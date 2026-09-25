@@ -11,4 +11,7 @@ public sealed class WorkOrderOptions
 
     /// <summary>IANA time zone of the organization; used for the year in work-order codes (WO-2026-000123).</summary>
     public string TimeZone { get; set; } = "Asia/Damascus";
+
+    /// <summary>W1 effect: a new work order is marked as rework of one closed as REPAIRED on the same light within this many days (04 §4.8, configurable).</summary>
+    public int ReworkWindowDays { get; set; } = 30;
 }

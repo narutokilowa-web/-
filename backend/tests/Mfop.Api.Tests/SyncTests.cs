@@ -7,9 +7,13 @@ namespace Mfop.Api.Tests;
 
 /// <summary>The single write path POST /sync/v1/push: per-command results, idempotency by command id, recorded rejections.</summary>
 [Collection(nameof(DatabaseCollection))]
-public class SyncTests(DatabaseFixture db)
+public class SyncTests(DatabaseFixture db) : IAsyncLifetime
 {
     private TestApp App { get; } = new(db);
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync() => await App.DisposeAsync();
 
     private static object Push(params object[] commands) => new { commands, pendingCommands = 0 };
 

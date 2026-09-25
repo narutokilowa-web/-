@@ -1,6 +1,8 @@
 using Mfop.Access.Contracts;
 using Mfop.Assets.Contracts;
+using Mfop.Evidence.Contracts;
 using Mfop.Faults.Contracts;
+using Mfop.Inventory.Contracts;
 using Mfop.Infrastructure.Persistence;
 using Mfop.Kernel;
 using Mfop.Kernel.Auditing;
@@ -14,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Mfop.WorkOrders.Application;
 
-/// <summary>Supervisor work-order commands W1–W4 (docs/state-machines/work-order.yaml), each in one unit of work with its audit events.</summary>
+/// <summary>Supervisor work-order commands W1–W4 (docs/state-machines/work-order.yaml), each in one unit of work with its audit events and wo_events.</summary>
 public sealed class WorkOrderService(
     WorkOrdersDbContext db,
     IUnitOfWork uow,
@@ -23,7 +25,8 @@ public sealed class WorkOrderService(
     IAssetDirectory assets,
     IFaultWorkflow faults,
     IAssigneeDirectory assignees,
-    IEnumerable<IWorkOrderActivity> activity,
+    IEvidenceRegistry evidence,
+    IInventoryLedger inventory,
     IOptions<WorkOrderOptions> options)
 {
     /// <summary>W1: from an OPEN fault on an ACTIVE asset. Effect F4: the fault moves to IN_WORK_ORDER.</summary>
@@ -59,7 +62,26 @@ public sealed class WorkOrderService(
             var workOrder = new WorkOrder(Ids.New(), code, fault.Id, asset.Id, request.Priority, slaDue, cmd.Actor.UserId!.Value, now,
                 string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim());
             db.WorkOrders.Add(workOrder);
+
+            // W1 effects: checklist template pinned by power source; rework link to a recent REPAIRED closure on the same light.
+            var template = await db.ChecklistTemplates.AsNoTracking()
+                .Where(t => t.PowerSources.Contains(asset.PowerSource))
+                .OrderByDescending(t => t.TemplateVersion).FirstOrDefaultAsync(innerCt);
+            if (template is not null) workOrder.PinChecklistTemplate(template.Id);
+            var reworkFrom = now.AddDays(-options.Value.ReworkWindowDays);
+            var previous = await db.WorkOrders.AsNoTracking()
+                .Where(w => w.AssetId == asset.Id && w.State == WorkOrderStates.Closed && w.Outcome == "REPAIRED" && w.ClosedAt >= reworkFrom)
+                .OrderByDescending(w => w.ClosedAt).Select(w => (Guid?)w.Id).FirstOrDefaultAsync(innerCt);
+            if (previous is { } p) workOrder.MarkReworkOf(p);
+
             audit.Record(workOrder, "work_order.created");
+            WorkOrderEventLog.Append(db, audit, workOrder, WorkOrderEventLog.Created, cmd, now, new Dictionary<string, string?>
+            {
+                ["fault_id"] = fault.Id.ToString("D"),
+                ["priority"] = workOrder.Priority,
+                ["checklist_template_id"] = workOrder.ChecklistTemplateId?.ToString("D"),
+                ["rework_of_id"] = workOrder.ReworkOfId?.ToString("D"),
+            });
 
             var faultMoved = await faults.OnWorkOrderCreatedAsync(fault.Id, workOrder.Id, innerCt);
             if (!faultMoved.IsSuccess) return faultMoved.Error!;
@@ -84,12 +106,11 @@ public sealed class WorkOrderService(
             var workOrder = await db.WorkOrders.SingleOrDefaultAsync(w => w.Id == workOrderId, innerCt);
             if (workOrder is null) return NotFound();
 
-            foreach (var probe in activity)
+            // W4 guard (N6): only while nothing was done on site.
+            if ((await evidence.ForOwnersAsync(EvidenceOwnerTypes.WorkOrder, [workOrder.Id], innerCt)).Count > 0
+                || (await inventory.MovementsForWorkOrdersAsync([workOrder.Id], innerCt)).Count > 0)
             {
-                if (await probe.HasEvidenceOrConsumptionAsync(workOrder.Id, innerCt))
-                {
-                    return Error.InvalidTransition("WorkOrder", workOrder.State, WorkOrderCommands.Cancel);
-                }
+                return Error.InvalidTransition("WorkOrder", workOrder.State, WorkOrderCommands.Cancel);
             }
 
             var now = clock.UtcNowMicros();
@@ -97,6 +118,7 @@ public sealed class WorkOrderService(
             var cancelled = workOrder.Cancel(cmd.Actor.UserId!.Value, reason, now);
             if (!cancelled.IsSuccess) return cancelled.Error!;
             audit.Record(workOrder, "work_order.cancelled", reason);
+            WorkOrderEventLog.Append(db, audit, workOrder, WorkOrderEventLog.Cancelled, cmd, now, new Dictionary<string, string?> { ["reason"] = reason });
 
             foreach (var assignment in await db.Assignments.Where(a => a.WorkOrderId == workOrder.Id && a.State == AssignmentStates.Active).ToListAsync(innerCt))
             {
@@ -114,6 +136,10 @@ public sealed class WorkOrderService(
         {
             var workOrder = await db.WorkOrders.SingleOrDefaultAsync(w => w.Id == workOrderId, innerCt);
             if (workOrder is null) return NotFound();
+
+            // The state guard comes before the assignee checks: a command on a CLOSED or CANCELLED work order is always INVALID_TRANSITION (N7).
+            var allowed = WorkOrderStateMachines.WorkOrder.Resolve(workOrder.State, command);
+            if (!allowed.IsSuccess) return allowed.Error!;
 
             var check = await assignees.CheckAsync(request.AssigneeId, innerCt);
             if (!check.Exists) return Error.NotFound("ASSIGNEE_NOT_FOUND", "User not found.");
@@ -137,6 +163,8 @@ public sealed class WorkOrderService(
             db.Assignments.Add(assignment);
             audit.Record(workOrder, command == WorkOrderCommands.Assign ? "work_order.assigned" : "work_order.reassigned", reason);
             audit.Record(assignment, "work_order_assignment.started");
+            WorkOrderEventLog.Append(db, audit, workOrder, command == WorkOrderCommands.Assign ? WorkOrderEventLog.Assigned : WorkOrderEventLog.Reassigned,
+                cmd, now, new Dictionary<string, string?> { ["assignee_id"] = request.AssigneeId.ToString("D"), ["reason"] = reason });
             return workOrder.Id;
         }, ct);
 

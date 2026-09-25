@@ -8,6 +8,9 @@
     <ProjectReference Include="..\Mfop.Assets\Mfop.Assets.csproj" />
     <ProjectReference Include="..\Mfop.Audit\Mfop.Audit.csproj" />
     <ProjectReference Include="..\Mfop.Faults\Mfop.Faults.csproj" />
+    <ProjectReference Include="..\Mfop.Evidence\Mfop.Evidence.csproj" />
+    <ProjectReference Include="..\Mfop.Inventory\Mfop.Inventory.csproj" />
+    <ProjectReference Include="..\Mfop.Rules\Mfop.Rules.csproj" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="EFCore.NamingConventions" />
   </ItemGroup>

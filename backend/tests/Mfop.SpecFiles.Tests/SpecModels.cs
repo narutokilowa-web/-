@@ -13,6 +13,14 @@ internal sealed class StateMachineSpec
     public List<string> Terminal { get; set; } = [];
     public Dictionary<string, string> DeferredExits { get; set; } = [];
     public List<TransitionSpec> Transitions { get; set; } = [];
+    public List<InStateCommandSpec> InStateCommands { get; set; } = [];
+}
+
+internal sealed class InStateCommandSpec
+{
+    public string Command { get; set; } = "";
+    public List<string> In { get; set; } = [];
+    public string Actor { get; set; } = "";
 }
 
 internal sealed class TransitionSpec

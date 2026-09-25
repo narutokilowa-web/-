@@ -31,8 +31,9 @@ logs: ## follow logs
 migrate: env ## apply DB migrations (owner role, one-shot)
 	$(COMPOSE) run --rm migrate migrate
 
-seed: env ## load dev seed data (M0: bootstrap users/roles; from M2: synthetic demo data)
-	$(COMPOSE) run --rm migrate migrate --seed-dev /seed/dev-users.json
+seed: env ## load DEMO 1 data: dev users, reference data, synthetic lights/stock and the light with 2 earlier repairs (idempotent)
+	$(COMPOSE) run --rm migrate migrate --reference-data /seed/reference-data.json --seed-dev /seed/dev-users.json
+	$(COMPOSE) run --rm migrate seed-demo /seed/demo-data.json
 
 verify-audit: env ## verify the audit chain, approved snapshots and active assets (read-only DB role)
 	set -a && source .env && set +a && dotnet run --project tools/audit-verify -- --db "Host=localhost;Port=$${DB_PORT:-5432};Database=mfop;Username=mfop_readonly;Password=$${MFOP_READONLY_PASSWORD}"

@@ -15,7 +15,7 @@ namespace Mfop.Api.Tests;
 /// the "X-Test-Sub" header plays the role of a validated token's "sub" claim.
 /// (Real Keycloak token validation is verified end-to-end against Docker Compose.)
 /// </summary>
-public sealed class TestApp(DatabaseFixture db) : WebApplicationFactory<Program>
+public sealed class TestApp(DatabaseFixture db, bool backgroundVerifier = true) : WebApplicationFactory<Program>
 {
     public const string SubHeader = "X-Test-Sub";
 
@@ -31,6 +31,10 @@ public sealed class TestApp(DatabaseFixture db) : WebApplicationFactory<Program>
         builder.UseSetting("Auth:MetadataAddress", "http://issuer.test/realms/mfop/.well-known/openid-configuration");
         builder.UseSetting("Tags:CheckKey", TagCheckKey);
         builder.UseSetting("Tags:BaseUrl", "http://web.test/t");
+        builder.UseSetting("Storage:Mode", "local");
+        builder.UseSetting("Storage:Root", db.ObjectStoreRoot);
+        builder.UseSetting("Evidence:VerifyIntervalSeconds", "0.3");
+        builder.UseSetting("Evidence:RunBackgroundVerifier", backgroundVerifier ? "true" : "false");
         builder.ConfigureTestServices(services =>
         {
             services.AddAuthentication(TestAuthHandler.SchemeName)

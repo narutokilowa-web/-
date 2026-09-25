@@ -25,6 +25,182 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
 
             modelBuilder.HasSequence("work_order_code_seq");
 
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.ChecklistResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Answers")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("answers");
+
+                    b.Property<bool>("Blocked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("blocked");
+
+                    b.Property<string>("NotTestedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("not_tested_reason");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<Guid>("RecordedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<Guid>("TemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("template_id");
+
+                    b.Property<string>("TestMethod")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("test_method");
+
+                    b.Property<string>("TestResult")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("test_result");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_checklist_results");
+
+                    b.HasIndex("TemplateId")
+                        .HasDatabaseName("ix_checklist_results_template_id");
+
+                    b.HasIndex("WorkOrderId")
+                        .HasDatabaseName("ix_checklist_results_work_order_id");
+
+                    b.ToTable("checklist_results", "workorders");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.ChecklistTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("EvidenceRequirements")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("evidence_requirements");
+
+                    b.Property<string>("Items")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("items");
+
+                    b.PrimitiveCollection<string[]>("PowerSources")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("power_sources");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<int>("TemplateVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("template_version");
+
+                    b.Property<string>("TestMethods")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("test_methods");
+
+                    b.HasKey("Id")
+                        .HasName("pk_checklist_templates");
+
+                    b.HasIndex("Code", "TemplateVersion")
+                        .IsUnique()
+                        .HasDatabaseName("ix_checklist_templates_code_template_version");
+
+                    b.ToTable("checklist_templates", "workorders");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.DiagnosisCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("code");
+
+                    b.Property<bool>("CountsAsFailure")
+                        .HasColumnType("boolean")
+                        .HasColumnName("counts_as_failure");
+
+                    b.PrimitiveCollection<string[]>("ExpectedItems")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("expected_items");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_ar");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_en");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("path");
+
+                    b.PrimitiveCollection<string[]>("PowerSources")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("power_sources");
+
+                    b.Property<bool>("RequiresMaterial")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_material");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_diagnosis_codes");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_diagnosis_codes_code");
+
+                    b.ToTable("diagnosis_codes", "workorders");
+                });
+
             modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -53,6 +229,18 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("cancelled_by");
 
+                    b.Property<Guid?>("ChecklistTemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("checklist_template_id");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<Guid?>("ClosedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -67,20 +255,63 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("DiagnosisCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("diagnosis_code");
+
+                    b.Property<string>("DiagnosisNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("diagnosis_note");
+
                     b.Property<Guid>("FaultId")
                         .HasColumnType("uuid")
                         .HasColumnName("fault_id");
+
+                    b.Property<DateTimeOffset?>("FirstArrivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("first_arrived_at");
+
+                    b.Property<int>("LastEventSeq")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_event_seq");
+
+                    b.Property<string>("NoMaterialReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("no_material_reason");
 
                     b.Property<string>("Note")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("note");
 
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("outcome");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(2)
                         .HasColumnType("character varying(2)")
                         .HasColumnName("priority");
+
+                    b.Property<Guid?>("ReworkOfId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rework_of_id");
+
+                    b.Property<string>("RootCauseNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("root_cause_note");
+
+                    b.Property<string>("SealHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("seal_hash")
+                        .IsFixedLength();
 
                     b.Property<DateTimeOffset?>("SlaDueAt")
                         .HasColumnType("timestamp with time zone")
@@ -92,10 +323,32 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("state");
 
+                    b.Property<int>("SubmissionCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("submission_count");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<string>("TestMethod")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("test_method");
+
+                    b.Property<string>("TestResult")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("test_result");
+
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("integer")
                         .HasColumnName("version");
+
+                    b.Property<DateTimeOffset?>("WorkStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("work_started_at");
 
                     b.HasKey("Id")
                         .HasName("pk_work_orders");
@@ -117,6 +370,62 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
                         .HasDatabaseName("ix_work_orders_assignee_id_state");
 
                     b.ToTable("work_orders", "workorders");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderArrival", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ArrivalNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("arrival_no");
+
+                    b.Property<DateTimeOffset?>("DeviceTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("device_time");
+
+                    b.Property<string>("ManualCode")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("manual_code");
+
+                    b.Property<string>("ManualReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("manual_reason");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<string>("ScannedCode")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("scanned_code");
+
+                    b.Property<bool>("TagScanned")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tag_scanned");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_wo_arrivals");
+
+                    b.HasIndex("WorkOrderId", "ArrivalNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_wo_arrivals_work_order_id_arrival_no");
+
+                    b.ToTable("wo_arrivals", "workorders");
                 });
 
             modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderAssignment", b =>
@@ -175,6 +484,185 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
                     b.ToTable("assignments", "workorders");
                 });
 
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("command_id");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("data");
+
+                    b.Property<Guid?>("DeviceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("device_id");
+
+                    b.Property<DateTimeOffset?>("DeviceTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("device_time");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at");
+
+                    b.Property<int>("Seq")
+                        .HasColumnType("integer")
+                        .HasColumnName("seq");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_wo_events");
+
+                    b.HasIndex("WorkOrderId", "Seq")
+                        .IsUnique()
+                        .HasDatabaseName("ix_wo_events_work_order_id_seq");
+
+                    b.ToTable("wo_events", "workorders");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("decision");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("note");
+
+                    b.PrimitiveCollection<string[]>("Reasons")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("reasons");
+
+                    b.Property<Guid>("ReviewerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewer_id");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submission_id");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_wo_reviews");
+
+                    b.HasIndex("SubmissionId")
+                        .HasDatabaseName("ix_wo_reviews_submission_id");
+
+                    b.HasIndex("WorkOrderId")
+                        .HasDatabaseName("ix_wo_reviews_work_order_id");
+
+                    b.ToTable("wo_reviews", "workorders");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("payload_hash")
+                        .IsFixedLength();
+
+                    b.Property<string>("Report")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("report");
+
+                    b.Property<int>("SubmissionNo")
+                        .HasColumnType("integer")
+                        .HasColumnName("submission_no");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<Guid>("SubmittedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_wo_submissions");
+
+                    b.HasIndex("WorkOrderId", "SubmissionNo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_wo_submissions_work_order_id_submission_no");
+
+                    b.ToTable("wo_submissions", "workorders");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.ChecklistResult", b =>
+                {
+                    b.HasOne("Mfop.WorkOrders.Domain.ChecklistTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_checklist_results_checklist_templates_template_id");
+
+                    b.HasOne("Mfop.WorkOrders.Domain.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_checklist_results_work_orders_work_order_id");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderArrival", b =>
+                {
+                    b.HasOne("Mfop.WorkOrders.Domain.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_wo_arrivals_work_orders_work_order_id");
+                });
+
             modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderAssignment", b =>
                 {
                     b.HasOne("Mfop.WorkOrders.Domain.WorkOrder", null)
@@ -183,6 +671,43 @@ namespace Mfop.WorkOrders.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_assignments_work_orders_work_order_id");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderEvent", b =>
+                {
+                    b.HasOne("Mfop.WorkOrders.Domain.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_wo_events_work_orders_work_order_id");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderReview", b =>
+                {
+                    b.HasOne("Mfop.WorkOrders.Domain.WorkOrderSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_wo_reviews_wo_submissions_submission_id");
+
+                    b.HasOne("Mfop.WorkOrders.Domain.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_wo_reviews_work_orders_work_order_id");
+                });
+
+            modelBuilder.Entity("Mfop.WorkOrders.Domain.WorkOrderSubmission", b =>
+                {
+                    b.HasOne("Mfop.WorkOrders.Domain.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_wo_submissions_work_orders_work_order_id");
                 });
 #pragma warning restore 612, 618
         }
