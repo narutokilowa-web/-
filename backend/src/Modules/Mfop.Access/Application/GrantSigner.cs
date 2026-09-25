@@ -35,7 +35,7 @@ public sealed class GrantSigner : IDisposable
         }
         else
         {
-            _key.ImportPkcs8PrivateKey(Convert.FromBase64String(options.Value.SigningKey.Trim()), out _);
+            Import(_key, Convert.FromBase64String(options.Value.SigningKey.Trim()));
         }
 
         PublicKey = Convert.ToBase64String(_key.ExportSubjectPublicKeyInfo());
@@ -50,4 +50,19 @@ public sealed class GrantSigner : IDisposable
         Convert.ToBase64String(_key.SignData(payload, HashAlgorithmName.SHA256, DSASignatureFormat.Rfc3279DerSequence));
 
     public void Dispose() => _key.Dispose();
+
+    /// <summary>PKCS#8 (documented format) or SEC1 `ECPrivateKey` (what `openssl genpkey -outform DER` writes); P-256 only.</summary>
+    private static void Import(ECDsa key, byte[] der)
+    {
+        try
+        {
+            key.ImportPkcs8PrivateKey(der, out _);
+        }
+        catch (CryptographicException)
+        {
+            key.ImportECPrivateKey(der, out _);
+        }
+
+        if (key.KeySize != 256) throw new CryptographicException("Grants:SigningKey must be an EC P-256 key.");
+    }
 }

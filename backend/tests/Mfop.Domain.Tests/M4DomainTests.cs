@@ -100,3 +100,33 @@ public class M4DomainTests
         Assert.Equal("INVALID_TRANSITION", q.Resolve(QuarantineCommands.ApplyQuarantined, Guid.NewGuid(), "x", Now).Error!.Code);
     }
 }
+
+public class GrantSignerTests
+{
+    private static Mfop.Access.Application.GrantSigner Signer(string? key) => new(
+        Microsoft.Extensions.Options.Options.Create(new Mfop.Access.Application.GrantSigningOptions { SigningKey = key, KeyId = "k-test" }),
+        Microsoft.Extensions.Logging.Abstractions.NullLogger<Mfop.Access.Application.GrantSigner>.Instance);
+
+    /// <summary>`make env` keys: PKCS#8 (documented) and SEC1 (earlier `openssl genpkey -outform DER` output) both load.</summary>
+    [Theory]
+    [InlineData("pkcs8")]
+    [InlineData("sec1")]
+    public void The_configured_grant_key_is_loaded_and_its_signatures_verify(string format)
+    {
+        using var original = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var der = format == "pkcs8" ? original.ExportPkcs8PrivateKey() : original.ExportECPrivateKey();
+        using var signer = Signer(Convert.ToBase64String(der));
+        Assert.Equal("k-test", signer.KeyId);
+        Assert.Equal(Convert.ToBase64String(original.ExportSubjectPublicKeyInfo()), signer.PublicKey);
+        var payload = "{\"grant_id\":\"x\"}"u8.ToArray();
+        Assert.True(original.VerifyData(payload, Convert.FromBase64String(signer.Sign(payload)),
+            System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.DSASignatureFormat.Rfc3279DerSequence));
+    }
+
+    [Fact]
+    public void A_key_on_another_curve_is_refused()
+    {
+        using var p384 = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP384);
+        Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => Signer(Convert.ToBase64String(p384.ExportPkcs8PrivateKey())));
+    }
+}

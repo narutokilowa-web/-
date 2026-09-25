@@ -9,7 +9,9 @@ gen() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-24}"; }
 # EC P-256 private key (PKCS#8 DER, base64) for signing offline grants.
 gen_grant_key() {
   if command -v openssl >/dev/null 2>&1; then
-    openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -outform DER 2>/dev/null | base64 | tr -d '\n'
+    # genpkey's DER output is SEC1 (ECPrivateKey); convert to PKCS#8 as documented in .env.example.
+    openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 2>/dev/null \
+      | openssl pkcs8 -topk8 -nocrypt -outform DER 2>/dev/null | base64 | tr -d '\n'
   else
     echo "openssl not found: MFOP_GRANT_SIGNING_KEY left empty (the API then uses an ephemeral key)." >&2
   fi
