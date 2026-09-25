@@ -161,11 +161,13 @@ jobs:
       - working-directory: mobile
         run: flutter pub get
       # Gradle next to a running emulator starves this runner (QEMU "hanging thread", then a runner shutdown or the
-      # emulator going offline) — even a 3-minute incremental rebuild did. The test APK is therefore built here, before
-      # the emulator boots, and the emulator step only installs and runs it (no Gradle while the emulator runs).
+      # emulator going offline). The test app is built here, before the emulator boots, with exactly what `flutter drive`
+      # builds for the x86_64 emulator (same target, defines and `android-x64` only), so the build inside the emulator
+      # step finds everything up to date. (Installing a prebuilt APK with --use-application-binary is not used: the
+      # activity was recreated shortly after launch and the test hung on a platform call of the detached engine.)
       - name: Build the field-app test app before the emulator boots
         working-directory: mobile
-        run: flutter build apk --debug --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
+        run: flutter build apk --debug --target-platform android-x64 --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
       - name: "Field-app flow on an Android 14 emulator (the phone reaches the stack as localhost via adb reverse)"
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -178,7 +180,7 @@ jobs:
           script: |
             adb reverse tcp:5080 tcp:5080 && adb reverse tcp:8080 tcp:8080
             sleep 90   # let the freshly booted system finish its start-up work before the timed test steps
-            cd mobile && flutter drive --use-application-binary=build/app/outputs/flutter-apk/app-debug.apk --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart
+            cd mobile && flutter drive --driver=test_driver/integration_test.dart --target=integration_test/field_flow_test.dart --dart-define=MFOP_TEST_PASSWORD="$(grep '^MFOP_DEV_USER_PASSWORD=' ../.env | cut -d= -f2-)"
       - name: Screenshots from the device
         if: always()
         uses: actions/upload-artifact@v4
