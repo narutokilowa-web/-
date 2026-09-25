@@ -28,9 +28,12 @@ public class DeviceTests(DatabaseFixture db) : IAsyncLifetime
         var key = Guid.NewGuid();
         using var phone = App.FieldAppClientFor(tech, null);
         phone.DefaultRequestHeaders.Add("Idempotency-Key", key.ToString());
-        var registered = await phone.PostAsJsonAsync("/sync/v1/devices/register", new { platform = "ANDROID", model = "Galaxy A12", osVersion = "12", appVersion = "0.2.0" });
+        using var deviceKey = new TestPhone();
+        var registered = await phone.PostAsJsonAsync("/sync/v1/devices/register",
+            new { platform = "ANDROID", model = "Galaxy A12", osVersion = "12", appVersion = "0.4.0", publicKey = deviceKey.PublicKey });
         Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
         var deviceId = (await registered.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("deviceId").GetGuid();
+        deviceKey.Bind(deviceId);
         Assert.Equal(["device.registered"], await db.AuditActionsForCommandAsync(key));
         Assert.Equal("PENDING_APPROVAL", (await DeviceAsync(deviceId)).GetProperty("status").GetString());
 

@@ -17,7 +17,12 @@ public interface IAuditTrail
 {
     /// <param name="action">Stable action name, e.g. "registration.approved".</param>
     /// <param name="extra">Additional recorded facts (key → value). Values must be string, bool, integer or null.</param>
-    void Record(IAuditable entity, string action, string? reason = null, IReadOnlyDictionary<string, object?>? extra = null);
+    /// <param name="actor">
+    /// Who this event is attributed to, when it differs from the command's actor. Used only where one unit of work
+    /// records the decisions of two people (e.g. a supervisor applying a technician's quarantined command, M4).
+    /// </param>
+    void Record(IAuditable entity, string action, string? reason = null, IReadOnlyDictionary<string, object?>? extra = null,
+        Commands.ActorContext? actor = null);
 }
 
 /// <summary>

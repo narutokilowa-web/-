@@ -46,6 +46,7 @@ public sealed class MigrationRunner(string ownerConnectionString, TextWriter log
         "audit.audit_events", "assets.asset_versions", "assets.asset_status_events", "faults.fault_confirmations", "sync.sync_commands",
         "inventory.stock_movements", "inventory.item_costs", "workorders.wo_events", "workorders.wo_arrivals", "workorders.checklist_templates",
         "workorders.checklist_results", "workorders.wo_submissions", "workorders.wo_reviews",
+        "access.offline_grants", "access.offline_grant_revocations", "access.device_nonces",
     ];
 
     public async Task MigrateAsync(CancellationToken ct)
@@ -98,6 +99,17 @@ public sealed class MigrationRunner(string ownerConnectionString, TextWriter log
         log.WriteLine("migrations applied: access, audit, assets, faults, workorders, sync, rules, inventory, evidence");
         await ApplyGrantsAsync(ct);
         await EnsureRuleDefaultsAsync(ct);
+        await EnsurePolicyDefaultsAsync(ct);
+    }
+
+    /// <summary>Security policies are data (docs/lean-pilot/05 §5.9): defaults written once, audited (SYSTEM), then changed by the admin.</summary>
+    private async Task EnsurePolicyDefaultsAsync(CancellationToken ct)
+    {
+        await using var provider = CoreServices().BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var result = await scope.ServiceProvider.GetRequiredService<Mfop.Access.Application.PolicyService>().EnsureDefaultsAsync(ct);
+        if (!result.IsSuccess) throw new InvalidOperationException($"Policy defaults: {result.Error!.Code}");
+        log.WriteLine($"policy settings: {result.Value} defaults ensured (audited)");
     }
 
     /// <summary>Rule settings are data: the defaults (REPEATED_FAILURE threshold 3, window 180 days) are written once, audited (SYSTEM).</summary>
@@ -129,6 +141,8 @@ public sealed class MigrationRunner(string ownerConnectionString, TextWriter log
         services.AddScoped<RuleSettingsService>();
         services.AddModuleDbContext<WorkOrdersDbContext>(WorkOrdersModule.Info.Schema);
         services.AddScoped<ReferenceDataLoader>();
+        services.AddModuleDbContext<Mfop.Access.Infrastructure.AccessDbContext>(Mfop.Access.AccessModule.Info.Schema);
+        services.AddScoped<Mfop.Access.Application.PolicyService>();
         return services;
     }
 

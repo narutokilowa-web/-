@@ -115,6 +115,27 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "mfop-backend",
+      "name": "MFOP API (offboarding: disable users, end sessions)",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${MFOP_KEYCLOAK_BACKEND_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": [],
+      "webOrigins": [],
+      "attributes": {},
+      "defaultClientScopes": [
+        "basic",
+        "roles"
+      ],
+      "optionalClientScopes": []
     }
   ],
   "users": [
@@ -270,6 +291,17 @@
         }
       ],
       "requiredActions": []
+    },
+    {
+      "username": "service-account-mfop-backend",
+      "enabled": true,
+      "serviceAccountClientId": "mfop-backend",
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "manage-users"
+        ]
+      }
     }
   ]
 }

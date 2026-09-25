@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Modules\Mfop.Evidence\Mfop.Evidence.csproj" />
     <ProjectReference Include="..\..\src\Modules\Mfop.Inventory\Mfop.Inventory.csproj" />
     <ProjectReference Include="..\..\src\Modules\Mfop.Rules\Mfop.Rules.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Mfop.Sync\Mfop.Sync.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

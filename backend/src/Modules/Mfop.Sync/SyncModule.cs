@@ -19,6 +19,7 @@ public static class SyncModule
     {
         services.AddModuleDbContext<SyncDbContext>(Info.Schema);
         services.AddScoped<SyncService>();
+        services.AddScoped<QuarantineService>();
         services.AddScoped<IDeviceSyncInfo, DeviceSyncInfo>();
         return services;
     }

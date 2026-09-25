@@ -37,4 +37,18 @@ The automated check runs on every CI build (job **Android emulator**): the real 
 | 11 | Web → Devices → Active → the phone → reason → **Revoke** | — |
 | 12 | App → **Send and sync now** (or any action) | "This device was revoked". The app has deleted its own data; open the phone's gallery/files: nothing of the app is there, nothing else changed |
 
+## M4 checks on the real phone (app 0.4.0)
+
+Uninstall the M3 app first (its registration has no device key), install the M4 APK, and register again (steps 1–5).
+
+| # | Action | Expected |
+|---|---|---|
+| 13 | Web as `admin1` → **Devices** → the new phone | No "no device signing key" warning: the Keystore key was registered |
+| 14 | App → **أنا** | "Offline work allowed until …" about 24 h from now (policy `offline_grace_hours`) |
+| 15 | Web as `admin1` → **Settings → Security policies**: set `offline_grace_hours` to 1 (reason). App → **إرسال ومزامنة الآن** | The Me tab shows about 1 hour |
+| 16 | Unplug USB (offline). Record an arrival and a before photo on a task. Change the phone's clock **back** by a day. Wait until the hour passes (or set the policy to 1 h and wait) | New work is refused with "Connect to continue working" after the hour, even with the clock set back; items recorded before stay counted on that screen |
+| 17 | Plug back in, `adb reverse` again, **حاول الآن** | The outbox is sent, a new grant arrives, the app returns to the tasks; the web shows the arrival and photo. Restore `offline_grace_hours` to 24 |
+| 18 | While a task is open offline, reassign it on the web to `tech2`; on the phone record a diagnosis and a photo; reconnect | The diagnosis is refused ("reassigned to another technician"); the photo is kept and flagged on the work order |
+| 19 | Web as `admin1` → **Users** → `tech1` → reason → **Disable** → confirm. App → any action | "Your account was disabled"; the app deleted its own data and key. Nothing else on the phone changed. Then **Enable again** `tech1` (a new device approval is needed) |
+
 Record the phone model, Android version, lighting and label condition for each run, and the time the field steps took (DEMO 1 DoD: interaction time recorded). Report any Arabic wording a technician finds unclear.

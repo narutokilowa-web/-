@@ -1,0 +1,14 @@
+machine: SyncQuarantine
+scope: m4
+spec_ref: docs/lean-pilot/05-byod-offline-security.md#55-the-offline-grant
+states: [PENDING, APPLIED, DISCARDED, APPLY_FAILED]
+initial: PENDING
+terminal: [APPLIED, DISCARDED, APPLY_FAILED]
+transitions:
+  - {id: Q1, from: [_start], command: QuarantineCommand, to: PENDING, actor: system,
+     effects: [nothing_applied, receipt_quarantined]}
+  - {id: Q2, from: [PENDING], command: ApplyQuarantined, to: APPLIED, actor: [SUPERVISOR], policies: [resolver_not_author],
+     requires: [reason, author_user_and_device_active], effects: [command_applied_as_author]}
+  - {id: Q3, from: [PENDING], command: DiscardQuarantined, to: DISCARDED, actor: [SUPERVISOR], policies: [resolver_not_author], requires: [reason]}
+  - {id: Q4, from: [PENDING], command: RecordApplyFailure, to: APPLY_FAILED, actor: [SUPERVISOR],
+     effects: [command_no_longer_fits_current_state]}

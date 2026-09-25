@@ -1,3 +1,4 @@
+using Mfop.Access.Contracts;
 using Mfop.Assets.Contracts;
 using Mfop.Infrastructure;
 using Mfop.Kernel;
@@ -32,6 +33,7 @@ public static class WorkOrdersModule
         services.AddScoped<ReferenceDataLoader>();
         services.AddScoped<FieldExecutionService>();
         services.AddScoped<ReviewService>();
+        services.AddScoped<IUserOffboardingHandler, WorkOrderOffboarding>();
         services.AddScoped<ISyncCommandHandler, ArriveOnSiteHandler>();
         services.AddScoped<ISyncCommandHandler, AddEvidenceHandler>();
         services.AddScoped<ISyncCommandHandler, RecordDiagnosisHandler>();

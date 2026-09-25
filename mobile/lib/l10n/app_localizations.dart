@@ -835,6 +835,78 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'{count} أعطال محسوبة؛ العتبة {threshold} خلال {days} يومًا'**
   String recommendationRule(int count, int threshold, int days);
+
+  /// No description provided for @refusalReason.
+  ///
+  /// In ar, this message translates to:
+  /// **'{code, select, WORK_ORDER_CHANGED{تغيّر أمر العمل على الخادم بعد آخر تحديث للهاتف؛ حدّث المهمة وتحقق قبل إعادة الخطوة} WORK_ORDER_REASSIGNED{أُعيد إسناد أمر العمل لفني آخر؛ صورك وموادك محفوظة لكن هذه الخطوة لم تُطبّق} WORK_ORDER_CANCELLED{أُلغي أمر العمل؛ ينتظر العمل قرار المشرف} WORK_ORDER_CLOSED{أُغلق أمر العمل؛ ينتظر العمل قرار المشرف} BASE_VERSION_REQUIRED{حدّث المهمة ثم أعد المحاولة} GRANT_REQUIRED{لا يوجد تصريح عمل دون اتصال} GRANT_INVALID{تصريح العمل غير صالح لهذا الجهاز} GRANT_EXPIRED{أُنجز بعد انتهاء تصريح العمل دون اتصال} GRANT_REVOKED{أُنجز بعد إلغاء تصريح العمل} GRANT_WINDOW_UNPROVEN{لا يمكن إثبات وقت إنجازه (أُعيد تشغيل الهاتف دون اتصال)؛ ينتظر قرار المشرف} QUARANTINE_DISCARDED{رفضه المشرف بعد المراجعة} NOT_ASSIGNEE{أمر العمل ليس مسندًا إليك} INVALID_TRANSITION{لم تعد هذه الخطوة ممكنة في حالة أمر العمل الحالية} other{تعذّرت العملية ({code})}}'**
+  String refusalReason(String code);
+
+  /// No description provided for @commandHeld.
+  ///
+  /// In ar, this message translates to:
+  /// **'محجوز بانتظار قرار المشرف: {command} — {reason}'**
+  String commandHeld(String command, String reason);
+
+  /// No description provided for @heldCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} بانتظار قرار المشرف'**
+  String heldCount(int count);
+
+  /// No description provided for @grantExpiredTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'اتصل بالإنترنت لمتابعة العمل'**
+  String get grantExpiredTitle;
+
+  /// No description provided for @grantExpiredBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'انتهت مدة العمل دون اتصال المسموح بها لهذا الهاتف. اتصل بالإنترنت (وسجّل الدخول من جديد إن طُلب منك) لمتابعة العمل. لا يُسجَّل عمل جديد قبل ذلك.'**
+  String get grantExpiredBody;
+
+  /// No description provided for @grantPendingItems.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} عنصر محفوظ على الهاتف وسيُرسل عند الاتصال'**
+  String grantPendingItems(int count);
+
+  /// No description provided for @tryNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'حاول الآن'**
+  String get tryNow;
+
+  /// No description provided for @updateRequiredTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'يلزم تحديث التطبيق'**
+  String get updateRequiredTitle;
+
+  /// No description provided for @updateRequiredBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'لم يعد الخادم يقبل هذا الإصدار من التطبيق. ثبّت الإصدار {version} أو أحدث. ما حفظته على الهاتف يبقى محفوظًا.'**
+  String updateRequiredBody(String version);
+
+  /// No description provided for @userDisabledBody.
+  ///
+  /// In ar, this message translates to:
+  /// **'عُطّل حسابك في النظام، لذلك لم يعد الخادم يقبل شيئًا من هذا الهاتف. حذف التطبيق بياناته الخاصة المخزنة على الهاتف. لم يُمسّ أي شيء آخر على هاتفك.'**
+  String get userDisabledBody;
+
+  /// No description provided for @grantValidUntil.
+  ///
+  /// In ar, this message translates to:
+  /// **'العمل دون اتصال مسموح حتى {time}'**
+  String grantValidUntil(String time);
+
+  /// No description provided for @grantNone.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد تصريح للعمل دون اتصال بعد: اتصل بالإنترنت'**
+  String get grantNone;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

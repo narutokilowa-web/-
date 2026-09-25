@@ -5,9 +5,82 @@
 | M0 — Foundations | ✅ **approved by the owner** | 2026-09-24 |
 | M1 — Audit core + register / approve / QR (web) | ✅ **approved by the owner** | 2026-09-24 |
 | M2 — Android scan + faults + work-order creation | ✅ **approved by the owner** | 2026-09-25 |
-| M3 — Field execution + review + dashboard → DEMO 1 | ✅ **PASS — DEMO 1 complete (CI green incl. Android emulator); awaiting owner approval; M4 not started** | 2026-09-25 |
+| M3 — Field execution + review + dashboard → DEMO 1 | ✅ **approved by the owner** (APK also installed on a real phone) | 2026-09-25 |
+| M4 — Offline and BYOD hardening | 🟡 **implemented; local suites green; CI run pending — see below; M5 not started** | 2026-09-25 |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
+
+---
+
+## M4 — Offline and BYOD hardening
+
+Scope followed: 11 §11.2 M4 and the owner's M4 list (configurable offline grants, full offline workflow, grant expiry,
+conflict detection and resolution, device-key signing, stronger device trust, complete offboarding, secure revocation,
+sync recovery after reconnect, tests for offline and revoked-device cases). Nothing from M5 was started. The DEMO 1 UI
+is unchanged except where M4 needs it (new admin/supervisor pages, two locked screens on the phone, refusal/held lines).
+Personal-phone rules unchanged: no background tracking, no access to other data on the phone, no remote wipe; the app
+deletes only its own data and its own Keystore key when the server refuses it.
+
+### Deliverables vs. specification
+
+| # | Deliverable | Status | Where |
+|---|---|---|---|
+| 1 | **Configurable offline grants** (05 §5.5): `POST /sync/v1/grant` (signed request) issues a server-signed grant (ECDSA P-256) for the caller's ACTIVE device; lifetime from policy `offline_grace_hours` (default 24, 1–72); a new grant revokes the previous one; revoked on device revoke and user disable; the phone verifies the signature with the key it pinned for the key id and renews the grant on every successful sync | ✅ | `Access/Application/GrantService.cs`, `GrantSigner.cs`, `mobile/lib/core/offline_grant.dart` |
+| 2 | **Policies are data** (`access.policy_settings`): offline grace hours, grant-window tolerance (10 min), app lock (5 min), minimum app version (0.4.0); seeded by the migrator, changed by the admin with a reason (validated range, audited); sent to the phone with each grant and pull | ✅ | `PolicyService.cs`, web **Settings → Security policies** |
+| 3 | **Server grant-window check on trusted time** (05 §5.5, §5.7): every command carries grant id, boot id and `elapsedRealtime`; the server places it on its own clock from a clock sample of the same boot (HIGH) or bounds the phone clock (LOW). Missing → `GRANT_REQUIRED`; foreign/unknown → `GRANT_INVALID` + WARNING flag; after expiry (HIGH) → `GRANT_EXPIRED` + WARNING flag; after revocation → `GRANT_REVOKED`; time not provable → **QUARANTINED** `GRANT_WINDOW_UNPROVEN`; `CLOCK_SKEW` INFO flag when the phone clock is > 5 min off | ✅ | `SyncService.cs`, `DeviceClockService.cs` |
+| 4 | **Quarantine + supervisor resolution**: held commands (`sync.quarantine`) listed for SUPERVISOR/AUDITOR; a supervisor other than the author applies (runs as the author, only while the author's account and device are ACTIVE) or discards, both with a reason and audited; `APPLY_FAILED` recorded when the command no longer fits; a resent held command reports the decision | ✅ | `QuarantineService.cs`, `docs/state-machines/sync-quarantine.yaml`, web **Quarantine** |
+| 5 | **Conflict detection and resolution** (spec 10 §10.5): commands carry `baseVersion`; a change on a stale view → `WORK_ORDER_CHANGED` (never overwrites); reassigned meanwhile → previous assignee's photos/materials **kept** + `SUBMITTED_BY_NON_ASSIGNEE` flag, changes refused (`WORK_ORDER_REASSIGNED`); cancelled meanwhile → **quarantined**; a stranger → `NOT_ASSIGNEE`; the phone shows refusals and held items on the task | ✅ | `FieldExecutionService.cs`, `mobile/lib/core/field_work.dart` |
+| 6 | **Device-key signing / stronger device trust**: EC P-256 key in the Android Keystore (non-exportable), public key required at registration; push and grant signed over method, path, time, nonce and body hash; single-use nonces; ±15 min; stolen token without the key → `SIGNATURE_REQUIRED` / `SIGNATURE_INVALID`; replay → `NONCE_REUSED`; min app version → **426** `UPGRADE_REQUIRED` | ✅ | `DeviceTrustMiddleware.cs`, `MainActivity.kt`, `mobile/lib/core/api_client.dart` |
+| 7 | **Complete offboarding** (05 §5.6): admin **Users** page → disable with reason (confirmation) → in one transaction: user DISABLED, active devices REVOKED (`USER_DISABLED`), pending registration REJECTED, grants revoked, Keycloak disable + logout-all queued, open work orders flagged `NEEDS_REASSIGNMENT`, custody ≠ 0 → `CUSTODY_TO_RECONCILE`; Keycloak calls after commit with back-off and an alert after 5 failures; **needs-reassignment queue** for supervisors; enable again restores the account but not the devices | ✅ | `UserAdminService.cs`, `IdentityProvider.cs`, `WorkOrderOffboarding.cs`, `docs/state-machines/user.yaml`, `docs/runbooks/offboarding.md` |
+| 8 | **Secure revocation behaviour**: revoked device or disabled user → whole request refused (`DEVICE_REVOKED` / `USER_DISABLED`), nothing applied; grants revoked; device revoke also ends the field-app sessions in Keycloak; the app deletes only its own database, keys, tokens and its own device key | ✅ | `DeviceService.cs`, `app_controller.dart` |
+| 9 | **Full offline workflow on the phone + locked states**: work continues offline while the grant is valid (measured on the monotonic clock; after a reboot the wall clock never below the last server time); when it runs out: **"Connect to continue working"** screen, no new work recorded, outbox kept; **update-required** screen on 426 | ✅ | `mobile/lib/app/app_controller.dart`, `device_screens.dart` |
+| 10 | **Sync recovery after reconnect**: reconnect back-off (15 s → 15 min); outbox sent first (under the grant it was made with), then held commands rechecked, photos uploaded, grant renewed, tasks pulled; lost responses → resend reports `DUPLICATE`; **resumable photo uploads** (`Content-Range` chunks, resume point from the server) | ✅ | `sync_engine.dart`, `EvidenceService.UploadChunkAsync` |
+| 11 | **Tests for offline and revoked-device edge cases** | ✅ | see below |
+
+### Tests run (local, final)
+
+| Suite | Tests | Result |
+|---|---|---|
+| `Mfop.SpecFiles.Tests` (+ User and SyncQuarantine machines == code; realm: `mfop-backend` is a service account with user management only, no committed secret) | 127 | ✅ |
+| `Mfop.Domain.Tests` (+ app versions, policy ranges and defaults, user disable/enable SoD and reason, IdP back-off and alert, quarantine decision guards) | 70 | ✅ |
+| `Mfop.Architecture.Tests` (audit-exempt allow-list: nonces, clock samples, IdP outbox) | 38 | ✅ |
+| `Mfop.Api.Tests` — **OfflineTrustTests** (11): signature required / stolen key / tampered body / old timestamp / replayed nonce; public key required; 426 and changing `min_app_version`; policy validation, reason, audit; grant signature verifies and its lifetime follows the policy; grant required / foreign grant flagged; **offline inside the grant, synced 30 h later → applied (HIGH, placed at +2 h)**; **made after expiry → `GRANT_EXPIRED` + flag**; made after revocation → `GRANT_REVOKED`; **double reboot → quarantined, author cannot decide, supervisor applies (author's audit, supervisor's decision), discard reported on resend**; phone clock 3 days back → one `CLOCK_SKEW`, time unaffected | 11 | ✅ |
+| `Mfop.Api.Tests` — **SyncScenarioTests** (7): **reassigned while offline** (B's diagnosis stands; A's photo + material kept and flagged; stranger refused); **stale view** → `WORK_ORDER_CHANGED` then OK after refresh; own batch never conflicts; missing version refused; **cancelled while offline → quarantined**, apply → `APPLY_FAILED`, discard; **revoked phone** (push, pull, task, grant, upload all refused; grants revoked; Keycloak field-app logout); **complete offboarding** (one audited transaction, devices revoked/rejected, flags, push refused, held command discard-only, needs-reassignment queue, Keycloak retries + alert, enable keeps devices revoked); **interrupted upload resumes**; **lost response → resend DUPLICATE** | 7 | ✅ |
+| `Mfop.Api.Tests` — all M1–M3 tests (now through a signed test phone with grants) | 95 | ✅ |
+| `Mfop.GoldenPath.Tests` — **DEMO 1 steps 2–19 unchanged** on a `make seed` database (the seeder now registers a device key and works under a grant) | 1 | ✅ |
+| Web: lint, typecheck, build; Vitest (+ offboarding confirmation and reason, admin cannot disable self, quarantine decisions only for others' commands, auditor read-only) | 30 | ✅ |
+| Mobile: `flutter analyze` (no issues); `flutter test` (+ 11 M4 tests: key registered, writes signed, per-command grant/clock/version, **grant expiry on the monotonic clock with the phone clock set back**, reboot floor, bad/changed grant key refused, policy-driven lifetime, 426 screen, **disabled employee: own data and key deleted**, refused and held lines, **resumable upload after a cut-off**, reconnect back-off) | 39 | ✅ |
+| Secret scan (gitleaks, working tree) | — | ✅ only the git-ignored local `.env` |
+
+**Not run locally** (done by CI): the Compose stack (Playwright E2E incl. the new M4 spec with real Keycloak offboarding,
+`make seed`, `make verify-audit`), the Android APK build and the Android emulator run. This sandbox's proxy refuses
+`quay.io` (Keycloak image) and `dl.google.com` (Android SDK); network settings were not changed.
+
+### Deviations from the specification
+
+All recorded in ADR-0008 (M4 entries): ECDSA P-256 instead of Ed25519; trust-on-first-use pinning of the server grant key;
+device signing in M4 (not M6); boot id from Android's boot count; reactivation of a cancelled work order from the
+quarantine is not built (apply → APPLY_FAILED or discard); resumable uploads through the API (no S3 multipart yet);
+YAML scope value `m4`.
+
+### Warnings and known limitations
+
+| # | What | Status |
+|---|---|---|
+| 1 | **Upgrade note:** the Keycloak realm gained the `mfop-backend` client — an existing dev Keycloak volume keeps the old realm; run `make demo-reset` once (and `make env` for the two new secrets). Phones must install app 0.4.0 and register again. | Documented (dev-setup) |
+| 2 | Real-phone checks (Keystore on real hardware, offline hours with the clock set back, reassignment while offline, disabled account) are listed as steps 13–19 in `docs/runbooks/android-field-test.md`. | Owner checklist |
+| 3 | The phone pins the server's grant key on first use; a key rotation needs a new key id. A key shipped inside the APK is for the pilot build (M8/M9). | By design |
+| 4 | Without `MFOP_GRANT_SIGNING_KEY` the API signs grants with an ephemeral key (warning in the log); phones then simply renew their grant after an API restart. `make env` generates the key. | Dev only |
+
+### Decisions needed from the owner
+
+1. Approve M4 (M5 will not start before that).
+2. Run steps 13–19 of the real-phone checklist, or accept the emulator result.
+3. Still open from M2/M3: SLA hours per priority.
+
+### CI results
+
+Pending — filled in after the CI run on the pushed head.
 
 ---
 

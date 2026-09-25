@@ -30,13 +30,24 @@ public class StateMachineFilesTests
         Assert.Empty(required.Except(machines));
     }
 
+    [Fact]
+    public void M4_machines_are_all_present()
+    {
+        var machines = Directory.GetFiles(RepoPaths.Path("docs", "state-machines"), "*.yaml")
+            .Select(f => Yaml.Load<StateMachineSpec>(f).Machine)
+            .ToHashSet();
+
+        string[] required = ["User", "SyncQuarantine"];
+        Assert.Empty(required.Except(machines));
+    }
+
     [Theory]
     [MemberData(nameof(Files))]
     public void Header_is_complete(string file)
     {
         var sm = Load(file);
         Assert.False(string.IsNullOrWhiteSpace(sm.Machine));
-        Assert.Contains(sm.Scope, new[] { "demo1", "deferred" });
+        Assert.Contains(sm.Scope, new[] { "demo1", "m4", "deferred" });
         Assert.False(string.IsNullOrWhiteSpace(sm.SpecRef));
         Assert.NotEmpty(sm.States);
         Assert.NotEmpty(sm.Transitions);

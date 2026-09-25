@@ -11,6 +11,7 @@ import 'package:mfop_field/core/api_client.dart';
 import 'package:mfop_field/core/auth.dart';
 import 'package:mfop_field/core/config.dart';
 import 'package:mfop_field/core/device_info.dart';
+import 'package:mfop_field/core/device_trust.dart';
 import 'package:mfop_field/core/local_db.dart';
 import 'package:mfop_field/core/pin.dart';
 import 'package:mfop_field/core/secure_store.dart';
@@ -22,7 +23,7 @@ const testConfig = AppConfig(
   clientId: 'mfop-mobile',
   redirectUri: 'mfop://oauth-callback',
   environment: 'TEST',
-  appVersion: '0.2.0',
+  appVersion: '0.4.0',
   allowInsecureConnections: true,
   appLockMinutes: 5,
 );
@@ -47,6 +48,35 @@ class FakeAuth implements AuthService {
 
   @override
   Future<void> signOut() => store.delete(SecureKeys.refreshToken);
+}
+
+/// The Keystore key and monotonic clock of a test phone. Tests move [elapsedMs] / [bootId] to play time passing and restarts.
+class FakeDeviceTrust implements DeviceTrust {
+  int elapsedMs = 1000000;
+  String bootId = 'boot-1';
+  bool verifyResult = true;
+  bool keyDeleted = false;
+  final List<String> signed = [];
+
+  void advance(Duration d) => elapsedMs += d.inMilliseconds;
+
+  @override
+  Future<String> publicKey() async => 'device-public-key';
+
+  @override
+  Future<String> sign(String message) async {
+    signed.add(message);
+    return 'signature-${signed.length}';
+  }
+
+  @override
+  Future<bool> verify(String publicKey, String message, String signature) async => verifyResult;
+
+  @override
+  Future<void> deleteKey() async => keyDeleted = true;
+
+  @override
+  Future<MonotonicTime> now() async => MonotonicTime(elapsedMs, bootId);
 }
 
 class FakeDeviceInfo implements DeviceInfoSource {
@@ -147,6 +177,19 @@ class FakePhotoSource implements PhotoSource {
 
 class FakeServer {
   String deviceStatus = 'PENDING_APPROVAL';
+
+  /// The server's clock (grants, pull and push report it).
+  DateTime serverTime = DateTime.utc(2026, 9, 24, 10, 5);
+  int grantHours = 24;
+  int grantsIssued = 0;
+  String grantKey = 'server-grant-key';
+
+  /// When set, every request gets 426 with this minimum version.
+  String? minAppVersion;
+
+  /// Resumable uploads: bytes received so far per evidence id, and requests that fail after [failUploadAfterBytes].
+  final Map<String, List<int>> partial = {};
+  int? failUploadAfterBytes;
   List<Map<String, dynamic>> tasks = [];
   final Map<String, List<int>> uploads = {};
   List<Map<String, dynamic>> recommendations = [];
@@ -173,14 +216,17 @@ class FakeServer {
     final path = request.url.path;
     http.Response json(Object body, [int status = 200]) =>
         http.Response.bytes(utf8.encode(jsonEncode(body)), status, headers: {'content-type': 'application/json'});
+    if (minAppVersion != null) return json({'code': 'UPGRADE_REQUIRED', 'details': {'minAppVersion': minAppVersion}}, 426);
 
     if (path == '/sync/v1/devices/register') return json({'deviceId': 'device-1', 'status': 'PENDING_APPROVAL'}, 201);
-    if (path == '/sync/v1/devices/current') return json({'deviceId': 'device-1', 'status': deviceStatus, 'reason': null});
+    if (path == '/sync/v1/devices/current') {
+      return json({'deviceId': 'device-1', 'status': deviceStatus, 'reason': null, 'serverTime': serverTime.toIso8601String()});
+    }
     if (blockedCode != null) return json({'code': blockedCode, 'detail': 'blocked'}, 403);
     if (deviceStatus != 'ACTIVE') return json({'code': 'DEVICE_NOT_APPROVED'}, 403);
     if (path == '/sync/v1/pull') {
       return json({
-        'serverTime': '2026-09-24T10:05:00Z',
+        'serverTime': serverTime.toIso8601String(),
         'cursor': 'c',
         'user': {
           'id': 'u',
@@ -191,7 +237,36 @@ class FakeServer {
         'workOrders': tasks,
         'reference': referenceJson,
         'custody': custodyJson,
+        'policy': {'offlineGraceHours': grantHours, 'appLockMinutes': 5, 'minAppVersion': '0.4.0'},
       });
+    }
+
+    if (path == '/sync/v1/grant') {
+      grantsIssued++;
+      final payload = jsonEncode({
+        'device_id': 'device-1',
+        'expires_at': serverTime.add(Duration(hours: grantHours)).toIso8601String(),
+        'grant_id': 'grant-$grantsIssued',
+        'issued_at': serverTime.toIso8601String(),
+        'kid': 'k1',
+        'policy_hours': grantHours,
+        'roles': ['TECHNICIAN'],
+        'user_id': 'u',
+      });
+      return json({
+        'grantId': 'grant-$grantsIssued',
+        'signedPayload': payload,
+        'signature': 'server-signature',
+        'publicKey': grantKey,
+        'keyId': 'k1',
+        'policy': {'offlineGraceHours': grantHours, 'appLockMinutes': 5, 'minAppVersion': '0.4.0'},
+        'serverTime': serverTime.toIso8601String(),
+      });
+    }
+
+    if (path.startsWith('/sync/v1/evidence/') && path.endsWith('/upload') && request.method == 'GET') {
+      final id = path.split('/')[4];
+      return json({'evidenceId': id, 'state': uploads.containsKey(id) ? 'UPLOADED' : 'ANNOUNCED', 'receivedBytes': partial[id]?.length ?? 0});
     }
 
     if (path == '/sync/v1/push') {
@@ -202,12 +277,30 @@ class FakeServer {
         }
       }
 
-      return json({'serverTime': '2026-09-24T10:05:00Z', 'results': pushResults(body['commands'] as List<dynamic>)});
+      return json({'serverTime': serverTime.toIso8601String(), 'results': pushResults(body['commands'] as List<dynamic>)});
     }
 
     if (path.startsWith('/sync/v1/evidence/') && request.method == 'PUT') {
-      uploads[path.split('/')[4]] = request.bodyBytes;
-      return json({'id': path.split('/')[4], 'state': 'UPLOADED'});
+      final id = path.split('/')[4];
+      final range = RegExp(r'bytes (\d+)-(\d+)/(\d+)').firstMatch(request.headers['Content-Range'] ?? '');
+      if (range == null) {
+        uploads[id] = request.bodyBytes;
+        return json({'id': id, 'state': 'UPLOADED'});
+      }
+
+      final have = partial.putIfAbsent(id, () => []);
+      if (int.parse(range.group(1)!) != have.length) return json({'code': 'UPLOAD_OFFSET_MISMATCH', 'details': {'receivedBytes': '${have.length}'}}, 409);
+      final limit = failUploadAfterBytes;
+      if (limit != null && have.length + request.bodyBytes.length > limit) {
+        have.addAll(request.bodyBytes.take(limit - have.length)); // the connection dropped mid-chunk
+        failUploadAfterBytes = null;
+        throw http.ClientException('connection reset');
+      }
+
+      have.addAll(request.bodyBytes);
+      final total = int.parse(range.group(3)!);
+      if (have.length == total) uploads[id] = List.of(have);
+      return json({'id': id, 'state': have.length == total ? 'UPLOADED' : 'ANNOUNCED', 'receivedBytes': have.length});
     }
 
     if (path.startsWith('/sync/v1/tags/')) {
@@ -263,7 +356,7 @@ extension on FakeServer {
 }
 
 class Harness {
-  Harness({DateTime Function()? clock}) {
+  Harness({DateTime Function()? clock, int chunkSize = 256 * 1024}) {
     photos = FakePhotoSource();
     auth = FakeAuth(store);
     controller = AppController(
@@ -272,7 +365,7 @@ class Harness {
       auth: auth,
       deviceInfo: FakeDeviceInfo(),
       openDb: (s) => LocalDb.open(s),
-      apiFactory: (deviceId) => ApiClient(testConfig, auth, deviceId, httpClient: server.client),
+      apiFactory: (deviceId) => ApiClient(testConfig, auth, deviceId, httpClient: server.client, trust: trust, chunkSize: chunkSize),
       pin: PinService(store, iterations: 10),
       clock: clock,
       photoSource: photos,
@@ -283,6 +376,7 @@ class Harness {
 
   final store = MemorySecureStore();
   final server = FakeServer();
+  final trust = FakeDeviceTrust();
   late final FakeAuth auth;
   late final AppController controller;
 }

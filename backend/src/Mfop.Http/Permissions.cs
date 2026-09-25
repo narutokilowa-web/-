@@ -48,3 +48,6 @@ public static class ErrorCodesHttp
 /// own identity). Every other mobile request needs an ACTIVE device owned by the caller.
 /// </summary>
 public sealed record DeviceNotRequired;
+
+/// <summary>Endpoint metadata: the request must be signed with the device's Keystore key (docs/lean-pilot/05 §5.4). Push and grant.</summary>
+public sealed record DeviceSignatureRequired;

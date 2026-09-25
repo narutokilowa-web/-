@@ -514,4 +514,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String recommendationRule(int count, int threshold, int days) {
     return '$count counted failures; threshold $threshold within $days days';
   }
+
+  @override
+  String refusalReason(String code) {
+    String _temp0 = intl.Intl.selectLogic(code, {
+      'WORK_ORDER_CHANGED':
+          'The work order changed on the server after your last refresh; refresh the task and check before repeating this step',
+      'WORK_ORDER_REASSIGNED':
+          'The work order was reassigned to another technician; your photos and materials are kept, but this step was not applied',
+      'WORK_ORDER_CANCELLED': 'The work order was cancelled; the work waits for the supervisor\'s decision',
+      'WORK_ORDER_CLOSED': 'The work order was closed; the work waits for the supervisor\'s decision',
+      'BASE_VERSION_REQUIRED': 'Refresh the task and try again',
+      'GRANT_REQUIRED': 'There is no offline permission',
+      'GRANT_INVALID': 'The offline permission is not valid for this phone',
+      'GRANT_EXPIRED': 'Done after the offline permission ran out',
+      'GRANT_REVOKED': 'Done after the offline permission was revoked',
+      'GRANT_WINDOW_UNPROVEN': 'Its time cannot be proven (the phone restarted while offline); it waits for the supervisor\'s decision',
+      'QUARANTINE_DISCARDED': 'Discarded by the supervisor after review',
+      'NOT_ASSIGNEE': 'This work order is not assigned to you',
+      'INVALID_TRANSITION': 'This step is no longer possible in the work order\'s current state',
+      'other': 'The operation failed ($code)',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String commandHeld(String command, String reason) {
+    return 'Held for the supervisor\'s decision: $command — $reason';
+  }
+
+  @override
+  String heldCount(int count) {
+    return '$count held for the supervisor\'s decision';
+  }
+
+  @override
+  String get grantExpiredTitle => 'Connect to continue working';
+
+  @override
+  String get grantExpiredBody =>
+      'This phone has reached the time it may work offline. Connect to the internet (and sign in again if asked) to continue. No new work is recorded until then.';
+
+  @override
+  String grantPendingItems(int count) {
+    return '$count items are kept on the phone and will be sent when connected';
+  }
+
+  @override
+  String get tryNow => 'Try now';
+
+  @override
+  String get updateRequiredTitle => 'App update required';
+
+  @override
+  String updateRequiredBody(String version) {
+    return 'The server no longer accepts this app version. Install version $version or newer. What you saved on the phone stays saved.';
+  }
+
+  @override
+  String get userDisabledBody =>
+      'Your account was disabled, so the server no longer accepts anything from this phone. The app deleted its own data stored on the phone. Nothing else on your phone was touched.';
+
+  @override
+  String grantValidUntil(String time) {
+    return 'Offline work allowed until $time';
+  }
+
+  @override
+  String get grantNone => 'No offline permission yet: connect to the internet';
 }

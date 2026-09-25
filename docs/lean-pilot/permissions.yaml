@@ -39,7 +39,8 @@ policies:
   issuer_not_receiver: The warehouse officer issuing stock is not the receiving technician.
   assignee_only: Only the current assignee of the work order may act.
   own_records_only: Only records the actor created or is assigned to.
-  no_self_grant: A user cannot grant or change their own roles.
+  no_self_grant: A user cannot grant or change their own roles (nor disable or enable their own account).
+  resolver_not_author: A quarantined command is decided by someone other than the user who made it.
 
 # action -> allowed roles (+ policies). milestone = when the endpoint first exists.
 actions:
@@ -61,6 +62,9 @@ actions:
   device.revoke:              {roles: [ADMIN, SUPERVISOR], milestone: M2}
   sync.push:                  {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # transport only: every command inside is authorized by its own action
   sync.pull:                  {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # transport only: returns only what the actor may see
+  sync.grant:                 {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M4}   # offline grant for the caller's own ACTIVE device (05 §5.5)
+  sync.quarantine.read:       {roles: [SUPERVISOR, AUDITOR], milestone: M4}   # commands held because their time is not provably inside the grant
+  sync.quarantine.resolve:    {roles: [SUPERVISOR], policies: [resolver_not_author], milestone: M4}   # apply or discard, with a reason (03: "resolve sync quarantine")
   fault.report:               {roles: [SUPERVISOR], milestone: M2}        # mobile reporting by TECHNICIAN/INSPECTOR comes after DEMO 1
   fault.dismiss:              {roles: [SUPERVISOR], milestone: M2}
   fault.read:                 {roles: [SUPERVISOR, AUDITOR], milestone: M2}

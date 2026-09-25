@@ -7,4 +7,7 @@ public sealed record CurrentUserDto(Guid UserId, string Username, string Display
 public interface IUserDirectory
 {
     Task<IReadOnlyDictionary<Guid, string>> DisplayNamesAsync(IEnumerable<Guid> userIds, CancellationToken ct);
+
+    /// <summary>The users among <paramref name="userIds"/> that are not ACTIVE (disabled / offboarded).</summary>
+    Task<IReadOnlySet<Guid>> InactiveAsync(IEnumerable<Guid> userIds, CancellationToken ct);
 }

@@ -168,8 +168,9 @@ public sealed class UnitOfWork(
                 }
             }
 
+            var actor = record.Actor ?? command.Actor;
             events.Add(new AuditEventDraft(
-                Ids.New(), occurredAt, command.Actor.UserId, command.Actor.Roles, command.Actor.DeviceId,
+                Ids.New(), occurredAt, actor.UserId, actor.Roles, actor.DeviceId,
                 record.Action, record.Entity.AuditEntityType, record.Entity.Id.ToString("D"), version,
                 changes, facts, record.Reason ?? command.Reason, command.CommandId, command.CorrelationId));
         }

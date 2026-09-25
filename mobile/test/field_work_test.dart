@@ -69,16 +69,16 @@ void main() {
       expect(c.reference.repairCodesFor('SOLAR').map((d) => d.code), ['LED_MODULE_FAIL', 'BATTERY_FAIL']); // NO_WORK and grid-only codes hidden
       expect(c.custody.map((x) => x.sku), ['LED-MOD-50W', 'FUSE-10A']);
 
-      c.arrive(task, scanned: 'http://web.test/t/7K3M92QX.4F');
+      await c.arrive(task, scanned: 'http://web.test/t/7K3M92QX.4F');
       for (final kind in ['BEFORE', 'BEFORE']) {
-        c.addPhoto(task, kind, processPhoto(PhotoRequest(cameraJpeg(seed: kind.length + c.outbox!.all().length), 'WO $kind')), DateTime.utc(2026, 9, 25, 10));
+        await c.addPhoto(task, kind, processPhoto(PhotoRequest(cameraJpeg(seed: kind.length + c.outbox!.all().length), 'WO $kind')), DateTime.utc(2026, 9, 25, 10));
       }
-      c.recordDiagnosis(task, 'LED_MODULE_FAIL', ' وحدة الليد ');
-      c.startWork(task);
-      c.consume(task, c.custody.first, 1, ['M-0003']);
-      c.recordChecklist(task, 'tpl-solar', 'NIGHT', {'LAMP_ON': 'YES', 'EXPOSED_WIRES': 'NO'}, null);
+      await c.recordDiagnosis(task, 'LED_MODULE_FAIL', ' وحدة الليد ');
+      await c.startWork(task);
+      await c.consume(task, c.custody.first, 1, ['M-0003']);
+      await c.recordChecklist(task, 'tpl-solar', 'NIGHT', {'LAMP_ON': 'YES', 'EXPOSED_WIRES': 'NO'}, null);
       for (final kind in ['TEST', 'AFTER', 'AFTER']) {
-        c.addPhoto(task, kind, processPhoto(PhotoRequest(cameraJpeg(seed: 10 + c.outbox!.all().length), 'WO $kind')), DateTime.utc(2026, 9, 25, 11));
+        await c.addPhoto(task, kind, processPhoto(PhotoRequest(cameraJpeg(seed: 10 + c.outbox!.all().length), 'WO $kind')), DateTime.utc(2026, 9, 25, 11));
       }
 
       final view = c.workView(task);
@@ -88,7 +88,7 @@ void main() {
       expect(view.testPhotos, 1);
       expect(view.readyToSubmit, isTrue);
 
-      c.submit(task, rootCause: 'احتراق وحدة الليد', resubmit: false);
+      await c.submit(task, rootCause: 'احتراق وحدة الليد', resubmit: false);
       await c.syncNow();
 
       final sent = pushedCommands(h);
@@ -124,7 +124,7 @@ void main() {
       ];
       final c = h.controller;
       final task = c.tasks.single;
-      c.addPhoto(task, 'AFTER', processPhoto(PhotoRequest(cameraJpeg(), 'x')), DateTime.utc(2026, 9, 25));
+      await c.addPhoto(task, 'AFTER', processPhoto(PhotoRequest(cameraJpeg(), 'x')), DateTime.utc(2026, 9, 25));
       await c.syncNow();
 
       expect(h.server.uploads, isEmpty);
@@ -139,8 +139,8 @@ void main() {
       final c = h.controller;
       final task = c.tasks.single;
       h.server.offline = true;
-      c.arrive(task, manualCode: '7k3m92qx.4f', manualReason: 'الملصق ممزق');
-      c.addPhoto(task, 'BEFORE', processPhoto(PhotoRequest(cameraJpeg(seed: 3), 'x')), DateTime.utc(2026, 9, 25));
+      await c.arrive(task, manualCode: '7k3m92qx.4f', manualReason: 'الملصق ممزق');
+      await c.addPhoto(task, 'BEFORE', processPhoto(PhotoRequest(cameraJpeg(seed: 3), 'x')), DateTime.utc(2026, 9, 25));
       await c.syncNow();
       expect(c.syncStatus!.online, isFalse);
       expect(c.syncStatus!.pending, 2);
@@ -160,7 +160,7 @@ void main() {
     test('a typed code is sent as the tag token, even if the label URL was pasted', () async {
       final h = await readyTechnician();
       final c = h.controller;
-      c.arrive(c.tasks.single, manualCode: 'http://localhost:5173/t/7K3M92QX.4F', manualReason: 'الملصق ممزق');
+      await c.arrive(c.tasks.single, manualCode: 'http://localhost:5173/t/7K3M92QX.4F', manualReason: 'الملصق ممزق');
       await c.syncNow();
       expect(pushedCommands(h).single['payload']['manualCode'], '7K3M92QX.4F');
     });
@@ -181,8 +181,8 @@ void main() {
       expect(view.isReturned, isTrue);
       expect(view.canRecordWork, isTrue);
       expect(view.readyToSubmit, isTrue);
-      c.addPhoto(task, 'AFTER', processPhoto(PhotoRequest(cameraJpeg(seed: 9), 'x')), DateTime.utc(2026, 9, 25));
-      c.submit(task, rootCause: 'احتراق', resubmit: true);
+      await c.addPhoto(task, 'AFTER', processPhoto(PhotoRequest(cameraJpeg(seed: 9), 'x')), DateTime.utc(2026, 9, 25));
+      await c.submit(task, rootCause: 'احتراق', resubmit: true);
       await c.syncNow();
       expect(pushedCommands(h).map((x) => x['type']), ['AddEvidence', 'Resubmit']);
     });

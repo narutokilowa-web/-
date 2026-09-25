@@ -7,6 +7,7 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
 {
     public DbSet<SyncCommand> Commands => Set<SyncCommand>();
     public DbSet<DeviceSyncState> DeviceStates => Set<DeviceSyncState>();
+    public DbSet<QuarantinedCommand> Quarantine => Set<QuarantinedCommand>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +25,24 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
             b.Property(x => x.ResultCode).HasMaxLength(60);
             b.Property(x => x.ResultMessage).HasMaxLength(500);
             b.HasIndex(x => new { x.DeviceId, x.ReceivedAt });
+            b.Property(x => x.TimeConfidence).HasMaxLength(10);
+        });
+
+        modelBuilder.Entity<QuarantinedCommand>(b =>
+        {
+            b.ToTable("quarantine");
+            b.HasKey(x => x.Id);
+            b.HasIndex(x => x.CommandId).IsUnique();
+            b.Property(x => x.Type).HasMaxLength(60).IsRequired();
+            b.Property(x => x.Payload).HasColumnType("jsonb");
+            b.Property(x => x.ReasonCode).HasMaxLength(60).IsRequired();
+            b.Property(x => x.Reason).HasMaxLength(500).IsRequired();
+            b.Property(x => x.TimeConfidence).HasMaxLength(10).IsRequired();
+            b.Property(x => x.State).HasMaxLength(20).IsRequired();
+            b.Property(x => x.ResolutionReason).HasMaxLength(500);
+            b.Property(x => x.ResultCode).HasMaxLength(60);
+            b.Property(x => x.Version).IsConcurrencyToken();
+            b.HasIndex(x => x.State);
         });
 
         modelBuilder.Entity<DeviceSyncState>(b =>

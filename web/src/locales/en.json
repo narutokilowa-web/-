@@ -48,7 +48,9 @@
     "dashboard": "Dashboard",
     "stock": "Stock",
     "audit": "Audit log",
-    "settings": "Settings"
+    "settings": "Settings",
+    "quarantine": "Quarantine",
+    "users": "Users"
   },
   "home": {
     "register": "Register a new street light",
@@ -63,7 +65,10 @@
     "dashboard": "Dashboard",
     "stock": "Stock balances",
     "audit": "Search the audit log",
-    "settings": "Rule settings"
+    "settings": "Rule settings",
+    "needsReassignment": "Work orders needing reassignment",
+    "quarantine": "Held commands to decide",
+    "users": "Users and offboarding"
   },
   "common": {
     "notFound": "Page not found",
@@ -275,7 +280,17 @@
     "recommendation.created": "Full-inspection recommendation",
     "recommendation.refreshed": "Recommendation refreshed",
     "rule_setting.changed": "Rule setting changed",
-    "rule_setting.created": "Rule setting created"
+    "rule_setting.created": "Rule setting created",
+    "user.disabled": "User disabled (offboarding)",
+    "user.enabled": "User enabled again",
+    "offline_grant.issued": "Offline grant issued",
+    "offline_grant.revoked": "Offline grant revoked",
+    "sync_quarantine.created": "Command held for a decision",
+    "sync_quarantine.applied": "Held command applied",
+    "sync_quarantine.discarded": "Held command discarded",
+    "sync_quarantine.apply_failed": "Held command could not be applied",
+    "policy_setting.changed": "Security policy changed",
+    "policy_setting.created": "Security policy default recorded"
   },
   "error": {
     "SOD_VIOLATION": "The registrar cannot decide on their own registration.",
@@ -315,7 +330,23 @@
     "INVALID_THRESHOLD": "The threshold must be between 1 and 100.",
     "INVALID_WINDOW": "The window must be between 1 and 3650 days.",
     "RULE_SETTING_NOT_FOUND": "The setting does not exist.",
-    "PREVIEW_NOT_READY": "The preview is not ready yet."
+    "PREVIEW_NOT_READY": "The preview is not ready yet.",
+    "GRANT_REQUIRED": "The command carries no offline grant.",
+    "GRANT_INVALID": "Unknown offline grant, or one of another device.",
+    "GRANT_EXPIRED": "Made after the offline grant expired.",
+    "GRANT_REVOKED": "Made after the offline grant was revoked.",
+    "GRANT_WINDOW_UNPROVEN": "Its time cannot be proven inside the offline grant (the phone restarted while offline).",
+    "WORK_ORDER_CANCELLED": "The work order was cancelled while this was done offline.",
+    "WORK_ORDER_CLOSED": "The work order was closed by another technician's work.",
+    "WORK_ORDER_CHANGED": "The work order changed on the server after the phone last refreshed it.",
+    "WORK_ORDER_REASSIGNED": "The work order was reassigned to another technician.",
+    "ACTOR_NOT_ACTIVE": "The technician's account or device is no longer active: this command can only be discarded.",
+    "USER_DISABLED": "This account is disabled.",
+    "USER_NOT_FOUND": "User not found.",
+    "POLICY_NOT_FOUND": "Unknown policy.",
+    "INVALID_POLICY_VALUE": "The value is outside the allowed range.",
+    "INVALID_DECISION": "Choose apply or discard.",
+    "QUARANTINE_NOT_FOUND": "Held command not found."
   },
   "device": {
     "title": "Staff devices",
@@ -331,7 +362,8 @@
     "reason": "Reason (required to reject or revoke)",
     "approve": "Approve",
     "reject": "Reject",
-    "revoke": "Revoke"
+    "revoke": "Revoke",
+    "noKey": "No device signing key: this phone was registered before M4 and must register again with the current app."
   },
   "deviceStatus": {
     "PENDING_APPROVAL": "Waiting for approval",
@@ -341,7 +373,8 @@
   },
   "deviceReason": {
     "REPLACED": "Replaced by a new device",
-    "SUPERSEDED_BY_NEW_REGISTRATION": "Superseded by a newer registration"
+    "SUPERSEDED_BY_NEW_REGISTRATION": "Superseded by a newer registration",
+    "USER_DISABLED": "The employee was disabled (offboarded)"
   },
   "fault": {
     "reportTitle": "Report a fault",
@@ -503,7 +536,13 @@
     "EVIDENCE_HASH_MISMATCH": "Photo hash does not match what the phone announced",
     "EVIDENCE_DUPLICATE": "Duplicate photo (already used)",
     "CONSUMPTION_EXCEEDS_CUSTODY": "Consumption exceeds the technician's known custody",
-    "SERIAL_NOT_IN_CUSTODY": "Serial not in the technician's custody"
+    "SERIAL_NOT_IN_CUSTODY": "Serial not in the technician's custody",
+    "GRANT_INVALID": "A command carried an unknown offline grant, or one of another device",
+    "GRANT_EXPIRED": "A command was made after its offline grant expired",
+    "CLOCK_SKEW": "The phone clock differs from the server time by more than 5 minutes",
+    "NEEDS_REASSIGNMENT": "The technician was disabled: reassign this work order",
+    "CUSTODY_TO_RECONCILE": "The disabled employee still holds materials in custody",
+    "SUBMITTED_BY_NON_ASSIGNEE": "Photo or material recorded offline by the previous technician after reassignment"
   },
   "testMethod": {
     "NIGHT": "At night",
@@ -604,7 +643,11 @@
     "device": "Device",
     "registration": "Registration",
     "rule_setting": "Rule setting",
-    "recommendation": "Recommendation"
+    "recommendation": "Recommendation",
+    "user": "User",
+    "offline_grant": "Offline grant",
+    "sync_quarantine": "Held command",
+    "policy_setting": "Security policy"
   },
   "settings": {
     "title": "Settings",
@@ -622,5 +665,82 @@
     "title": "Recurrent Failure",
     "FULL_INSPECTION": "Recommendation: Full inspection recommended",
     "rule": "{{count}} counted failures; threshold {{threshold}} within {{days}} days (from the rule settings)"
+  },
+  "users": {
+    "title": "Users",
+    "hint": "Disabling an employee (offboarding) revokes all their devices and offline grants, ends their sessions in the identity provider and queues their open work orders for reassignment — all on the server. Nothing on the employee's personal phone is read or deleted.",
+    "user": "Employee",
+    "roles": "Roles",
+    "status": "Status",
+    "devices": "Devices",
+    "identityProvider": "Sign-in (Keycloak)",
+    "disabledBy": "Disabled by {{name}} on {{at}}",
+    "idpInSync": "Up to date",
+    "idpPending": "{{count}} update(s) being sent",
+    "idpAlert": "{{count}} update(s) failing — access is already blocked by the platform; check the identity provider",
+    "reason": "Reason (required)",
+    "disable": "Disable (offboard)",
+    "confirmDisable": "All devices and grants will be revoked. Continue?",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "enable": "Enable again"
+  },
+  "userStatus": {
+    "ACTIVE": "Active",
+    "DISABLED": "Disabled"
+  },
+  "quarantine": {
+    "title": "Held commands (quarantine)",
+    "hint": "Phone commands the server held instead of applying: their time could not be proven inside the offline grant, or the work order was cancelled meanwhile. Apply or discard each one with a reason (someone other than its author). Nothing is lost; both decisions are audited.",
+    "command": "Command",
+    "author": "Made by",
+    "reason": "Why it was held",
+    "time": "Time",
+    "state": "State",
+    "payload": "Content",
+    "device": "Device {{id}}…",
+    "received": "Received {{at}}",
+    "deviceTime": "Phone clock {{at}}",
+    "estimated": "Estimated {{at}}",
+    "decisionReason": "Reason for the decision (required)",
+    "apply": "Apply",
+    "discard": "Discard"
+  },
+  "quarantineState": {
+    "PENDING": "Waiting for a decision",
+    "APPLIED": "Applied",
+    "DISCARDED": "Discarded",
+    "APPLY_FAILED": "Could not be applied"
+  },
+  "timeConfidence": {
+    "HIGH": "time proven (phone monotonic clock)",
+    "LOW": "time not proven (phone restarted)"
+  },
+  "syncCommand": {
+    "ReportFault": "Report fault",
+    "ArriveOnSite": "Arrived on site",
+    "AddEvidence": "Photo",
+    "RecordDiagnosis": "Diagnosis",
+    "StartWork": "Start work",
+    "ConsumeMaterial": "Material used",
+    "RecordChecklist": "Checklist",
+    "SubmitWorkOrder": "Submit for review",
+    "Resubmit": "Resubmit"
+  },
+  "needsReassignment": {
+    "title": "Work orders needing reassignment",
+    "hint": "Open work orders whose technician was disabled (offboarded). Reassign each one (the new technician captures new arrival photos) or cancel it."
+  },
+  "policy": {
+    "title": "Security policies (offline work)",
+    "hint": "Values are data, not code: each change needs a reason and is recorded in the audit log. A new grant lifetime applies to grants issued after the change.",
+    "setting": "Setting",
+    "current": "Current value",
+    "newValue": "New value and reason",
+    "default": "Default: {{value}}",
+    "offline_grace_hours": "Offline grant lifetime (hours, 1–72)",
+    "grant_window_tolerance_minutes": "Grant-window tolerance (minutes, 0–60)",
+    "app_lock_minutes": "Phone app lock after (minutes, 1–30)",
+    "min_app_version": "Minimum field-app version"
   }
 }

@@ -41,11 +41,14 @@ public sealed class Device : IAuditable
 {
     public const string ReasonSuperseded = "SUPERSEDED_BY_NEW_REGISTRATION";
     public const string ReasonReplaced = "REPLACED";
+    public const string ReasonUserDisabled = "USER_DISABLED";
 
     private Device() { }
 
-    public Device(Guid id, Guid userId, string platform, string model, string osVersion, string appVersion, DateTimeOffset requestedAt)
+    public Device(Guid id, Guid userId, string platform, string model, string osVersion, string appVersion, DateTimeOffset requestedAt,
+        string? publicKey = null)
     {
+        PublicKey = publicKey;
         Id = id;
         UserId = userId;
         Platform = platform;
@@ -64,6 +67,13 @@ public sealed class Device : IAuditable
     public string Model { get; private set; } = string.Empty;
     public string OsVersion { get; private set; } = string.Empty;
     public string AppVersion { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// The phone's signing key (M4, docs/lean-pilot/05 §5.3–5.4): an EC P-256 public key (X.509 SubjectPublicKeyInfo, base64)
+    /// whose private half lives in the Android Keystore and never leaves the phone. Null only for devices registered before M4,
+    /// which cannot sign and therefore cannot push or obtain a grant.
+    /// </summary>
+    public string? PublicKey { get; private set; }
     public string Status { get; private set; } = DeviceStates.PendingApproval;
     public DateTimeOffset RequestedAt { get; private set; }
     public Guid? DecidedBy { get; private set; }
@@ -114,6 +124,15 @@ public sealed class Device : IAuditable
         Status = AccessStateMachines.Device.Resolve(Status, DeviceCommands.RejectDevice).Value.To;
         DecidedAt = now;
         DecisionReason = ReasonSuperseded;
+    }
+
+    /// <summary>D4 as an effect of U1 DisableUser (offboarding): every active device of the user is revoked.</summary>
+    public void RevokeAsUserDisabled(Guid actorId, DateTimeOffset now)
+    {
+        Status = AccessStateMachines.Device.Resolve(Status, DeviceCommands.RevokeDevice).Value.To;
+        RevokedBy = actorId;
+        RevokedAt = now;
+        RevokeReason = ReasonUserDisabled;
     }
 
     /// <summary>D2 effect: approving a new device revokes the user's previous active one (one active device per user).</summary>

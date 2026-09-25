@@ -4,10 +4,11 @@ import 'api_client.dart';
 import 'evidence_queue.dart';
 import 'local_db.dart';
 import 'models.dart';
+import 'offline_grant.dart';
 import 'outbox.dart';
 
 class SyncStatus {
-  const SyncStatus({required this.online, required this.pending, required this.lastSyncAt, this.photosWaiting = 0});
+  const SyncStatus({required this.online, required this.pending, required this.lastSyncAt, this.photosWaiting = 0, this.held = 0});
 
   final bool online;
   final int pending;
@@ -15,20 +16,34 @@ class SyncStatus {
 
   /// Photos taken on the phone whose bytes the server does not have yet.
   final int photosWaiting;
+
+  /// Commands the server holds for a supervisor's decision (quarantine).
+  final int held;
 }
 
-/// One sync cycle (docs/lean-pilot/08 §8.6): push queued commands in order, upload the bytes of photos whose
-/// AddEvidence the server accepted, then pull the current task set, reference data and own custody.
-/// The server wins: after a pull, the cached tasks are replaced by the server's view.
-/// No conflict resolution, offline grants or resumable uploads yet (M4).
+/// The server's grant signature did not verify with the pinned key: the grant is not used (the old one stays).
+class GrantRejectedException implements Exception {
+  GrantRejectedException(this.reason);
+
+  final GrantAcceptance reason;
+}
+
+/// One sync cycle (docs/lean-pilot/08 §8.6, M4 hardening): push queued commands in order — each with the grant, boot and
+/// monotonic clock it was made under and the work-order version the technician saw — ask again about held commands, upload
+/// photo bytes (resumable), renew the offline grant, then pull the current tasks, reference data, custody and policies.
+/// The server wins: after a pull, the cached tasks are replaced by the server's view; a refused change stays visible.
 class SyncEngine {
-  SyncEngine(this._api, this._outbox, this._db, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now, evidence = EvidenceQueue(_db);
+  SyncEngine(this._api, this._outbox, this._db, {DateTime Function()? clock, required this.grants, required this.deviceId})
+    : _clock = clock ?? DateTime.now,
+      evidence = EvidenceQueue(_db);
 
   final ApiClient _api;
   final Outbox _outbox;
   final LocalDb _db;
   final EvidenceQueue evidence;
   final DateTime Function() _clock;
+  final GrantStore grants;
+  final Future<String?> Function() deviceId;
   bool _online = true;
 
   static const _tasksKey = 'tasks_json';
@@ -43,6 +58,7 @@ class SyncEngine {
     pending: _outbox.pendingCount,
     lastSyncAt: _db.getValue(_lastSyncKey) == null ? null : DateTime.parse(_db.getValue(_lastSyncKey)!),
     photosWaiting: evidence.waitingCount,
+    held: _outbox.heldCount,
   );
 
   FieldReference get cachedReference {
@@ -98,8 +114,11 @@ class SyncEngine {
   Future<SyncStatus> _once() async {
     try {
       await _pushAll();
+      await _recheckHeld();
       await _uploadPhotos();
+      await renewGrant();
       final pull = await _api.pull();
+      if (pull.raw['policy'] is Map<String, dynamic>) grants.savePolicy(ClientPolicy.fromJson(pull.raw['policy'] as Map<String, dynamic>));
       _db.setValue(_tasksKey, jsonEncode(pull.raw['workOrders']));
       if (pull.raw['reference'] != null) _db.setValue(_referenceKey, jsonEncode(pull.raw['reference']));
       if (pull.raw['custody'] != null) _db.setValue(_custodyKey, jsonEncode(pull.raw['custody']));
@@ -146,22 +165,36 @@ class SyncEngine {
     }
   }
 
+  /// The phone renews its grant on every successful sync (after sending what was made under the old one), so while it is
+  /// connected a technician never reaches the end of the offline period (docs/lean-pilot/05 §5.5).
+  Future<void> renewGrant() async {
+    final id = await deviceId();
+    if (id == null) return;
+    final response = await _api.grant();
+    final accepted = await grants.accept(response, id, _api.trust, await _api.trust.now());
+    if (accepted != GrantAcceptance.accepted) throw GrantRejectedException(accepted);
+  }
+
   Future<void> _pushAll() async {
     while (true) {
       final batch = _outbox.pending().take(batchSize).toList();
       if (batch.isEmpty) return;
       _outbox.markAttempted(batch.map((c) => c.commandId));
-      final results = await _api.push(
-        batch
-            .map(
-              (c) => {'commandId': c.commandId, 'type': c.type, 'payload': c.payload, 'deviceTime': c.createdAt.toUtc().toIso8601String()},
-            )
-            .toList(),
-        _outbox.pendingCount - batch.length,
-      );
+      final results = await _api.push(batch.map((c) => c.toPush()).toList(), _outbox.pendingCount - batch.length);
       for (final r in results) {
         _outbox.markResult(r.commandId, r.result, r.code, r.message, r.entityId);
       }
+    }
+  }
+
+  /// Held (quarantined) commands are sent again with the same command id: the server applies nothing twice and answers with
+  /// the supervisor's decision once there is one (DUPLICATE = applied, REJECTED = discarded).
+  Future<void> _recheckHeld() async {
+    final held = _outbox.held().take(batchSize).toList();
+    if (held.isEmpty) return;
+    final results = await _api.push(held.map((c) => c.toPush()).toList(), _outbox.pendingCount);
+    for (final r in results) {
+      _outbox.markResult(r.commandId, r.result, r.code, r.message, r.entityId);
     }
   }
 }

@@ -29,6 +29,8 @@ export function Layout({ environment, storageMode = 'local', onLogout, children 
             {hasRole(session, 'SUPERVISOR', 'ADMIN') && <NavLink to="/devices" data-testid="nav-devices">{t('nav.devices')}</NavLink>}
             {hasRole(session, 'WAREHOUSE', 'SUPERVISOR', 'AUDITOR') && <NavLink to="/stock" data-testid="nav-stock">{t('nav.stock')}</NavLink>}
             {hasRole(session, 'AUDITOR') && <NavLink to="/audit" data-testid="nav-audit">{t('nav.audit')}</NavLink>}
+            {hasRole(session, 'SUPERVISOR', 'AUDITOR') && <NavLink to="/sync/quarantine" data-testid="nav-quarantine">{t('nav.quarantine')}</NavLink>}
+            {hasRole(session, 'ADMIN') && <NavLink to="/users" data-testid="nav-users">{t('nav.users')}</NavLink>}
             {hasRole(session, 'ADMIN') && <NavLink to="/settings/rules" data-testid="nav-settings">{t('nav.settings')}</NavLink>}
           </nav>
         )}

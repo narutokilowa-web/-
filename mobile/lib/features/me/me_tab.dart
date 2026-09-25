@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/app_controller.dart';
 import '../../core/secure_store.dart';
@@ -26,6 +27,14 @@ class MeTab extends StatelessWidget {
         Text(l10n.environmentLabel(controller.config.environment), style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 16),
         Text(pending == 0 ? l10n.outboxEmpty : l10n.waitingToSend(pending), key: const Key('outbox-count')),
+        if ((controller.outbox?.heldCount ?? 0) > 0) Text(l10n.heldCount(controller.outbox!.heldCount), key: const Key('held-count')),
+        Text(
+          controller.grants?.current == null
+              ? l10n.grantNone
+              : l10n.grantValidUntil(DateFormat('yyyy-MM-dd HH:mm').format(controller.grants!.current!.expiresAt.toLocal())),
+          key: const Key('grant-until'),
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         const SizedBox(height: 8),
         FilledButton(key: const Key('sync-now'), onPressed: controller.busy ? null : controller.syncNow, child: Text(l10n.syncNow)),
         const SizedBox(height: 8),

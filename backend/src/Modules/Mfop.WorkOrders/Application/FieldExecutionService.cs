@@ -34,12 +34,22 @@ public sealed class FieldExecutionService(
 {
     public const string NotAssignee = "NOT_ASSIGNEE";
 
+    /// <summary>Conflict codes (docs/spec/10 §10.5). The phone shows them as "changed on the server", never as a silent loss.</summary>
+    public const string WorkOrderChanged = "WORK_ORDER_CHANGED", WorkOrderReassigned = "WORK_ORDER_REASSIGNED",
+        WorkOrderCancelled = "WORK_ORDER_CANCELLED", WorkOrderClosed = "WORK_ORDER_CLOSED", BaseVersionRequired = "BASE_VERSION_REQUIRED";
+
+    /// <summary>
+    /// Facts are things that happened in the field (a photo, a part used): they are kept even if the work order moved on.
+    /// Changes set the work order's state or overwrite its fields: they are applied only on the version the technician saw.
+    /// </summary>
+    private enum FieldKind { Fact, Change }
+
     /// <summary>W5: the scanned tag must be this light's tag; a typed code needs a reason.</summary>
     public async Task<Result<SyncCommandOutcome>> ArriveAsync(CommandEnvelope cmd, ArriveOnSitePayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Change, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
+        var w = loaded.Value.WorkOrder;
         var t = WorkOrderStateMachines.WorkOrder.Resolve(w.State, WorkOrderCommands.ArriveOnSite);
         if (!t.IsSuccess) return t.Error!;
 
@@ -103,16 +113,19 @@ public sealed class FieldExecutionService(
     /// <summary>AddEvidence: announces the photo's hash (the bytes follow with PUT /sync/v1/evidence/{id}/content).</summary>
     public async Task<Result<SyncCommandOutcome>> AddEvidenceAsync(CommandEnvelope cmd, AddEvidencePayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Fact, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
-        var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.AddEvidence);
-        if (!allowed.IsSuccess) return allowed.Error!;
-
+        var (w, previousAssignee) = loaded.Value;
         var kind = p.Kind?.Trim().ToUpperInvariant();
         if (kind is not ("BEFORE" or "AFTER" or "TEST")) return Error.Validation("INVALID_EVIDENCE_KIND", "Kind must be BEFORE, AFTER or TEST.");
-        if (kind == "BEFORE" && w.State != WorkOrderStates.OnSite) return Error.Validation("EVIDENCE_KIND_NOT_NOW", "Before photos are taken on arrival, before starting work.");
-        if (kind != "BEFORE" && w.State == WorkOrderStates.OnSite) return Error.Validation("EVIDENCE_KIND_NOT_NOW", "After and test photos come after the work has started.");
+        if (!previousAssignee)
+        {
+            // The previous assignee's photos are kept whatever the state is now: the work happened (docs/spec/10 §10.5).
+            var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.AddEvidence);
+            if (!allowed.IsSuccess) return allowed.Error!;
+            if (kind == "BEFORE" && w.State != WorkOrderStates.OnSite) return Error.Validation("EVIDENCE_KIND_NOT_NOW", "Before photos are taken on arrival, before starting work.");
+            if (kind != "BEFORE" && w.State == WorkOrderStates.OnSite) return Error.Validation("EVIDENCE_KIND_NOT_NOW", "After and test photos come after the work has started.");
+        }
 
         var announced = await evidence.AnnounceAsync(new AnnounceEvidence(p.EvidenceId, EvidenceOwnerTypes.WorkOrder, w.Id, kind, p.Sha256 ?? string.Empty,
             p.SizeBytes, p.Mime ?? "image/jpeg", cmd.Actor.UserId!.Value, cmd.Actor.DeviceId, p.CapturedAt ?? cmd.DeviceTime,
@@ -127,16 +140,18 @@ public sealed class FieldExecutionService(
             ["kind"] = kind,
             ["sha256_device"] = p.Sha256?.ToLowerInvariant(),
             ["supersedes"] = p.SupersedesEvidenceId?.ToString("D"),
+            ["by_previous_assignee"] = previousAssignee ? "true" : null,
         });
+        if (previousAssignee) await FlagPreviousAssigneeAsync(cmd, w, WorkOrderCommands.AddEvidence, p.EvidenceId, ct);
         return new SyncCommandOutcome(p.EvidenceId);
     }
 
     /// <summary>RecordDiagnosis (ON_SITE, IN_PROGRESS): a seeded code for this light's power source.</summary>
     public async Task<Result<SyncCommandOutcome>> RecordDiagnosisAsync(CommandEnvelope cmd, RecordDiagnosisPayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Change, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
+        var w = loaded.Value.WorkOrder;
         var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.RecordDiagnosis);
         if (!allowed.IsSuccess) return allowed.Error!;
 
@@ -158,9 +173,9 @@ public sealed class FieldExecutionService(
     /// <summary>W6: diagnosis recorded and the before photos of this arrival announced. Effect OS5: the light is UNDER_MAINTENANCE.</summary>
     public async Task<Result<SyncCommandOutcome>> StartWorkAsync(CommandEnvelope cmd, StartWorkPayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Change, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
+        var w = loaded.Value.WorkOrder;
         var t = WorkOrderStateMachines.WorkOrder.Resolve(w.State, WorkOrderCommands.StartWork);
         if (!t.IsSuccess) return t.Error!;
         if (w.DiagnosisCode is null) return Error.Validation("DIAGNOSIS_REQUIRED", "Record the diagnosis before starting work.");
@@ -188,11 +203,15 @@ public sealed class FieldExecutionService(
     /// <summary>ConsumeMaterial (IN_PROGRESS, RETURNED): custody → consumed, linked to the work order and the light.</summary>
     public async Task<Result<SyncCommandOutcome>> ConsumeMaterialAsync(CommandEnvelope cmd, ConsumeMaterialPayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Fact, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
-        var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.ConsumeMaterial);
-        if (!allowed.IsSuccess) return allowed.Error!;
+        var (w, previousAssignee) = loaded.Value;
+        if (!previousAssignee)
+        {
+            var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.ConsumeMaterial);
+            if (!allowed.IsSuccess) return allowed.Error!;
+        }
+
         if (p.MovementId == Guid.Empty) return Error.Validation("INVALID_PAYLOAD", "movementId is required.");
 
         var now = clock.UtcNowMicros();
@@ -229,16 +248,18 @@ public sealed class FieldExecutionService(
             ["quantity"] = WorkOrderSeal.Quantity(p.Quantity),
             ["serials"] = string.Join(",", p.Serials ?? []),
             ["exceeds_custody"] = outcome.ExceedsCustody ? "true" : "false",
+            ["by_previous_assignee"] = previousAssignee ? "true" : null,
         });
+        if (previousAssignee) await FlagPreviousAssigneeAsync(cmd, w, WorkOrderCommands.ConsumeMaterial, outcome.MovementId, ct);
         return new SyncCommandOutcome(outcome.MovementId, outcome.ExceedsCustody ? "APPLIED_EXCEEDS_CUSTODY" : null);
     }
 
     /// <summary>RecordChecklist (IN_PROGRESS, RETURNED): the pinned template, every item answered, test method (NOT_TESTED needs a reason).</summary>
     public async Task<Result<SyncCommandOutcome>> RecordChecklistAsync(CommandEnvelope cmd, RecordChecklistPayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Change, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
+        var w = loaded.Value.WorkOrder;
         var allowed = WorkOrderStateMachines.AllowedInState(w.State, WorkOrderCommands.RecordChecklist);
         if (!allowed.IsSuccess) return allowed.Error!;
         if (p.ChecklistId == Guid.Empty) return Error.Validation("INVALID_PAYLOAD", "checklistId is required.");
@@ -293,9 +314,9 @@ public sealed class FieldExecutionService(
     /// <summary>W9 (SubmitWorkOrder) or W12 (Resubmit, additions only): the submission guards are evaluated again each time.</summary>
     public async Task<Result<SyncCommandOutcome>> SubmitAsync(CommandEnvelope cmd, string command, SubmitWorkOrderPayload p, CancellationToken ct)
     {
-        var loaded = await LoadForAssigneeAsync(cmd, p.WorkOrderId, ct);
+        var loaded = await LoadForFieldAsync(cmd, p.WorkOrderId, FieldKind.Change, ct);
         if (!loaded.IsSuccess) return loaded.Error!;
-        var w = loaded.Value;
+        var w = loaded.Value.WorkOrder;
         var t = WorkOrderStateMachines.WorkOrder.Resolve(w.State, command);
         if (!t.IsSuccess) return t.Error!;
 
@@ -356,13 +377,85 @@ public sealed class FieldExecutionService(
     /// <summary>A photo still counts toward requirements unless verification proved it unusable (then it must be replaced).</summary>
     internal static bool Usable(string state) => state is not ("HASH_MISMATCH" or "DUPLICATE");
 
-    private async Task<Result<WorkOrder>> LoadForAssigneeAsync(CommandEnvelope cmd, Guid workOrderId, CancellationToken ct)
+    private sealed record FieldTarget(WorkOrder WorkOrder, bool PreviousAssignee);
+
+    /// <summary>
+    /// The conflict matrix (docs/spec/10 §10.5) for a technician command that may have been made offline:
+    /// never assigned to this user → NOT_ASSIGNEE; cancelled meanwhile → QUARANTINE (a supervisor decides);
+    /// reassigned meanwhile → facts kept with a SUBMITTED_BY_NON_ASSIGNEE flag, changes refused (WORK_ORDER_REASSIGNED);
+    /// changed by someone else since the version the phone saw → changes refused (WORK_ORDER_CHANGED), facts kept.
+    /// Nothing newer on the server is ever overwritten silently.
+    /// </summary>
+    private async Task<Result<FieldTarget>> LoadForFieldAsync(CommandEnvelope cmd, Guid workOrderId, FieldKind kind, CancellationToken ct)
     {
         var w = await db.WorkOrders.SingleOrDefaultAsync(x => x.Id == workOrderId, ct);
         if (w is null) return Error.NotFound("WORK_ORDER_NOT_FOUND", "Work order not found.");
-        if (w.AssigneeId != cmd.Actor.UserId) return Error.Forbidden(NotAssignee, "This work order is not assigned to you.");
-        return w;
+        var userId = cmd.Actor.UserId!.Value;
+        var isAssignee = w.AssigneeId == userId;
+        if (!isAssignee && !await db.Assignments.AnyAsync(a => a.WorkOrderId == w.Id && a.AssigneeId == userId, ct))
+        {
+            return Error.Forbidden(NotAssignee, "This work order is not assigned to you.");
+        }
+
+        if (w.State == WorkOrderStates.Cancelled)
+        {
+            return SyncDispositions.QuarantineFor(WorkOrderCancelled, "The work order was cancelled while this was done; a supervisor decides.");
+        }
+
+        if (!isAssignee)
+        {
+            if (kind == FieldKind.Change)
+            {
+                return Error.Conflict(WorkOrderReassigned, "The work order was reassigned to another technician: this step is not applied (your photos and materials are kept).");
+            }
+
+            return w.State == WorkOrderStates.Closed
+                ? SyncDispositions.QuarantineFor(WorkOrderClosed, "The work order was closed by another technician's work; a supervisor decides.")
+                : new FieldTarget(w, true);
+        }
+
+        if (kind == FieldKind.Change && !w.IsTerminal) // a closed work order refuses every change anyway (INVALID_TRANSITION)
+        {
+            var stale = await ChangedSinceAsync(cmd, w, ct);
+            if (stale is not null) return stale;
+        }
+
+        return new FieldTarget(w, false);
     }
+
+    /// <summary>Events after the phone's base version made by anyone else (another user, or this user on another device).</summary>
+    private async Task<Error?> ChangedSinceAsync(CommandEnvelope cmd, WorkOrder w, CancellationToken ct)
+    {
+        if (cmd.BaseVersion is not { } baseVersion)
+        {
+            return cmd.Actor.DeviceId is null ? null : Error.Validation(BaseVersionRequired, "Refresh the task and try again (the version you worked on is missing).");
+        }
+
+        if (w.LastEventSeq <= baseVersion) return null;
+        var userId = cmd.Actor.UserId;
+        var deviceId = cmd.Actor.DeviceId;
+        var changes = await db.Events.AsNoTracking()
+            .Where(e => e.WorkOrderId == w.Id && e.Seq > baseVersion && (e.ActorId != userId || e.DeviceId != deviceId))
+            .OrderBy(e => e.Seq).Select(e => e.Type).ToListAsync(ct);
+        if (changes.Count == 0) return null;
+        return new Error(WorkOrderChanged, "The work order was changed on the server after you last refreshed it; refresh and check before repeating this step.",
+            ErrorKind.Conflict, new Dictionary<string, string>
+            {
+                ["baseVersion"] = baseVersion.ToString(CultureInfo.InvariantCulture),
+                ["serverVersion"] = w.LastEventSeq.ToString(CultureInfo.InvariantCulture),
+                ["state"] = w.State,
+                ["changes"] = string.Join(",", changes.Distinct()),
+            });
+    }
+
+    private Task FlagPreviousAssigneeAsync(CommandEnvelope cmd, WorkOrder w, string command, Guid entityId, CancellationToken ct) =>
+        flags.RaiseAsync(FlagCodes.SubmittedByNonAssignee, "WARNING", "work_order", w.Id, new Dictionary<string, object?>
+        {
+            ["command"] = command,
+            ["entity_id"] = entityId.ToString("D"),
+            ["previous_assignee_id"] = cmd.Actor.UserId?.ToString("D"),
+            ["current_assignee_id"] = w.AssigneeId?.ToString("D"),
+        }, ct);
 
     private static DateTimeOffset? Device(CommandEnvelope cmd) => cmd.DeviceTime is { } t ? ClockExtensions.TruncateToMicros(t) : null;
 }

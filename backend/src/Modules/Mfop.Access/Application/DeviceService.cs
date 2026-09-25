@@ -14,7 +14,8 @@ namespace Mfop.Access.Application;
 /// Device trust (BYOD): registration by the owner, approval / rejection / revocation by a supervisor or admin.
 /// Revocation is server-side only; the API rejects the device on its next request (<see cref="Api.ActorResolutionMiddleware"/>).
 /// </summary>
-public sealed class DeviceService(AccessDbContext db, IUnitOfWork uow, IAuditTrail audit, TimeProvider clock, IEnumerable<IDeviceSyncInfo> syncInfo)
+public sealed class DeviceService(
+    AccessDbContext db, IUnitOfWork uow, IAuditTrail audit, TimeProvider clock, IEnumerable<IDeviceSyncInfo> syncInfo, GrantService grants)
 {
     public static readonly IReadOnlySet<string> Platforms = new HashSet<string>(StringComparer.Ordinal) { "ANDROID" };
 
@@ -32,7 +33,8 @@ public sealed class DeviceService(AccessDbContext db, IUnitOfWork uow, IAuditTra
                 audit.Record(pending, "device.superseded", Device.ReasonSuperseded);
             }
 
-            var device = new Device(Ids.New(), userId, request.Platform, request.Model.Trim(), request.OsVersion.Trim(), request.AppVersion.Trim(), now);
+            var device = new Device(Ids.New(), userId, request.Platform, request.Model.Trim(), request.OsVersion.Trim(), request.AppVersion.Trim(), now,
+                request.PublicKey!.Trim());
             db.Devices.Add(device);
             audit.Record(device, "device.registered");
             return device.Id;
@@ -46,14 +48,24 @@ public sealed class DeviceService(AccessDbContext db, IUnitOfWork uow, IAuditTra
             {
                 old.RevokeAsReplaced(cmd.Actor.UserId!.Value, now);
                 audit.Record(old, "device.revoked", Device.ReasonReplaced);
+                await grants.RevokeOpenGrantsAsync(g => g.DeviceId == old.Id, GrantRevokeReasons.DeviceRevoked, cmd.Actor.UserId, now, innerCt);
             }
         }, ct);
 
     public Task<Result<Guid>> RejectAsync(CommandEnvelope cmd, Guid id, string? reason, CancellationToken ct) =>
         DecideAsync(cmd, id, DeviceCommands.RejectDevice, reason, "device.rejected", null, ct);
 
+    /// <summary>
+    /// D4 (docs/lean-pilot/04 §4.1): the device's offline grants are revoked and the owner's field-app sessions are ended at the
+    /// identity provider (after commit, retried). The next request from the phone is refused.
+    /// </summary>
     public Task<Result<Guid>> RevokeAsync(CommandEnvelope cmd, Guid id, string? reason, CancellationToken ct) =>
-        DecideAsync(cmd, id, DeviceCommands.RevokeDevice, reason, "device.revoked", null, ct);
+        DecideAsync(cmd, id, DeviceCommands.RevokeDevice, reason, "device.revoked", async (device, now, innerCt) =>
+        {
+            await grants.RevokeOpenGrantsAsync(g => g.DeviceId == device.Id, GrantRevokeReasons.DeviceRevoked, cmd.Actor.UserId, now, innerCt);
+            var owner = await db.Users.AsNoTracking().SingleAsync(u => u.Id == device.UserId, innerCt);
+            db.IdpTasks.Add(new IdpTask(Ids.New(), IdpTaskKinds.LogoutMobile, owner.Id, owner.IdpSubject, now));
+        }, ct);
 
     public Task<Device?> FindAsync(Guid id, CancellationToken ct) => db.Devices.AsNoTracking().SingleOrDefaultAsync(d => d.Id == id, ct);
 
@@ -84,7 +96,7 @@ public sealed class DeviceService(AccessDbContext db, IUnitOfWork uow, IAuditTra
             return new DeviceDto(
                 d.Id, d.UserId, Name(d.UserId) ?? "?", users.TryGetValue(d.UserId, out var owner) ? owner.Username : "?",
                 d.Platform, d.Model, d.OsVersion, d.AppVersion, d.Status, d.RequestedAt,
-                Name(d.DecidedBy), d.DecidedAt, d.DecisionReason, Name(d.RevokedBy), d.RevokedAt, d.RevokeReason,
+                Name(d.DecidedBy), d.DecidedAt, d.DecisionReason, Name(d.RevokedBy), d.RevokedAt, d.RevokeReason, d.PublicKey is not null,
                 s?.LastPullAt, s?.LastPushAt, s?.LastReportedPendingCommands);
         }).ToList();
     }
@@ -117,6 +129,7 @@ public sealed class DeviceService(AccessDbContext db, IUnitOfWork uow, IAuditTra
         if (string.IsNullOrWhiteSpace(r.Model) || r.Model.Length > 100) details["model"] = "required, at most 100 characters";
         if (string.IsNullOrWhiteSpace(r.OsVersion) || r.OsVersion.Length > 50) details["osVersion"] = "required, at most 50 characters";
         if (string.IsNullOrWhiteSpace(r.AppVersion) || r.AppVersion.Length > 30) details["appVersion"] = "required, at most 30 characters";
+        if (!DeviceKeys.IsValidPublicKey(r.PublicKey)) details["publicKey"] = "required: EC P-256 public key (SubjectPublicKeyInfo, base64) from the device keystore";
         return details.Count == 0 ? null : Error.Validation(ErrorCodes.ValidationFailed, "Invalid device registration.", details);
     }
 }

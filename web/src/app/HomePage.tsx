@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { hasRole, useSession } from './MeContext';
 import { useResource } from '../shared/useApi';
-import type { Device, Fault, WorkOrderListItem } from '../shared/types';
+import type { Device, Fault, QuarantineEntry, WorkOrderListItem } from '../shared/types';
 
 /** "What needs me now?" (docs/lean-pilot/09 §9.1): a queue per role, not charts. */
 export function HomePage() {
@@ -14,6 +14,8 @@ export function HomePage() {
   const newWorkOrders = useResource<WorkOrderListItem[]>(supervisor ? '/api/v1/work-orders?state=NEW' : null);
   const pendingReview = useResource<WorkOrderListItem[]>(supervisor ? '/api/v1/work-orders?state=PENDING_REVIEW' : null);
   const pendingDevices = useResource<Device[]>(deviceApprover ? '/api/v1/devices?status=PENDING_APPROVAL' : null);
+  const needsReassignment = useResource<WorkOrderListItem[]>(supervisor ? '/api/v1/work-orders/needs-reassignment' : null);
+  const quarantined = useResource<QuarantineEntry[]>(supervisor ? '/api/v1/sync/quarantine?state=PENDING' : null);
   const count = <T,>(r: { result: { ok: true; data: T[] } | { ok: false } | null }) => (r.result?.ok ? r.result.data.length : '…');
 
   return (
@@ -29,6 +31,12 @@ export function HomePage() {
         {supervisor && (
           <li><Link to="/work-orders?state=PENDING_REVIEW" data-testid="home-pending-review">{t('home.pendingReview')} <strong>{count(pendingReview)}</strong></Link></li>
         )}
+        {supervisor && (
+          <li><Link to="/work-orders/needs-reassignment" data-testid="home-needs-reassignment">{t('home.needsReassignment')} <strong>{count(needsReassignment)}</strong></Link></li>
+        )}
+        {supervisor && (
+          <li><Link to="/sync/quarantine" data-testid="home-quarantine">{t('home.quarantine')} <strong>{count(quarantined)}</strong></Link></li>
+        )}
         {hasRole(session, 'SUPERVISOR', 'AUDITOR') && (
           <li><Link to="/dashboard" data-testid="home-dashboard">{t('home.dashboard')}</Link></li>
         )}
@@ -40,6 +48,9 @@ export function HomePage() {
         )}
         {hasRole(session, 'AUDITOR') && (
           <li><Link to="/audit" data-testid="home-audit">{t('home.audit')}</Link></li>
+        )}
+        {hasRole(session, 'ADMIN') && (
+          <li><Link to="/users" data-testid="home-users">{t('home.users')}</Link></li>
         )}
         {hasRole(session, 'ADMIN') && (
           <li><Link to="/settings/rules" data-testid="home-settings">{t('home.settings')}</Link></li>

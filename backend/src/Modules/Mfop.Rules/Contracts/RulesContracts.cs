@@ -40,6 +40,14 @@ public static class FlagCodes
     public const string EvidenceDuplicate = "EVIDENCE_DUPLICATE";
     public const string ConsumptionExceedsCustody = "CONSUMPTION_EXCEEDS_CUSTODY";
     public const string SerialNotInCustody = "SERIAL_NOT_IN_CUSTODY";
+
+    // M4 (docs/lean-pilot/05 §5.5–5.7, §5.6)
+    public const string GrantInvalid = "GRANT_INVALID";
+    public const string GrantExpired = "GRANT_EXPIRED";
+    public const string ClockSkew = "CLOCK_SKEW";
+    public const string NeedsReassignment = "NEEDS_REASSIGNMENT";
+    public const string CustodyToReconcile = "CUSTODY_TO_RECONCILE";
+    public const string SubmittedByNonAssignee = "SUBMITTED_BY_NON_ASSIGNEE"; // docs/spec/10 §10.5: field facts from the previous assignee
 }
 
 public sealed record RuleSettingDto(string RuleCode, bool Enabled, System.Text.Json.JsonElement Params, Guid? ChangedBy, DateTimeOffset ChangedAt, int Version);

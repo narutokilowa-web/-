@@ -123,5 +123,17 @@
   "noMaterialReasonLabel": "Why was no material used?",
   "recurrentFailureTitle": "Recurrent Failure",
   "fullInspectionRecommended": "Recommendation: Full inspection recommended",
-  "recommendationRule": "{count} counted failures; threshold {threshold} within {days} days"
+  "recommendationRule": "{count} counted failures; threshold {threshold} within {days} days",
+  "refusalReason": "{code, select, WORK_ORDER_CHANGED{The work order changed on the server after your last refresh; refresh the task and check before repeating this step} WORK_ORDER_REASSIGNED{The work order was reassigned to another technician; your photos and materials are kept, but this step was not applied} WORK_ORDER_CANCELLED{The work order was cancelled; the work waits for the supervisor's decision} WORK_ORDER_CLOSED{The work order was closed; the work waits for the supervisor's decision} BASE_VERSION_REQUIRED{Refresh the task and try again} GRANT_REQUIRED{There is no offline permission} GRANT_INVALID{The offline permission is not valid for this phone} GRANT_EXPIRED{Done after the offline permission ran out} GRANT_REVOKED{Done after the offline permission was revoked} GRANT_WINDOW_UNPROVEN{Its time cannot be proven (the phone restarted while offline); it waits for the supervisor's decision} QUARANTINE_DISCARDED{Discarded by the supervisor after review} NOT_ASSIGNEE{This work order is not assigned to you} INVALID_TRANSITION{This step is no longer possible in the work order's current state} other{The operation failed ({code})}}",
+  "commandHeld": "Held for the supervisor's decision: {command} — {reason}",
+  "heldCount": "{count} held for the supervisor's decision",
+  "grantExpiredTitle": "Connect to continue working",
+  "grantExpiredBody": "This phone has reached the time it may work offline. Connect to the internet (and sign in again if asked) to continue. No new work is recorded until then.",
+  "grantPendingItems": "{count} items are kept on the phone and will be sent when connected",
+  "tryNow": "Try now",
+  "updateRequiredTitle": "App update required",
+  "updateRequiredBody": "The server no longer accepts this app version. Install version {version} or newer. What you saved on the phone stays saved.",
+  "userDisabledBody": "Your account was disabled, so the server no longer accepts anything from this phone. The app deleted its own data stored on the phone. Nothing else on your phone was touched.",
+  "grantValidUntil": "Offline work allowed until {time}",
+  "grantNone": "No offline permission yet: connect to the internet"
 }

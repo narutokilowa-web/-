@@ -11,6 +11,8 @@ import 'package:mfop_field/app/app_controller.dart';
 import 'package:mfop_field/app/mfop_app.dart';
 import 'package:mfop_field/core/config.dart';
 import 'package:mfop_field/core/device_info.dart';
+import 'package:mfop_field/core/device_trust.dart';
+import 'package:mfop_field/core/outbox.dart';
 import 'package:mfop_field/core/secure_store.dart';
 import 'package:mfop_field/features/work/photo_source.dart';
 import 'package:mfop_field/main.dart' show openAppDatabase;
@@ -98,6 +100,10 @@ void main() {
     final row = pending.cast<Map<String, dynamic>>().singleWhere((d) => d['id'] == deviceId);
     expect(row['username'], 'tech1');
     expect(row['osVersion'], startsWith('Android'));
+    // M4: the phone registered the public half of its Android Keystore key (the private key never leaves the Keystore).
+    expect(row['hasKey'], isTrue);
+    expect(row['appVersion'], '0.4.0');
+    final keystoreKey = await PlatformDeviceTrust().publicKey();
 
     // Supervisor/admin approves on the server; the phone learns it on its next check.
     await office.call('admin1', 'POST', '/api/v1/devices/$deviceId/approve', {'reason': null});
@@ -108,6 +114,15 @@ void main() {
     await tester.enterText(find.byKey(const Key('pin-confirm')), '2468');
     await tester.tap(find.byKey(const Key('pin-save')));
     await until(find.byKey(const Key('tab-tasks')));
+
+    // M4: the first sync brought a server-signed offline grant, verified on the phone with the pinned server key.
+    final grantEnd = DateTime.now().add(const Duration(seconds: 30));
+    while (controller.grants?.current == null) {
+      if (DateTime.now().isAfter(grantEnd)) throw TestFailure('no offline grant after the first sync (${controller.message})');
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    expect(controller.grants!.pinnedKeys, isNotEmpty);
+    expect(await controller.grantValid(), isTrue);
 
     // DEMO 1 steps 8–9 on the web side: a synthetic light, a fault, a work order assigned to tech1.
     final address = 'شارع أندرويد ${DateTime.now().millisecondsSinceEpoch % 100000}';
@@ -209,6 +224,9 @@ void main() {
     await until(find.byKey(const Key('submitted-banner')), timeout: const Duration(seconds: 90));
     await shot('10-submitted');
     expect(controller.sync!.evidence.waitingCount, 0); // every photo's bytes reached the server and left the phone
+    // Every command was signed by the Keystore key and accepted under the grant (no refusals, nothing held).
+    expect(controller.outbox!.all().where((c) => c.state != OutboxState.sent), isEmpty);
+    expect(controller.outbox!.all().every((c) => c.grantId != null && c.baseVersion != null), isTrue);
 
     // Step 17 on the server: every photo VERIFIED, supervisor1 approves → CLOSED with a seal.
     final woPath = '/api/v1/work-orders/${workOrder['id']}';
@@ -245,6 +263,8 @@ void main() {
     expect(await store.read(SecureKeys.refreshToken), isNull);
     expect(await store.read(SecureKeys.deviceId), isNull);
     expect(await store.read(SecureKeys.pinHash), isNull);
+    // The app also deleted its own Keystore device key: a new start creates a different one.
+    expect(await PlatformDeviceTrust().publicKey(), isNot(keystoreKey));
   });
 }
 

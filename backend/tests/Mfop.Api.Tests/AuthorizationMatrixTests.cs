@@ -15,7 +15,7 @@ namespace Mfop.Api.Tests;
 [Collection(nameof(DatabaseCollection))]
 public class AuthorizationMatrixTests(DatabaseFixture db) : IAsyncLifetime
 {
-    private const string CurrentMilestone = "M3";
+    private const string CurrentMilestone = "M4";
 
     private TestApp App { get; } = new(db);
 

@@ -92,7 +92,7 @@ jobs:
           retention-days: 14
 
   e2e:
-    name: "E2E (Docker Compose stack + make seed; every role signs in; M1, M2 and M3 / DEMO 1 web flows; verifier)"
+    name: "E2E (Docker Compose stack + make seed; every role signs in; M1, M2, M3 / DEMO 1 and M4 web flows; verifier)"
     runs-on: ubuntu-latest
     needs: [backend, web]
     steps:
@@ -112,7 +112,7 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: web
         run: npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
-      - name: Sign in as every seeded user; M1, M2 and M3 / DEMO 1 web flows
+      - name: Sign in as every seeded user; M1, M2, M3 / DEMO 1 and M4 (policies, offboarding with Keycloak) web flows
         run: make e2e
       - name: Audit verifier on the demo database after the flows (chain, snapshots, seals, stock balances)
         run: make verify-audit
@@ -124,7 +124,7 @@ jobs:
         run: docker compose -f deploy/compose/docker-compose.yml --env-file .env down -v
 
   android:
-    name: "Android emulator (real app: sign-in, device approval, PIN, My tasks, QR, field work, evidence upload, approval, revocation)"
+    name: "Android emulator (real app: sign-in, Keystore device key, device approval, PIN, offline grant, My tasks, QR, signed field work, evidence upload, approval, revocation)"
     runs-on: ubuntu-latest
     needs: [backend, web, mobile]
     timeout-minutes: 50

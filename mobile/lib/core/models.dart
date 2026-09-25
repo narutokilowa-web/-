@@ -49,6 +49,7 @@ class WorkOrderTask {
     required this.assignedAt,
     required this.asset,
     this.progress,
+    this.eventSeq = 0,
   });
 
   factory WorkOrderTask.fromJson(Map<String, dynamic> j) => WorkOrderTask(
@@ -64,6 +65,7 @@ class WorkOrderTask {
     assignedAt: DateTime.parse(j['assignedAt'] as String),
     asset: AssetSummary.fromJson(j['asset'] as Map<String, dynamic>),
     progress: j['progress'] == null ? null : TaskProgress.fromJson(j['progress'] as Map<String, dynamic>),
+    eventSeq: (j['eventSeq'] as int?) ?? 0,
   );
 
   final String id;
@@ -80,6 +82,10 @@ class WorkOrderTask {
 
   /// What the server has already recorded for this work order (M3).
   final TaskProgress? progress;
+
+  /// M4: the work order's version on the server (last event number) when the phone received it; sent back with each
+  /// command as `baseVersion` so a change made meanwhile by someone else is refused, never overwritten.
+  final int eventSeq;
 }
 
 /// Server-side progress of a work order (Mfop.WorkOrders.Contracts.TaskProgress).

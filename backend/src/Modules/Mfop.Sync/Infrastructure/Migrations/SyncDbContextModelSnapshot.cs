@@ -51,6 +51,125 @@ namespace Mfop.Sync.Infrastructure.Migrations
                     b.ToTable("device_sync_states", "sync");
                 });
 
+            modelBuilder.Entity("Mfop.Sync.Domain.QuarantinedCommand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long?>("BaseVersion")
+                        .HasColumnType("bigint")
+                        .HasColumnName("base_version");
+
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("command_id");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("device_id");
+
+                    b.Property<DateTimeOffset?>("DeviceTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("device_time");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<DateTimeOffset>("EstimatedTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("estimated_time");
+
+                    b.Property<Guid?>("GrantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grant_id");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("ReasonCode")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("reason_code");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<string>("ResolutionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("resolution_reason");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid?>("ResolvedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by");
+
+                    b.Property<string>("ResultCode")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("result_code");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("state");
+
+                    b.Property<string>("TimeConfidence")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("time_confidence");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.PrimitiveCollection<string[]>("UserRoles")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("user_roles");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quarantine");
+
+                    b.HasIndex("CommandId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_quarantine_command_id");
+
+                    b.HasIndex("State")
+                        .HasDatabaseName("ix_quarantine_state");
+
+                    b.ToTable("quarantine", "sync");
+                });
+
             modelBuilder.Entity("Mfop.Sync.Domain.SyncCommand", b =>
                 {
                     b.Property<Guid>("CommandId")
@@ -68,6 +187,14 @@ namespace Mfop.Sync.Infrastructure.Migrations
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uuid")
                         .HasColumnName("entity_id");
+
+                    b.Property<DateTimeOffset?>("EstimatedTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("estimated_time");
+
+                    b.Property<Guid?>("GrantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grant_id");
 
                     b.Property<string>("Payload")
                         .IsRequired()
@@ -100,6 +227,11 @@ namespace Mfop.Sync.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("result_message");
+
+                    b.Property<string>("TimeConfidence")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("time_confidence");
 
                     b.Property<string>("Type")
                         .IsRequired()

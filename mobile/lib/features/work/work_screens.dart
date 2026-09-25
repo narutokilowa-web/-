@@ -90,9 +90,15 @@ class _WorkStepsState extends State<WorkSteps> {
               ),
             for (final rej in v.rejections.reversed.take(3))
               Text(
-                l10n.commandRejected(l10n.commandName(rej.commandType), l10n.errorCode(rej.code)),
+                l10n.commandRejected(l10n.commandName(rej.commandType), l10n.refusalReason(rej.code)),
                 key: Key('rejected-${rej.commandType}'),
                 style: const TextStyle(color: Color(0xFFB42318)),
+              ),
+            for (final h in v.held.reversed.take(3))
+              Text(
+                l10n.commandHeld(l10n.commandName(h.commandType), l10n.refusalReason(h.code)),
+                key: Key('held-${h.commandType}'),
+                style: const TextStyle(color: Color(0xFF7A5300)),
               ),
             if (v.photosWaiting > 0) Text(l10n.photosWaiting(v.photosWaiting), key: const Key('photos-waiting')),
             if (_processing) const LinearProgressIndicator(),

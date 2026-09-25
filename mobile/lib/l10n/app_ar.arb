@@ -384,5 +384,62 @@
         "type": "int"
       }
     }
-  }
+  },
+  "refusalReason": "{code, select, WORK_ORDER_CHANGED{تغيّر أمر العمل على الخادم بعد آخر تحديث للهاتف؛ حدّث المهمة وتحقق قبل إعادة الخطوة} WORK_ORDER_REASSIGNED{أُعيد إسناد أمر العمل لفني آخر؛ صورك وموادك محفوظة لكن هذه الخطوة لم تُطبّق} WORK_ORDER_CANCELLED{أُلغي أمر العمل؛ ينتظر العمل قرار المشرف} WORK_ORDER_CLOSED{أُغلق أمر العمل؛ ينتظر العمل قرار المشرف} BASE_VERSION_REQUIRED{حدّث المهمة ثم أعد المحاولة} GRANT_REQUIRED{لا يوجد تصريح عمل دون اتصال} GRANT_INVALID{تصريح العمل غير صالح لهذا الجهاز} GRANT_EXPIRED{أُنجز بعد انتهاء تصريح العمل دون اتصال} GRANT_REVOKED{أُنجز بعد إلغاء تصريح العمل} GRANT_WINDOW_UNPROVEN{لا يمكن إثبات وقت إنجازه (أُعيد تشغيل الهاتف دون اتصال)؛ ينتظر قرار المشرف} QUARANTINE_DISCARDED{رفضه المشرف بعد المراجعة} NOT_ASSIGNEE{أمر العمل ليس مسندًا إليك} INVALID_TRANSITION{لم تعد هذه الخطوة ممكنة في حالة أمر العمل الحالية} other{تعذّرت العملية ({code})}}",
+  "@refusalReason": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "commandHeld": "محجوز بانتظار قرار المشرف: {command} — {reason}",
+  "@commandHeld": {
+    "placeholders": {
+      "command": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "heldCount": "{count} بانتظار قرار المشرف",
+  "@heldCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "grantExpiredTitle": "اتصل بالإنترنت لمتابعة العمل",
+  "grantExpiredBody": "انتهت مدة العمل دون اتصال المسموح بها لهذا الهاتف. اتصل بالإنترنت (وسجّل الدخول من جديد إن طُلب منك) لمتابعة العمل. لا يُسجَّل عمل جديد قبل ذلك.",
+  "grantPendingItems": "{count} عنصر محفوظ على الهاتف وسيُرسل عند الاتصال",
+  "@grantPendingItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tryNow": "حاول الآن",
+  "updateRequiredTitle": "يلزم تحديث التطبيق",
+  "updateRequiredBody": "لم يعد الخادم يقبل هذا الإصدار من التطبيق. ثبّت الإصدار {version} أو أحدث. ما حفظته على الهاتف يبقى محفوظًا.",
+  "@updateRequiredBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "userDisabledBody": "عُطّل حسابك في النظام، لذلك لم يعد الخادم يقبل شيئًا من هذا الهاتف. حذف التطبيق بياناته الخاصة المخزنة على الهاتف. لم يُمسّ أي شيء آخر على هاتفك.",
+  "grantValidUntil": "العمل دون اتصال مسموح حتى {time}",
+  "@grantValidUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "grantNone": "لا يوجد تصريح للعمل دون اتصال بعد: اتصل بالإنترنت"
 }

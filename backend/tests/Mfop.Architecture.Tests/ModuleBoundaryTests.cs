@@ -24,9 +24,14 @@ public class ModuleBoundaryTests
 
     /// <summary>
     /// The only persisted types allowed to skip the per-change audit event (Kernel.Auditing.IAuditExempt):
-    /// technical sync receipts and device sync telemetry. Business state must always be IAuditable.
+    /// technical sync receipts and device sync telemetry; M4: single-use signature nonces, trusted-time clock samples and the
+    /// identity-provider delivery outbox (the decision behind each task is itself audited). Business state must always be IAuditable.
     /// </summary>
-    private static readonly string[] AuditExemptAllowList = ["Mfop.Sync.Domain.SyncCommand", "Mfop.Sync.Domain.DeviceSyncState"];
+    private static readonly string[] AuditExemptAllowList =
+    [
+        "Mfop.Sync.Domain.SyncCommand", "Mfop.Sync.Domain.DeviceSyncState",
+        "Mfop.Access.Domain.DeviceNonce", "Mfop.Access.Domain.DeviceClockSample", "Mfop.Access.Domain.IdpTask",
+    ];
 
     public static TheoryData<string> ModuleNames()
     {

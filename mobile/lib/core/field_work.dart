@@ -17,6 +17,7 @@ class WorkView {
     required this.checklistRecorded,
     required this.submittedLocally,
     required this.rejections,
+    this.held = const [],
     required this.photosWaiting,
     required this.photosFailed,
   });
@@ -69,6 +70,7 @@ class WorkView {
       checklistRecorded: checklist,
       submittedLocally: submitted,
       rejections: mine.where((c) => c.state == OutboxState.rejected).map((c) => Rejection(c.type, c.resultCode ?? 'REJECTED', c.createdAt)).toList(),
+      held: mine.where((c) => c.state == OutboxState.held).map((c) => Rejection(c.type, c.resultCode ?? 'QUARANTINED', c.createdAt)).toList(),
       photosWaiting: photos.where((x) => x.state == EvidenceUploadState.waiting).length,
       photosFailed: photos.where((x) => x.state == EvidenceUploadState.failed).length,
     );
@@ -87,6 +89,9 @@ class WorkView {
   final bool checklistRecorded;
   final bool submittedLocally;
   final List<Rejection> rejections;
+
+  /// Commands the server holds for a supervisor (quarantine): neither applied nor lost.
+  final List<Rejection> held;
   final int photosWaiting;
   final int photosFailed;
 

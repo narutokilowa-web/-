@@ -16,6 +16,8 @@ public static class WorkOrderEndpoints
         var wo = app.MapGroup("/api/v1/work-orders").WithTags("WorkOrders");
         wo.MapGet("/", async (string? state, WorkOrderQueries q, CancellationToken ct) => Results.Ok(await q.ListAsync(state, ct)))
             .RequirePermission("workorder.read");
+        wo.MapGet("/needs-reassignment", async (WorkOrderQueries q, CancellationToken ct) => Results.Ok(await q.NeedsReassignmentAsync(ct)))
+            .RequirePermission("workorder.read");
         wo.MapGet("/{id:guid}", async (Guid id, CurrentActor actor, WorkOrderQueries q, CancellationToken ct) => (await q.GetAsync(id, actor.Required, ct)).ToHttp())
             .RequirePermission("workorder.read");
         wo.MapGet("/{id:guid}/timeline", async (Guid id, WorkOrderQueries q, CancellationToken ct) => (await q.TimelineAsync(id, ct)).ToHttp())

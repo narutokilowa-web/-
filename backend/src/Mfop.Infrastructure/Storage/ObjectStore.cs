@@ -19,6 +19,19 @@ public interface IObjectStore
 
     /// <summary>Only for the quarantine bucket (<see cref="Buckets.EvidenceIncoming"/>): verified originals are never deleted.</summary>
     Task DeleteIncomingAsync(string key, CancellationToken ct);
+
+    /// <summary>Resumable upload into the quarantine bucket: bytes of the partial object received so far (0 if none).</summary>
+    Task<long> IncomingPartLengthAsync(string key, CancellationToken ct);
+
+    /// <summary>
+    /// Appends a chunk to the partial object only if it holds exactly <paramref name="offset"/> bytes; never grows it past
+    /// <paramref name="maxLength"/>. Returns whether the chunk was accepted and the partial length afterwards. If the
+    /// connection drops mid-chunk, the bytes that did arrive stay, and the client resumes from the returned length.
+    /// </summary>
+    Task<(bool Accepted, long Length)> AppendIncomingPartAsync(string key, long offset, Stream chunk, long maxLength, CancellationToken ct);
+
+    /// <summary>Turns the complete partial object into the object <paramref name="key"/> of the quarantine bucket.</summary>
+    Task CompleteIncomingPartAsync(string key, CancellationToken ct);
 }
 
 public static class Buckets
@@ -78,6 +91,63 @@ public sealed class LocalFileSystemObjectStore(string root) : IObjectStore
 
         return Task.CompletedTask;
     }
+
+    public Task<long> IncomingPartLengthAsync(string key, CancellationToken ct)
+    {
+        var info = new FileInfo(PartOf(key));
+        return Task.FromResult(info.Exists ? info.Length : 0L);
+    }
+
+    public async Task<(bool Accepted, long Length)> AppendIncomingPartAsync(string key, long offset, Stream chunk, long maxLength, CancellationToken ct)
+    {
+        var path = PartOf(key);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        FileStream file;
+        try
+        {
+            file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+        }
+        catch (IOException)
+        {
+            return (false, await IncomingPartLengthAsync(key, ct)); // another chunk of the same upload is being written
+        }
+
+        await using (file)
+        {
+            if (file.Length != offset) return (false, file.Length);
+            file.Seek(0, SeekOrigin.End);
+            var buffer = new byte[81920];
+            try
+            {
+                int n;
+                while ((n = await chunk.ReadAsync(buffer, ct)) > 0)
+                {
+                    if (file.Length + n > maxLength)
+                    {
+                        file.SetLength(offset);
+                        return (false, offset);
+                    }
+
+                    await file.WriteAsync(buffer.AsMemory(0, n), ct);
+                }
+            }
+            catch (Exception e) when (e is IOException or OperationCanceledException) // incl. a client that disconnects mid-chunk
+            {
+                await file.FlushAsync(CancellationToken.None);
+                return (false, file.Length);
+            }
+
+            return (true, file.Length);
+        }
+    }
+
+    public Task CompleteIncomingPartAsync(string key, CancellationToken ct)
+    {
+        File.Move(PartOf(key), PathOf(Buckets.EvidenceIncoming, key), overwrite: true);
+        return Task.CompletedTask;
+    }
+
+    private string PartOf(string key) => PathOf(Buckets.EvidenceIncoming, key) + ".part";
 
     private string PathOf(string bucket, string key)
     {

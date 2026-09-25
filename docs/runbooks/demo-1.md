@@ -15,7 +15,7 @@ make seed            # dev users, reference data, 8 items with SYP costs, stock,
 make verify-audit    # RESULT: OK — no tampering detected.
 ```
 
-Phone (Android 8+, USB debugging on), with the APK from CI (`mfop-field-debug-apk`) or `make apk`:
+Phone (Android 8+, USB debugging on), with the APK from CI (`mfop-field-debug-apk`, app version 0.4.0 since M4) or `make apk`:
 
 ```bash
 adb install -r app-debug.apk
@@ -81,3 +81,6 @@ event (broken chain at a `seq`), an edited approved asset snapshot, an edited as
 | Phone: a red "refused by the server" line | The server's reason is shown (e.g. `TAG_MISMATCH`: wrong label scanned). Fix and repeat the step |
 | Step 17a shows no banner | The seeded light's earlier repairs are missing: `make seed` must have run on this database |
 | Verifier not OK before step 20 | Do not demo on it: `make demo-reset && make seed` |
+| Phone: "Connect to continue working" (M4) | The offline grant ran out or was never received: reconnect (`adb reverse`) → **حاول الآن** |
+| Phone: "App update required" (M4) | Install the current APK (0.4.0 or newer, policy `min_app_version`) |
+| Phone refused with "no device signing key" on the Devices page (M4) | The phone was registered by an older app: uninstall, install the current APK, register again |

@@ -67,6 +67,11 @@ namespace Mfop.Access.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("platform");
 
+                    b.Property<string>("PublicKey")
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)")
+                        .HasColumnName("public_key");
+
                     b.Property<DateTimeOffset>("RequestedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("requested_at");
@@ -106,6 +111,241 @@ namespace Mfop.Access.Infrastructure.Migrations
                         .HasDatabaseName("ix_devices_user_id_status");
 
                     b.ToTable("devices", "access");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.DeviceClockSample", b =>
+                {
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("device_id");
+
+                    b.Property<string>("BootId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("boot_id");
+
+                    b.Property<long>("ElapsedMs")
+                        .HasColumnType("bigint")
+                        .HasColumnName("elapsed_ms");
+
+                    b.Property<DateTimeOffset>("ServerTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("server_time");
+
+                    b.HasKey("DeviceId", "BootId")
+                        .HasName("pk_device_clock_samples");
+
+                    b.ToTable("device_clock_samples", "access");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.DeviceNonce", b =>
+                {
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("device_id");
+
+                    b.Property<string>("Nonce")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("nonce");
+
+                    b.Property<DateTimeOffset>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.HasKey("DeviceId", "Nonce")
+                        .HasName("pk_device_nonces");
+
+                    b.ToTable("device_nonces", "access");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.GrantRevocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("GrantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grant_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTimeOffset>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<Guid?>("RevokedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("revoked_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_offline_grant_revocations");
+
+                    b.HasIndex("GrantId")
+                        .HasDatabaseName("ix_offline_grant_revocations_grant_id");
+
+                    b.ToTable("offline_grant_revocations", "access");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.IdpTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Alert")
+                        .HasColumnType("boolean")
+                        .HasColumnName("alert");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DoneAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("done_at");
+
+                    b.Property<string>("IdpSubject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("idp_subject");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_idp_tasks");
+
+                    b.HasIndex("DoneAt", "NextAttemptAt")
+                        .HasDatabaseName("ix_idp_tasks_done_at_next_attempt_at");
+
+                    b.ToTable("idp_tasks", "access");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.OfflineGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("device_id");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<string>("KeyId")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("key_id");
+
+                    b.Property<int>("PolicyHours")
+                        .HasColumnType("integer")
+                        .HasColumnName("policy_hours");
+
+                    b.PrimitiveCollection<string[]>("Roles")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("roles");
+
+                    b.Property<string>("Signature")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("signature");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_offline_grants");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_offline_grants_user_id");
+
+                    b.HasIndex("DeviceId", "ExpiresAt")
+                        .HasDatabaseName("ix_offline_grants_device_id_expires_at");
+
+                    b.ToTable("offline_grants", "access");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.PolicySetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at");
+
+                    b.Property<Guid?>("ChangedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("value");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_policy_settings");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_policy_settings_key");
+
+                    b.ToTable("policy_settings", "access");
                 });
 
             modelBuilder.Entity("Mfop.Access.Domain.RoleAssignment", b =>
@@ -172,6 +412,19 @@ namespace Mfop.Access.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("DisableReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("disable_reason");
+
+                    b.Property<DateTimeOffset?>("DisabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disabled_at");
+
+                    b.Property<Guid?>("DisabledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("disabled_by");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -223,6 +476,26 @@ namespace Mfop.Access.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_devices_users_user_id");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.GrantRevocation", b =>
+                {
+                    b.HasOne("Mfop.Access.Domain.OfflineGrant", null)
+                        .WithMany()
+                        .HasForeignKey("GrantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_offline_grant_revocations_offline_grants_grant_id");
+                });
+
+            modelBuilder.Entity("Mfop.Access.Domain.OfflineGrant", b =>
+                {
+                    b.HasOne("Mfop.Access.Domain.Device", null)
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_offline_grants_devices_device_id");
                 });
 
             modelBuilder.Entity("Mfop.Access.Domain.RoleAssignment", b =>

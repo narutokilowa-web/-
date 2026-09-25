@@ -132,6 +132,8 @@ export interface Device {
   lastPullAt: string | null;
   lastPushAt: string | null;
   lastReportedPendingCommands: number | null;
+  /** M4: the phone registered a Keystore signing key (devices registered before M4 cannot sync and must re-register). */
+  hasKey?: boolean;
 }
 
 export const FAULT_CATEGORIES = ['LIGHT_OFF', 'FLICKERING', 'DAY_BURNING', 'DAMAGED_POLE', 'EXPOSED_WIRES', 'MISSING_PARTS', 'OTHER'] as const;
@@ -486,6 +488,69 @@ export interface RuleSetting {
   ruleCode: string;
   enabled: boolean;
   params: { threshold?: number; window_days?: number };
+  changedBy: string | null;
+  changedAt: string;
+  version: number;
+}
+
+// ---- M4: offboarding, quarantine, security policies ----
+
+/** Mirrors Mfop.Access.Contracts.UserDeviceDto. */
+export interface UserDevice {
+  id: string;
+  model: string;
+  status: Device['status'];
+  requestedAt: string;
+  revokedAt: string | null;
+  revokeReason: string | null;
+}
+
+/** Mirrors Mfop.Access.Contracts.UserDto. */
+export interface UserAccount {
+  id: string;
+  username: string;
+  displayName: string;
+  status: 'ACTIVE' | 'DISABLED';
+  roles: string[];
+  disabledAt: string | null;
+  disabledByName: string | null;
+  disableReason: string | null;
+  devices: UserDevice[];
+  idpPending: number;
+  idpAlert: boolean;
+  idpLastError: string | null;
+}
+
+/** Mirrors Mfop.Sync.Contracts.QuarantineDto. */
+export interface QuarantineEntry {
+  id: string;
+  commandId: string;
+  type: string;
+  userId: string;
+  userName: string;
+  deviceId: string;
+  reasonCode: string;
+  reason: string;
+  deviceTime: string | null;
+  estimatedTime: string;
+  timeConfidence: 'HIGH' | 'LOW';
+  receivedAt: string;
+  grantId: string | null;
+  grantExpiresAt: string | null;
+  payload: Record<string, unknown>;
+  state: 'PENDING' | 'APPLIED' | 'DISCARDED' | 'APPLY_FAILED';
+  resolvedByName: string | null;
+  resolvedAt: string | null;
+  resolutionReason: string | null;
+  resultCode: string | null;
+}
+
+/** Mirrors Mfop.Access.Contracts.PolicySettingDto. */
+export interface PolicySetting {
+  key: string;
+  value: string;
+  default: string;
+  description: string;
   changedBy: string | null;
   changedAt: string;
   version: number;

@@ -19,6 +19,7 @@
     <Compile Include="..\Mfop.Api.Tests\TestApp.cs" Link="Shared\TestApp.cs" />
     <Compile Include="..\Mfop.Api.Tests\ApiHelpers.cs" Link="Shared\ApiHelpers.cs" />
     <Compile Include="..\Mfop.Api.Tests\FieldFlow.cs" Link="Shared\FieldFlow.cs" />
+    <Compile Include="..\Mfop.Api.Tests\TestPhone.cs" Link="Shared\TestPhone.cs" />
     <Compile Include="..\Mfop.Api.Tests\RepoPaths.cs" Link="Shared\RepoPaths.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -31,7 +31,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddMfopAuthentication(builder.Configuration);
 builder.Services.AddMfopPersistence(connectionString);
 builder.Services.AddAuditModule();
-builder.Services.AddAccessModule(builder.Configuration);
+builder.Services.AddAccessModule(builder.Configuration).AddAccessWorkers();
 builder.Services.AddAssetsModule(builder.Configuration);
 builder.Services.AddFaultsModule();
 builder.Services.AddWorkOrdersModule(builder.Configuration);
@@ -49,6 +49,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseMiddleware<ActorResolutionMiddleware>();
+app.UseMiddleware<DeviceTrustMiddleware>();
 app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())

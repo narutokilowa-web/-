@@ -18,7 +18,7 @@ public class StateMachineConformanceTests
     public static TheoryData<string> Implemented() => new(
     [
         "registration.yaml", "asset-lifecycle.yaml", "asset-operational-status.yaml",
-        "device.yaml", "fault.yaml", "work-order.yaml", "assignment.yaml", "evidence.yaml", "stock-ledger.yaml",
+        "device.yaml", "fault.yaml", "work-order.yaml", "assignment.yaml", "evidence.yaml", "stock-ledger.yaml", "user.yaml", "sync-quarantine.yaml",
     ]);
 
     private static StateMachine CodeFor(string file) => file switch
@@ -32,6 +32,8 @@ public class StateMachineConformanceTests
         "assignment.yaml" => WorkOrderStateMachines.Assignment,
         "evidence.yaml" => EvidenceStateMachines.Evidence,
         "stock-ledger.yaml" => InventoryStateMachines.StockLedger,
+        "user.yaml" => Mfop.Access.Domain.UserStateMachine.Machine,
+        "sync-quarantine.yaml" => Mfop.Sync.Domain.SyncStateMachines.Quarantine,
         _ => throw new ArgumentException(file),
     };
 

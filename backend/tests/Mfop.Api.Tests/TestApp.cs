@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Mfop.Access.Application;
+using Mfop.Access.Domain;
 
 namespace Mfop.Api.Tests;
 
@@ -15,7 +17,7 @@ namespace Mfop.Api.Tests;
 /// the "X-Test-Sub" header plays the role of a validated token's "sub" claim.
 /// (Real Keycloak token validation is verified end-to-end against Docker Compose.)
 /// </summary>
-public sealed class TestApp(DatabaseFixture db, bool backgroundVerifier = true) : WebApplicationFactory<Program>
+public sealed class TestApp(DatabaseFixture db, bool backgroundVerifier = true, ShiftableClock? clock = null) : WebApplicationFactory<Program>
 {
     public const string SubHeader = "X-Test-Sub";
 
@@ -35,8 +37,12 @@ public sealed class TestApp(DatabaseFixture db, bool backgroundVerifier = true) 
         builder.UseSetting("Storage:Root", db.ObjectStoreRoot);
         builder.UseSetting("Evidence:VerifyIntervalSeconds", "0.3");
         builder.UseSetting("Evidence:RunBackgroundVerifier", backgroundVerifier ? "true" : "false");
+        builder.UseSetting("Keycloak:RunWorker", "false"); // tests run IdpTaskProcessor themselves, against FakeIdentityProvider
         builder.ConfigureTestServices(services =>
         {
+            if (clock is not null) services.AddSingleton<TimeProvider>(clock);
+            services.AddSingleton<FakeIdentityProvider>();
+            services.AddSingleton<IIdentityProviderAdmin>(sp => sp.GetRequiredService<FakeIdentityProvider>());
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
             services.PostConfigure<AuthenticationOptions>(o =>
@@ -70,4 +76,29 @@ public sealed class TestApp(DatabaseFixture db, bool backgroundVerifier = true) 
             return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
         }
     }
+}
+
+/// <summary>Records identity-provider calls instead of calling Keycloak; can be told to fail (retry / alert tests).</summary>
+public sealed class FakeIdentityProvider : IIdentityProviderAdmin
+{
+    private readonly System.Collections.Concurrent.ConcurrentQueue<(string Kind, string Subject)> _calls = new();
+
+    public bool Fail { get; set; }
+
+    public IReadOnlyList<(string Kind, string Subject)> Calls => [.. _calls];
+
+    public Task ApplyAsync(IdpTask task, CancellationToken ct)
+    {
+        if (Fail) throw new HttpRequestException("identity provider unreachable (test)");
+        _calls.Enqueue((task.Kind, task.IdpSubject));
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>The server's clock, movable forward to play hours passing (grant expiry) without waiting.</summary>
+public sealed class ShiftableClock : TimeProvider
+{
+    public TimeSpan Offset { get; set; }
+
+    public override DateTimeOffset GetUtcNow() => System.GetUtcNow() + Offset;
 }

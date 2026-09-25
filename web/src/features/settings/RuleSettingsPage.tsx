@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApi, useResource } from '../../shared/useApi';
 import type { Problem } from '../../shared/api';
-import type { RuleSetting } from '../../shared/types';
+import type { PolicySetting, RuleSetting } from '../../shared/types';
 import { formatDateTime } from '../../shared/format';
 import { ProblemView } from '../../shared/ProblemView';
 
@@ -18,7 +18,70 @@ export function RuleSettingsPage() {
     <section>
       <h1>{t('settings.title')}</h1>
       {current ? <RepeatedFailureForm key={current.version} current={current} saved={saved} onSaving={() => setSaved(false)} onSaved={() => { setSaved(true); settings.reload(); }} /> : <p>{t('common.empty')}</p>}
+      <SecurityPolicies />
     </section>
+  );
+}
+
+/**
+ * M4 security policies (docs/lean-pilot/05 §5.5, §5.9): offline-grant lifetime, grant-window tolerance, app lock and the
+ * minimum field-app version are data, validated against their allowed range and changed only with a reason (audited).
+ */
+function SecurityPolicies() {
+  const { t, i18n } = useTranslation();
+  const { post } = useApi();
+  const policies = useResource<PolicySetting[]>('/api/v1/settings/policy');
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+  if (!policies.result) return null;
+  if (!policies.result.ok) return <ProblemView problem={policies.result.problem} />;
+
+  async function save(key: string) {
+    setProblem(null);
+    setSavedKey(null);
+    const res = await post(`/api/v1/settings/policy/${key}`, { value: (values[key] ?? '').trim(), reason: (reasons[key] ?? '').trim() || null });
+    if (!res.ok) {
+      setProblem(res.problem);
+      return;
+    }
+    setSavedKey(key);
+    setValues({ ...values, [key]: '' });
+    setReasons({ ...reasons, [key]: '' });
+    policies.reload();
+  }
+
+  return (
+    <div className="panel" data-testid="security-policies">
+      <h3>{t('policy.title')}</h3>
+      <p className="hint">{t('policy.hint')}</p>
+      <table className="table">
+        <thead><tr><th>{t('policy.setting')}</th><th>{t('policy.current')}</th><th>{t('policy.newValue')}</th><th /></tr></thead>
+        <tbody>
+          {policies.result.data.map((p) => (
+            <tr key={p.key} data-policy={p.key}>
+              <td>{t(`policy.${p.key}`, { defaultValue: p.description })}<div className="hint">{t('policy.default', { value: p.default })}</div></td>
+              <td>
+                <strong data-testid={`policy-value-${p.key}`}>{p.value}</strong>
+                <div className="hint">{t('settings.lastChanged', { at: formatDateTime(p.changedAt, i18n.language), version: p.version })}</div>
+              </td>
+              <td>
+                <div className="row-actions">
+                  <input value={values[p.key] ?? ''} placeholder={p.value} data-testid={`policy-input-${p.key}`} onChange={(e) => setValues({ ...values, [p.key]: e.target.value })} />
+                  <input value={reasons[p.key] ?? ''} placeholder={t('settings.reason')} data-testid={`policy-reason-${p.key}`} onChange={(e) => setReasons({ ...reasons, [p.key]: e.target.value })} />
+                </div>
+              </td>
+              <td>
+                <button type="button" className="primary" data-testid={`policy-save-${p.key}`} onClick={() => void save(p.key)}>{t('settings.save')}</button>
+                {savedKey === p.key && <span role="status" className="hint" data-testid="policy-saved"> {t('settings.saved')}</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {problem && <ProblemView problem={problem} />}
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { signIn } from './helpers';
+import { E2EPhone, signIn } from './helpers';
 
 const API = process.env.E2E_API_URL ?? 'http://localhost:5080';
 
@@ -29,7 +29,8 @@ test('device approval → fault → work order → assignment → task visible t
   const techPage = await techContext.newPage();
   await signIn(techPage, 'tech2');
   const techToken = await accessToken(techPage);
-  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone', osVersion: '14', appVersion: '0.2.0' });
+  const phone = new E2EPhone();
+  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone', osVersion: '14', appVersion: '0.4.0', publicKey: phone.publicKey });
   expect(registered.status).toBe(201);
   const deviceId = registered.json!.deviceId as string;
   expect((await api(request, techToken, 'GET', '/sync/v1/pull', undefined, deviceId)).json!.code).toBe('DEVICE_NOT_APPROVED');

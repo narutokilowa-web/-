@@ -6,6 +6,7 @@ using Mfop.Kernel.Commands;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mfop.Access.Api;
 
@@ -38,10 +39,37 @@ public static class AccessEndpoints
                 }
 
                 var device = await devices.FindAsync(id, ct); // ownership already checked by ActorResolutionMiddleware
-                return Results.Ok(new DeviceStatusDto(device!.Id, device.Status, device.RevokeReason ?? device.DecisionReason));
+                return Results.Ok(new DeviceStatusDto(device!.Id, device.Status, device.RevokeReason ?? device.DecisionReason,
+                    http.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow(), device.PublicKey is not null));
             })
             .RequirePermission("device.register")
             .WithMetadata(new DeviceNotRequired());
+
+        // Offline grant (docs/lean-pilot/05 §5.5): online only, ACTIVE device, signed by the device key.
+        app.MapPost("/sync/v1/grant", async (HttpContext http, GrantService grants, CancellationToken ct) =>
+                (await grants.IssueAsync(http.Command("IssueOfflineGrant"), ct)).ToHttp())
+            .WithTags("Devices")
+            .RequirePermission("sync.grant")
+            .WithMetadata(new DeviceSignatureRequired());
+
+        // Offboarding (ADMIN): disable / enable a user (docs/lean-pilot/05 §5.6).
+        var users = app.MapGroup("/api/v1/users").WithTags("Users");
+        users.MapGet("/", async (UserAdminService s, CancellationToken ct) => Results.Ok(await s.ListAsync(ct)))
+            .RequirePermission("user.manage");
+        users.MapPost("/{id:guid}/disable", async (Guid id, UserDecisionRequest body, HttpContext http, UserAdminService s, CancellationToken ct) =>
+                (await s.DisableAsync(http.Command("DisableUser", body.Reason), id, body.Reason, ct)).ToHttp(Ok))
+            .RequirePermission("user.manage");
+        users.MapPost("/{id:guid}/enable", async (Guid id, UserDecisionRequest body, HttpContext http, UserAdminService s, CancellationToken ct) =>
+                (await s.EnableAsync(http.Command("EnableUser", body.Reason), id, body.Reason, ct)).ToHttp(Ok))
+            .RequirePermission("user.manage");
+
+        // Security policies (ADMIN; audited, range-validated).
+        var policy = app.MapGroup("/api/v1/settings/policy").WithTags("Settings");
+        policy.MapGet("/", async (PolicyService s, CancellationToken ct) => Results.Ok(await s.ListAsync(ct)))
+            .RequirePermission("policy.settings.change");
+        policy.MapPost("/{key}", async (string key, ChangePolicyRequest body, HttpContext http, PolicyService s, CancellationToken ct) =>
+                (await s.ChangeAsync(http.Command("ChangePolicySetting", body.Reason), key, body, ct)).ToHttp(Ok))
+            .RequirePermission("policy.settings.change");
 
         // Web: supervisors and admins decide.
         var web = app.MapGroup("/api/v1/devices").WithTags("Devices");

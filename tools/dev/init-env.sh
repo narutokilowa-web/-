@@ -6,11 +6,21 @@ cd "$(dirname "$0")/../.."
 
 gen() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-24}"; }
 
+# EC P-256 private key (PKCS#8 DER, base64) for signing offline grants.
+gen_grant_key() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -outform DER 2>/dev/null | base64 | tr -d '\n'
+  else
+    echo "openssl not found: MFOP_GRANT_SIGNING_KEY left empty (the API then uses an ephemeral key)." >&2
+  fi
+}
+
 # Value for a key: secrets are generated, everything else copies the .env.example default.
 value_for() {
   case "$1" in
     POSTGRES_SUPERUSER_PASSWORD|MFOP_OWNER_PASSWORD|MFOP_APP_PASSWORD|MFOP_READONLY_PASSWORD|KEYCLOAK_DB_PASSWORD|KEYCLOAK_ADMIN_PASSWORD) gen ;;
-    MFOP_TAG_CHECK_KEY) gen 32 ;;
+    MFOP_TAG_CHECK_KEY|MFOP_KEYCLOAK_BACKEND_SECRET) gen 32 ;;
+    MFOP_GRANT_SIGNING_KEY) gen_grant_key ;;
     MFOP_DEV_USER_PASSWORD) echo "Dev-$(gen 16)" ;;
     *) grep -E "^$1=" .env.example | head -1 | cut -d= -f2- ;;
   esac

@@ -13,7 +13,8 @@ using Microsoft.Extensions.Options;
 
 namespace Mfop.Evidence.Application;
 
-public sealed record UploadResult(Guid EvidenceId, string State, string? Sha256Server);
+/// <param name="ReceivedBytes">Resumable upload: bytes the server holds (the next chunk starts there).</param>
+public sealed record UploadResult(Guid EvidenceId, string State, string? Sha256Server, long? ReceivedBytes = null, long? SizeBytes = null);
 
 public sealed record EvidenceFile(Stream Content, string ContentType);
 
@@ -91,6 +92,12 @@ public sealed class EvidenceService(
             return Error.Validation("EVIDENCE_TOO_LARGE", "The photo is too large.");
         }
 
+        return await FinishUploadAsync(actor, evidenceId, key, guard, sha, ct);
+    }
+
+    private async Task<Result<UploadResult>> FinishUploadAsync(ActorContext actor, Guid evidenceId, string key, HashingLimitStream guard, IncrementalHash sha,
+        CancellationToken ct)
+    {
         if (!guard.StartsWithJpegMagic)
         {
             await store.DeleteIncomingAsync(key, ct);
@@ -106,8 +113,50 @@ public sealed class EvidenceService(
             var t = tracked.MarkUploaded(serverHash, received, clock.UtcNowMicros());
             if (!t.IsSuccess) return new UploadResult(tracked.Id, tracked.State, tracked.Sha256Server); // concurrent duplicate upload
             audit.Record(tracked, "evidence.uploaded");
-            return new UploadResult(tracked.Id, tracked.State, serverHash);
+            return new UploadResult(tracked.Id, tracked.State, serverHash, received, tracked.SizeBytes);
         }, ct);
+    }
+
+    /// <summary>Resumable upload: how many bytes of an announced photo the server already holds.</summary>
+    public async Task<Result<UploadResult>> UploadStatusAsync(ActorContext actor, Guid evidenceId, CancellationToken ct)
+    {
+        var evidence = await db.Evidence.AsNoTracking().SingleOrDefaultAsync(e => e.Id == evidenceId, ct);
+        if (evidence is null) return Error.NotFound("EVIDENCE_NOT_FOUND", "Announce the photo (AddEvidence) before uploading it.");
+        if (evidence.CapturedBy != actor.UserId) return Error.Forbidden(NotOwner, "Only the person who took the photo can upload it.");
+        var received = evidence.State == EvidenceStates.Announced ? await store.IncomingPartLengthAsync(IncomingKey(evidence.Id), ct) : evidence.SizeBytes;
+        return new UploadResult(evidence.Id, evidence.State, evidence.Sha256Server, received, evidence.SizeBytes);
+    }
+
+    /// <summary>
+    /// Resumable upload (M4, weak networks): chunk <c>bytes start-end/total</c>. A chunk is appended only where the server's
+    /// copy ends (otherwise UPLOAD_OFFSET_MISMATCH with the length to resume from); total must be the announced size. When the
+    /// last byte arrives, the photo is hashed and handed to verification exactly like a single-request upload.
+    /// </summary>
+    public async Task<Result<UploadResult>> UploadChunkAsync(ActorContext actor, Guid evidenceId, long start, long total, Stream body, CancellationToken ct)
+    {
+        var evidence = await db.Evidence.AsNoTracking().SingleOrDefaultAsync(e => e.Id == evidenceId, ct);
+        if (evidence is null) return Error.NotFound("EVIDENCE_NOT_FOUND", "Announce the photo (AddEvidence) before uploading it.");
+        if (evidence.CapturedBy != actor.UserId) return Error.Forbidden(NotOwner, "Only the person who took the photo can upload it.");
+        if (evidence.State != EvidenceStates.Announced) return new UploadResult(evidence.Id, evidence.State, evidence.Sha256Server, evidence.SizeBytes, evidence.SizeBytes);
+        if (total != evidence.SizeBytes) return Error.Validation("UPLOAD_SIZE_MISMATCH", "The total size differs from the announced size of the photo.");
+        if (start < 0 || start >= total) return Error.Validation("INVALID_RANGE", "The chunk is outside the photo.");
+
+        var key = IncomingKey(evidence.Id);
+        var (accepted, length) = await store.AppendIncomingPartAsync(key, start, body, total, ct);
+        if (!accepted)
+        {
+            return new Error("UPLOAD_OFFSET_MISMATCH", "Resume the upload from the number of bytes the server holds.", ErrorKind.Conflict,
+                new Dictionary<string, string> { ["receivedBytes"] = length.ToString(System.Globalization.CultureInfo.InvariantCulture) });
+        }
+
+        if (length < total) return new UploadResult(evidence.Id, evidence.State, null, length, total);
+
+        await store.CompleteIncomingPartAsync(key, ct);
+        await using var complete = (await store.OpenReadAsync(Buckets.EvidenceIncoming, key, ct))!;
+        using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var guard = new HashingLimitStream(complete, sha, options.Value.MaxBytes);
+        await guard.CopyToAsync(Stream.Null, ct);
+        return await FinishUploadAsync(actor, evidenceId, key, guard, sha, ct);
     }
 
     /// <summary>Derived image (preview or thumbnail, EXIF stripped). TECHNICIAN may see only photos they took (own_records_only).</summary>

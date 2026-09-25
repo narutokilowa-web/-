@@ -44,6 +44,20 @@ public sealed class WorkOrderQueries(
             w.CreatedAt, w.SlaDueAt)).ToList();
     }
 
+    /// <summary>
+    /// docs/lean-pilot/05 §5.6 step 7: open work orders whose assignee is no longer ACTIVE (offboarded). Computed from the
+    /// live user status, so the queue empties as the supervisor reassigns or cancels them.
+    /// </summary>
+    public async Task<IReadOnlyList<WorkOrderListItem>> NeedsReassignmentAsync(CancellationToken ct)
+    {
+        var open = await db.WorkOrders.AsNoTracking()
+            .Where(w => w.AssigneeId != null && w.State != WorkOrderStates.Closed && w.State != WorkOrderStates.Cancelled)
+            .Select(w => new { w.Id, AssigneeId = w.AssigneeId!.Value }).ToListAsync(ct);
+        var inactive = await users.InactiveAsync(open.Select(w => w.AssigneeId), ct);
+        var ids = open.Where(w => inactive.Contains(w.AssigneeId)).Select(w => w.Id).ToHashSet();
+        return (await ListAsync(null, ct)).Where(w => ids.Contains(w.Id)).ToList();
+    }
+
     public async Task<Result<WorkOrderDto>> GetAsync(Guid id, ActorContext actor, CancellationToken ct)
     {
         var w = await db.WorkOrders.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
@@ -214,7 +228,7 @@ public sealed class WorkOrderQueries(
                     lastReturn?.Reasons ?? [], lastReturn?.Note);
                 return new WorkOrderTask(
                     w.Id, w.Code, w.State, w.Priority, w.SlaDueAt, w.Note, faultMap[w.FaultId].Category, faultMap[w.FaultId].Description,
-                    faultMap[w.FaultId].PowerAtInspection, assignedAt.GetValueOrDefault(w.Id, w.CreatedAt), assetMap[w.AssetId], progress);
+                    faultMap[w.FaultId].PowerAtInspection, assignedAt.GetValueOrDefault(w.Id, w.CreatedAt), assetMap[w.AssetId], progress, w.LastEventSeq);
             })
             .OrderBy(t => t.Priority, StringComparer.Ordinal)
             .ThenBy(t => t.SlaDueAt ?? DateTimeOffset.MaxValue)

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mfop_field/core/api_client.dart';
 import 'package:mfop_field/core/local_db.dart';
+import 'package:mfop_field/core/offline_grant.dart';
 import 'package:mfop_field/core/outbox.dart';
 import 'package:mfop_field/core/secure_store.dart';
 import 'package:mfop_field/core/sync_engine.dart';
@@ -20,9 +21,9 @@ void main() {
     await store.write(SecureKeys.deviceId, 'device-1');
     server = FakeServer()..deviceStatus = 'ACTIVE';
     final db = await LocalDb.open(store);
-    final api = ApiClient(testConfig, FakeAuth(store), () => store.read(SecureKeys.deviceId), httpClient: server.client);
+    final api = ApiClient(testConfig, FakeAuth(store), () => store.read(SecureKeys.deviceId), httpClient: server.client, trust: FakeDeviceTrust());
     outbox = Outbox(db);
-    sync = SyncEngine(api, outbox, db);
+    sync = SyncEngine(api, outbox, db, grants: GrantStore(db), deviceId: () => store.read(SecureKeys.deviceId));
   });
 
   test('commands are pushed in order with stable ids, and results are recorded per command', () async {

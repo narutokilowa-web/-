@@ -2,7 +2,7 @@
 
 ```yaml
 machine: <PascalCase name>
-scope: demo1 | deferred          # deferred machines are specified in 04 but not built yet
+scope: demo1 | m4 | deferred     # m4: built in milestone M4; deferred machines are specified in 04 but not built yet
 spec_ref: <doc section>
 states: [..]                      # every state used below must be listed
 initial: <state>                  # state entered by the creation transition

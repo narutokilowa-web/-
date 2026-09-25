@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
-import { signIn } from './helpers';
+import { E2EPhone, signIn } from './helpers';
 
 const API = process.env.E2E_API_URL ?? 'http://localhost:5080';
 
@@ -57,7 +57,8 @@ test('field work → review → approve and seal → recurrent-failure recommend
   const techPage = await techContext.newPage();
   await signIn(techPage, 'tech1');
   const techToken = await accessToken(techPage);
-  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone M3', osVersion: '14', appVersion: '0.3.0' });
+  const phone = new E2EPhone();
+  const registered = await api(request, techToken, 'POST', '/sync/v1/devices/register', { platform: 'ANDROID', model: 'E2E Phone M3', osVersion: '14', appVersion: '0.4.0', publicKey: phone.publicKey });
   expect(registered.status).toBe(201);
   const deviceId = registered.json!.deviceId as string;
 
@@ -87,8 +88,7 @@ test('field work → review → approve and seal → recurrent-failure recommend
   const led = (pull.custody as Json[]).find((c) => c.sku === 'LED-MOD-50W')!;
   const serial = (led.serials as string[])[0];
   const push = async (type: string, payload: Json) => {
-    const r = await api(request, techToken, 'POST', '/sync/v1/push', { commands: [{ commandId: crypto.randomUUID(), type, payload, deviceTime: new Date().toISOString() }] }, deviceId);
-    const result = (r.json!.results as Json[])[0];
+    const result = await phone.push(request, API, techToken, deviceId, type, payload);
     expect(result.result, `${type}: ${JSON.stringify(result)}`).toBe('APPLIED');
   };
   const photo = async (kind: 'BEFORE' | 'AFTER' | 'TEST') => {

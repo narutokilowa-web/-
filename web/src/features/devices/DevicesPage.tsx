@@ -58,7 +58,10 @@ export function DevicesPage() {
             {result.data.map((d) => (
               <tr key={d.id} data-device-id={d.id} data-username={d.username}>
                 <td>{d.userDisplayName} <span className="hint">({d.username})</span></td>
-                <td>{d.model} · {d.platform} {d.osVersion} · v{d.appVersion}</td>
+                <td>
+                  {d.model} · {d.platform} {d.osVersion} · v{d.appVersion}
+                  {d.hasKey === false && d.status !== 'REVOKED' && d.status !== 'REJECTED' && <div className="hint" data-testid="device-no-key">{t('device.noKey')}</div>}
+                </td>
                 <td><span className={`badge device-${d.status}`} data-testid="device-status">{t(`deviceStatus.${d.status}`)}</span></td>
                 <td>{formatDateTime(d.requestedAt, i18n.language)}</td>
                 <td>

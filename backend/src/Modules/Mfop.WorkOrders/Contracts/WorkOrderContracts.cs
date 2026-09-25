@@ -35,9 +35,12 @@ public sealed record WorkOrderDto(
     IReadOnlyList<string> AllowedCommands);
 
 /// <summary>A task on the technician's phone ("My tasks"), with the server's view of its progress.</summary>
+/// <param name="EventSeq">Version of the work order the phone now holds (last wo_events.seq). The phone sends it back as
+/// <c>baseVersion</c> with each command, so a change made meanwhile by someone else is detected, never overwritten.</param>
 public sealed record WorkOrderTask(
     Guid Id, string Code, string State, string Priority, DateTimeOffset? SlaDueAt, string? Note, string FaultCategory,
-    string? FaultDescription, string FaultPowerAtInspection, DateTimeOffset AssignedAt, AssetSummary Asset, TaskProgress? Progress = null);
+    string? FaultDescription, string FaultPowerAtInspection, DateTimeOffset AssignedAt, AssetSummary Asset, TaskProgress? Progress = null,
+    int EventSeq = 0);
 
 /// <param name="LastReturnReasons">Reasons of the latest ReturnWorkOrder (shown at the top of a returned task).</param>
 public sealed record TaskProgress(

@@ -40,6 +40,21 @@ make down          # stop
 make apk           # Android debug APK → mobile/build/app/outputs/flutter-apk/app-debug.apk
 ```
 
+## Added in M4
+
+- **New secrets in `.env`** (`make env` appends them to an existing `.env`): `MFOP_KEYCLOAK_BACKEND_SECRET` (the API's
+  Keycloak service account `mfop-backend`, used to disable users and end sessions) and `MFOP_GRANT_SIGNING_KEY` (EC P-256
+  PKCS#8 key that signs offline grants; needs `openssl`).
+- **Keycloak realm changed** (new client `mfop-backend`): an existing Keycloak volume keeps the old realm, so run
+  `make demo-reset` once after pulling M4.
+- **Phones:** install app **0.4.0** and register again (old registrations have no device key). The API refuses older
+  apps (`min_app_version`, 426).
+- **API settings:** `Grants:SigningKey`, `Grants:KeyId`, `Keycloak:BaseUrl`, `Keycloak:AdminClientSecret`,
+  `Keycloak:TaskIntervalSeconds` (5), `Auth:SignatureMaxSkewMinutes` (15). Security **policies** are data, changed by the
+  admin on **Settings** (offline grant hours, grant-window tolerance, app lock minutes, minimum app version).
+- New web pages: **Users** (admin, offboarding), **Quarantine** (supervisor/auditor), **Work orders needing reassignment**.
+  Runbook: `docs/runbooks/offboarding.md`.
+
 ## Added in M3
 
 - **Evidence store:** named volume `objects` mounted at `/var/lib/mfop/objects` in the `api` and `migrate` containers (`Storage__Mode=local`, `Storage__Root`). Local disk, **not WORM** (the web banner says so); WORM / Object Lock arrives in M8. `make demo-reset` wipes it with the database.

@@ -38,6 +38,7 @@ public class DevIdentityFilesTests
             .Select(u => (Id: u.GetProperty("id").GetString(), Username: u.GetProperty("username").GetString()))
             .OrderBy(x => x.Id).ToList();
         var keycloak = Realm().GetProperty("users").EnumerateArray()
+            .Where(u => !u.TryGetProperty("serviceAccountClientId", out _))
             .Select(u => (Id: u.GetProperty("id").GetString(), Username: u.GetProperty("username").GetString()))
             .OrderBy(x => x.Id).ToList();
         Assert.Equal(ours, keycloak);
@@ -54,6 +55,12 @@ public class DevIdentityFilesTests
         foreach (var user in realm.GetProperty("users").EnumerateArray())
         {
             Assert.False(user.TryGetProperty("realmRoles", out _));
+            if (user.TryGetProperty("serviceAccountClientId", out _))
+            {
+                Assert.False(user.TryGetProperty("credentials", out _), "A service account has no password.");
+                continue;
+            }
+
             foreach (var cred in user.GetProperty("credentials").EnumerateArray())
             {
                 Assert.Equal("${MFOP_DEV_USER_PASSWORD}", cred.GetProperty("value").GetString());
@@ -64,7 +71,7 @@ public class DevIdentityFilesTests
     [Fact]
     public void Clients_are_public_pkce_without_password_grant_and_carry_api_audience()
     {
-        var clients = Realm().GetProperty("clients").EnumerateArray().ToList();
+        var clients = Realm().GetProperty("clients").EnumerateArray().Where(c => c.GetProperty("clientId").GetString() != "mfop-backend").ToList();
         Assert.Equal(new[] { "mfop-mobile", "mfop-web" }, clients.Select(c => c.GetProperty("clientId").GetString()).Order());
         foreach (var c in clients)
         {
@@ -78,5 +85,25 @@ public class DevIdentityFilesTests
                 .Single(m => m.GetProperty("protocolMapper").GetString() == "oidc-audience-mapper");
             Assert.Equal("mfop-api", audience.GetProperty("config").GetProperty("included.custom.audience").GetString());
         }
+    }
+
+    /// <summary>docs/lean-pilot/05 §5.6 step 4: the API's own confidential client, used only to disable users and end sessions.</summary>
+    [Fact]
+    public void Backend_client_is_a_service_account_with_user_management_only_and_no_committed_secret()
+    {
+        var realm = Realm();
+        var backend = realm.GetProperty("clients").EnumerateArray().Single(c => c.GetProperty("clientId").GetString() == "mfop-backend");
+        Assert.False(backend.GetProperty("publicClient").GetBoolean());
+        Assert.True(backend.GetProperty("serviceAccountsEnabled").GetBoolean());
+        Assert.False(backend.GetProperty("standardFlowEnabled").GetBoolean());
+        Assert.False(backend.GetProperty("directAccessGrantsEnabled").GetBoolean());
+        Assert.False(backend.GetProperty("implicitFlowEnabled").GetBoolean());
+        Assert.Equal("${MFOP_KEYCLOAK_BACKEND_SECRET}", backend.GetProperty("secret").GetString());
+
+        var account = realm.GetProperty("users").EnumerateArray()
+            .Single(u => u.TryGetProperty("serviceAccountClientId", out var id) && id.GetString() == "mfop-backend");
+        var roles = account.GetProperty("clientRoles").GetProperty("realm-management").EnumerateArray().Select(r => r.GetString()).Order().ToList();
+        Assert.Equal(new[] { "manage-users", "view-users" }, roles);
+        Assert.Single(account.GetProperty("clientRoles").EnumerateObject());
     }
 }

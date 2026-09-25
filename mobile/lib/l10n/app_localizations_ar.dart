@@ -518,4 +518,70 @@ class AppLocalizationsAr extends AppLocalizations {
   String recommendationRule(int count, int threshold, int days) {
     return '$count أعطال محسوبة؛ العتبة $threshold خلال $days يومًا';
   }
+
+  @override
+  String refusalReason(String code) {
+    String _temp0 = intl.Intl.selectLogic(code, {
+      'WORK_ORDER_CHANGED': 'تغيّر أمر العمل على الخادم بعد آخر تحديث للهاتف؛ حدّث المهمة وتحقق قبل إعادة الخطوة',
+      'WORK_ORDER_REASSIGNED': 'أُعيد إسناد أمر العمل لفني آخر؛ صورك وموادك محفوظة لكن هذه الخطوة لم تُطبّق',
+      'WORK_ORDER_CANCELLED': 'أُلغي أمر العمل؛ ينتظر العمل قرار المشرف',
+      'WORK_ORDER_CLOSED': 'أُغلق أمر العمل؛ ينتظر العمل قرار المشرف',
+      'BASE_VERSION_REQUIRED': 'حدّث المهمة ثم أعد المحاولة',
+      'GRANT_REQUIRED': 'لا يوجد تصريح عمل دون اتصال',
+      'GRANT_INVALID': 'تصريح العمل غير صالح لهذا الجهاز',
+      'GRANT_EXPIRED': 'أُنجز بعد انتهاء تصريح العمل دون اتصال',
+      'GRANT_REVOKED': 'أُنجز بعد إلغاء تصريح العمل',
+      'GRANT_WINDOW_UNPROVEN': 'لا يمكن إثبات وقت إنجازه (أُعيد تشغيل الهاتف دون اتصال)؛ ينتظر قرار المشرف',
+      'QUARANTINE_DISCARDED': 'رفضه المشرف بعد المراجعة',
+      'NOT_ASSIGNEE': 'أمر العمل ليس مسندًا إليك',
+      'INVALID_TRANSITION': 'لم تعد هذه الخطوة ممكنة في حالة أمر العمل الحالية',
+      'other': 'تعذّرت العملية ($code)',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String commandHeld(String command, String reason) {
+    return 'محجوز بانتظار قرار المشرف: $command — $reason';
+  }
+
+  @override
+  String heldCount(int count) {
+    return '$count بانتظار قرار المشرف';
+  }
+
+  @override
+  String get grantExpiredTitle => 'اتصل بالإنترنت لمتابعة العمل';
+
+  @override
+  String get grantExpiredBody =>
+      'انتهت مدة العمل دون اتصال المسموح بها لهذا الهاتف. اتصل بالإنترنت (وسجّل الدخول من جديد إن طُلب منك) لمتابعة العمل. لا يُسجَّل عمل جديد قبل ذلك.';
+
+  @override
+  String grantPendingItems(int count) {
+    return '$count عنصر محفوظ على الهاتف وسيُرسل عند الاتصال';
+  }
+
+  @override
+  String get tryNow => 'حاول الآن';
+
+  @override
+  String get updateRequiredTitle => 'يلزم تحديث التطبيق';
+
+  @override
+  String updateRequiredBody(String version) {
+    return 'لم يعد الخادم يقبل هذا الإصدار من التطبيق. ثبّت الإصدار $version أو أحدث. ما حفظته على الهاتف يبقى محفوظًا.';
+  }
+
+  @override
+  String get userDisabledBody =>
+      'عُطّل حسابك في النظام، لذلك لم يعد الخادم يقبل شيئًا من هذا الهاتف. حذف التطبيق بياناته الخاصة المخزنة على الهاتف. لم يُمسّ أي شيء آخر على هاتفك.';
+
+  @override
+  String grantValidUntil(String time) {
+    return 'العمل دون اتصال مسموح حتى $time';
+  }
+
+  @override
+  String get grantNone => 'لا يوجد تصريح للعمل دون اتصال بعد: اتصل بالإنترنت';
 }

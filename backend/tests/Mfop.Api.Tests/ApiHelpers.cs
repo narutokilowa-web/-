@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Mfop.Access.Application;
+using Mfop.Access.Contracts;
 using Mfop.Kernel.Commands;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -96,11 +97,19 @@ public static class ApiHelpers
 
     public const string FieldAppClientId = "mfop-mobile";
 
-    /// <summary>A client that behaves like the field app: token issued to mfop-mobile, optional device header.</summary>
+    public const string CurrentAppVersion = "0.4.0";
+
+    /// <summary>
+    /// A client that behaves like the field app: token issued to mfop-mobile, app version, optional device header. For a device
+    /// registered by these helpers, requests also go through its <see cref="TestPhone"/> (clock headers, grant, signature).
+    /// </summary>
     public static HttpClient FieldAppClientFor(this TestApp app, string sub, Guid? deviceId)
     {
-        var client = app.ClientFor(sub);
+        var phone = deviceId is { } id ? TestPhone.For(id) : null;
+        var client = phone is null ? app.CreateClient() : app.CreateDefaultClient(new TestPhoneHandler(phone));
+        client.DefaultRequestHeaders.Add(TestApp.SubHeader, sub);
         client.DefaultRequestHeaders.Add(TestApp.AzpHeader, FieldAppClientId);
+        client.DefaultRequestHeaders.Add(TrustHttp.AppVersionHeader, CurrentAppVersion);
         if (deviceId is { } d)
         {
             client.DefaultRequestHeaders.Add("X-Device-Id", d.ToString());
@@ -125,12 +134,17 @@ public static class ApiHelpers
         return id.ToString("D");
     }
 
-    public static async Task<Guid> RegisterDeviceAsync(this TestApp app, string sub, string model = "Test Phone")
+    /// <summary>Registers a phone with a fresh device key (the <see cref="TestPhone"/> is kept for the device id).</summary>
+    public static async Task<Guid> RegisterDeviceAsync(this TestApp app, string sub, string model = "Test Phone", TestPhone? phone = null)
     {
+        phone ??= new TestPhone();
         using var client = app.FieldAppClientFor(sub, null);
-        var response = await client.PostAsJsonAsync("/sync/v1/devices/register", new { platform = "ANDROID", model, osVersion = "14", appVersion = "0.2.0" });
+        var response = await client.PostAsJsonAsync("/sync/v1/devices/register",
+            new { platform = "ANDROID", model, osVersion = "14", appVersion = CurrentAppVersion, publicKey = phone.PublicKey });
         response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("deviceId").GetGuid();
+        var deviceId = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("deviceId").GetGuid();
+        phone.Bind(deviceId);
+        return deviceId;
     }
 
     /// <summary>Registers a device for the user and has admin1 approve it. Returns the ACTIVE device id.</summary>

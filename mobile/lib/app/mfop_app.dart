@@ -73,6 +73,8 @@ class _MfopAppState extends State<MfopApp> {
       AppStage.setPin => PinSetupScreen(controller: c),
       AppStage.locked => PinLockScreen(controller: c),
       AppStage.ready => HomeShell(controller: c, onToggleLocale: _toggleLocale, showCamera: widget.showCamera),
+      AppStage.grantExpired => GrantExpiredScreen(controller: c),
+      AppStage.updateRequired => UpdateRequiredScreen(controller: c),
     };
   }
 }

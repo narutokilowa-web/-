@@ -97,10 +97,13 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
 
         // A dev-only seed device for tech1 (approved by admin1), used only for the earlier repairs, revoked at the end.
         var tech = users["tech1"];
+        // M4: like a phone, it registers a device key and works under an offline grant (the key is thrown away afterwards).
+        using var seedKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var deviceId = await Run(provider, sp => sp.GetRequiredService<DeviceService>().RegisterAsync(Cmd("RegisterDevice", tech),
-            new RegisterDeviceRequest("ANDROID", "DEV-SEED-DEVICE", "0", "seed"), ct));
+            new RegisterDeviceRequest("ANDROID", "DEV-SEED-DEVICE", "0", "seed", Convert.ToBase64String(seedKey.ExportSubjectPublicKeyInfo())), ct));
         await Run(provider, sp => sp.GetRequiredService<DeviceService>().ApproveAsync(Cmd("ApproveDevice", users["admin1"]), deviceId, "DEMO_SEED", ct));
         var techOnDevice = tech with { DeviceId = deviceId };
+        var grant = await Run(provider, sp => sp.GetRequiredService<GrantService>().IssueAsync(Cmd("IssueOfflineGrant", techOnDevice), ct));
 
         var asset = await Scoped(provider, sp => sp.GetRequiredService<AssetQueries>().GetAssetAsync(repeatLight, ct));
         var tagToken = asset.Value.Tag!.HumanCode;
@@ -108,7 +111,7 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         foreach (var repair in data.RepeatFailureLight.EarlierRepairs)
         {
             n++;
-            await EarlierRepairAsync(provider, users, techOnDevice, repeatLight, tagToken, itemIds[repair.Sku], repair, n, ct);
+            await EarlierRepairAsync(provider, users, techOnDevice, grant.GrantId, repeatLight, tagToken, itemIds[repair.Sku], repair, n, ct);
         }
 
         await Run(provider, sp => sp.GetRequiredService<DeviceService>().RevokeAsync(Cmd("RevokeDevice", users["admin1"]), deviceId, "SEED_COMPLETE", ct));
@@ -131,8 +134,8 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         return registration.Value.AssetId;
     }
 
-    private async Task EarlierRepairAsync(ServiceProvider provider, Dictionary<string, ActorContext> users, ActorContext tech, Guid assetId, string tagToken,
-        Guid itemId, Repair repair, int n, CancellationToken ct)
+    private async Task EarlierRepairAsync(ServiceProvider provider, Dictionary<string, ActorContext> users, ActorContext tech, Guid grantId, Guid assetId,
+        string tagToken, Guid itemId, Repair repair, int n, CancellationToken ct)
     {
         var supervisor = users["supervisor1"];
         var fault = await Run(provider, sp => sp.GetRequiredService<FaultService>().ReportAsync(Cmd("ReportFault", supervisor),
@@ -142,7 +145,8 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
         await Run(provider, sp => sp.GetRequiredService<WorkOrderService>().AssignAsync(Cmd("Assign", supervisor), workOrderId,
             new AssignRequest(tech.UserId!.Value, null), ct));
 
-        var templateId = (await Scoped(provider, sp => sp.GetRequiredService<WorkOrderQueries>().TaskForAssigneeAsync(workOrderId, tech, ct))).Value.Progress!.ChecklistTemplateId!.Value;
+        var task = (await Scoped(provider, sp => sp.GetRequiredService<WorkOrderQueries>().TaskForAssigneeAsync(workOrderId, tech, ct))).Value;
+        var templateId = task.Progress!.ChecklistTemplateId!.Value;
         var template = (await Scoped(provider, sp => sp.GetRequiredService<WorkOrderReferenceData>().TemplateAsync(templateId, ct)))!;
         var photos = new List<(Guid Id, string Kind, byte[] Bytes)>();
         foreach (var kind in new[] { "BEFORE", "BEFORE", "TEST", "AFTER", "AFTER" })
@@ -171,7 +175,8 @@ public sealed class DemoSeeder(string ownerConnectionString, IConfiguration conf
             ("AddEvidence", Photo(4)),
             ("SubmitWorkOrder", new { workOrderId, rootCauseNote = repair.RootCause }),
         };
-        var push = new PushRequest(commands.Select(c => new PushCommand(Guid.CreateVersion7(), c.Type, JsonSerializer.SerializeToElement(c.Payload, PayloadJson), DateTimeOffset.UtcNow)).ToList(), 0);
+        var push = new PushRequest(commands.Select(c => new PushCommand(Guid.CreateVersion7(), c.Type, JsonSerializer.SerializeToElement(c.Payload, PayloadJson),
+            DateTimeOffset.UtcNow, grantId, BaseVersion: task.EventSeq)).ToList(), 0);
         var pushed = await Scoped(provider, sp => sp.GetRequiredService<SyncService>().PushAsync(tech, push, "demo-seed", ct));
         var rejected = pushed.Value.Results.FirstOrDefault(r => r.Result == "REJECTED");
         if (rejected is not null) throw new InvalidOperationException($"demo seed push #{pushed.Value.Results.ToList().IndexOf(rejected)}: {rejected.Code} {rejected.Message}");

@@ -16,11 +16,16 @@ public static class DeviceErrorCodes
     public const string DeviceRevoked = "DEVICE_REVOKED";
 }
 
-public sealed record RegisterDeviceRequest(string Platform, string Model, string OsVersion, string AppVersion);
+/// <param name="PublicKey">
+/// M4: the device's EC P-256 public key (X.509 SubjectPublicKeyInfo, base64), generated in the Android Keystore. Required:
+/// every write from the phone is signed with its private half (docs/lean-pilot/05 §5.3–5.4).
+/// </param>
+public sealed record RegisterDeviceRequest(string Platform, string Model, string OsVersion, string AppVersion, string? PublicKey = null);
 
 public sealed record DeviceDecisionRequest(string? Reason);
 
-public sealed record DeviceStatusDto(Guid DeviceId, string Status, string? Reason);
+/// <param name="ServerTime">Lets the phone take a trusted-time sample on every status check (05 §5.7).</param>
+public sealed record DeviceStatusDto(Guid DeviceId, string Status, string? Reason, DateTimeOffset? ServerTime = null, bool HasKey = false);
 
 public sealed record DeviceDto(
     Guid Id,
@@ -39,6 +44,7 @@ public sealed record DeviceDto(
     string? RevokedByName,
     DateTimeOffset? RevokedAt,
     string? RevokeReason,
+    bool HasKey,
     DateTimeOffset? LastPullAt,
     DateTimeOffset? LastPushAt,
     int? LastReportedPendingCommands);

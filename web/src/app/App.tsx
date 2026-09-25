@@ -23,6 +23,9 @@ import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AuditSearchPage } from '../features/audit/AuditSearchPage';
 import { StockBalancesPage } from '../features/stock/StockBalancesPage';
 import { RuleSettingsPage } from '../features/settings/RuleSettingsPage';
+import { UsersPage } from '../features/users/UsersPage';
+import { QuarantinePage } from '../features/quarantine/QuarantinePage';
+import { NeedsReassignmentPage } from '../features/workorders/NeedsReassignmentPage';
 
 export const RETURN_PATH_KEY = 'mfop.returnPath';
 
@@ -99,11 +102,14 @@ export function App({ config }: { config: RuntimeConfig }) {
                   <Route path="/faults" element={<FaultListPage />} />
                   <Route path="/faults/:id" element={<FaultDetailPage />} />
                   <Route path="/work-orders" element={<WorkOrderListPage />} />
+                  <Route path="/work-orders/needs-reassignment" element={<NeedsReassignmentPage />} />
                   <Route path="/work-orders/:id" element={<WorkOrderDetailPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/audit" element={<AuditSearchPage />} />
                   <Route path="/stock" element={<StockBalancesPage />} />
                   <Route path="/settings/rules" element={<RuleSettingsPage />} />
+                  <Route path="/users" element={<UsersPage />} />
+                  <Route path="/sync/quarantine" element={<QuarantinePage />} />
                   <Route path="*" element={<p>{t('common.notFound')}</p>} />
                 </Routes>
               </Layout>

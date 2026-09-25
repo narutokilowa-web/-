@@ -74,6 +74,12 @@ class LocalDb {
         bytes BLOB
       );
     ''');
+    // M4: each command records the offline grant, boot and monotonic clock it was made under, and the work-order version
+    // the technician saw (added to databases created by earlier versions).
+    final columns = db.select('PRAGMA table_info(outbox)').map((r) => r['name'] as String).toSet();
+    for (final (name, type) in [('grant_id', 'TEXT'), ('elapsed_ms', 'INTEGER'), ('boot_id', 'TEXT'), ('base_version', 'INTEGER')]) {
+      if (!columns.contains(name)) db.execute('ALTER TABLE outbox ADD COLUMN $name $type');
+    }
   }
 
   String? getValue(String key) {
