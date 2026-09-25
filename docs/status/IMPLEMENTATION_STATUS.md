@@ -7,7 +7,7 @@
 | M2 — Android scan + faults + work-order creation | ✅ **approved by the owner** | 2026-09-25 |
 | M3 — Field execution + review + dashboard → DEMO 1 | ✅ **approved by the owner** (APK also installed on a real phone) | 2026-09-25 |
 | M4 — Offline and BYOD hardening | ✅ **approved by the owner** (real-phone checks: owner, before a real field pilot) | 2026-09-25 |
-| M5 — Inventory completion (material accountability) | ✅ **implemented and tested locally; CI pending on the M5 commit; awaiting owner approval; M6 not started** | 2026-09-25 |
+| M5 — Inventory completion (material accountability) | ✅ **CI green on all 6 jobs (incl. Android emulator); awaiting owner approval; M6 not started** | 2026-09-25 |
 
 Milestone definitions: `docs/lean-pilot/11-milestones-and-dod.md`.
 
@@ -91,7 +91,7 @@ flag; offboarding return as SR4/S12; YAML scope value `m5`; default `min_app_ver
 | 2 | Flags raised by M5 are shown on the documents; the auditor's review/decide workflow is M6. Material left with a disabled user stays visible (reconciliation finding + flags) until then. | By plan |
 | 3 | The dispute photo is supported by the API (owned by the issue); the phone sends the reason only. | Documented |
 | 4 | Real-phone checks M5 steps 20–24 (with M4 steps 13–19) are required before a real municipal field pilot. | Owner checklist |
-| 5 | CI emulator job: on a85304d (docs-only) it failed twice on runner infrastructure (emulator service crash; runner shutdown), no test assertion reached. M5 run 36171956916 (783f89f, 5/6 green) installed a prebuilt APK right after boot and sign-in stalled for 40 s with no error. Run 36175489981 (6e9a27d, 5/6 green) built the app inside the emulator step as in M4: attempt 1 lost the runner and attempt 2 lost the emulator during the 17-minute Gradle build. The job now builds the test app before the emulator boots (Gradle never runs next to the emulator), lets the booted system settle for 90 s, then runs the same `flutter drive` command (incremental build, normal install). The test's Keycloak login helper has 30 s request timeouts, sign-in may take up to 90 s, and a wait timeout saves a `timeout` screenshot. | Verified by the next M5 CI run |
+| 5 | CI emulator job: on a85304d (docs-only) it failed twice on runner infrastructure (emulator service crash; runner shutdown), no test assertion reached. M5 run 36171956916 (783f89f, 5/6 green) installed a prebuilt APK right after boot and sign-in stalled for 40 s with no error. Run 36175489981 (6e9a27d, 5/6 green) built the app inside the emulator step as in M4: attempt 1 lost the runner and attempt 2 lost the emulator during the 17-minute Gradle build. The job now builds the test app before the emulator boots (Gradle never runs next to the emulator), lets the booted system settle for 90 s, then runs the same `flutter drive` command (incremental build, normal install). The test's Keycloak login helper has 30 s request timeouts, sign-in may take up to 90 s, and a wait timeout saves a `timeout` screenshot. | Fixed in `a6b94f2`; green in run 36181297126 |
 
 ### Decisions needed from the owner
 
@@ -101,7 +101,22 @@ flag; offboarding return as SR4/S12; YAML scope value `m5`; default `min_app_ver
 
 ### CI results
 
-Pending on the M5 commit.
+Final run [36181297126](https://github.com/narutokilowa-web/-/actions/runs/36181297126) on head `a6b94f2`: **success, all 6 jobs** (Android emulator finished 20:12 UTC).
+
+| Job | Result |
+|---|---|
+| Secret scan (gitleaks CLI, full history) | ✅ |
+| Web (lint, typecheck, 38 unit tests incl. the M5 warehouse pages, build, `npm audit`) | ✅ |
+| Backend (build `-warnaserror`, 393 tests: spec files incl. the stock-issue / stock-return / core-return / stock-ledger v2 tables, domain, architecture, API on Testcontainers PostGIS incl. the 10 M5 accountability tests — shortages, duplicate movements, invalid returns, serial mismatch, offboarding return, reconciliation — and the **DEMO 1 golden path** with a balanced reconciliation; vulnerable-package check) | ✅ |
+| Mobile (analyze, 42 tests, **debug APK 0.5.0** → artifact `mfop-field-debug-apk`) | ✅ |
+| E2E (Compose on a clean runner with fresh secrets + `make seed`: role sign-ins, M1, M2, M3 / DEMO 1, M4 and **M5** web flows — warehouse issue, phone acknowledgment, unused return received, failed part received with the serial check, reconciliation without findings, serial history, supervisor reaches the failed-parts queue — then `make verify-audit` OK incl. **stock balances, in-transit documents and core bin**) | ✅ |
+| **Android emulator** (Android 14, real app 0.5.0, stack via `adb reverse`, after `make seed`): sign-in → Keystore device key → approval → PIN → offline grant → **Materials tab: issue D-0004 acknowledged with its serial** → My tasks → label QR → field work with material from custody → **failed part declared (WITH_PART, serial OLD-ANDROID-1, photo)** before submit → supervisor approves → `CLOSED` with a seal → **unused fuse returned from the Materials tab** → warehouse receives the return and the failed part → **reconciliation balanced** → revocation deletes only the app's own data and key (test 61 s) | ✅ (14 screenshots: artifact `android-e2e-screenshots`) |
+
+**Issues found by CI on the way (all in the emulator job's layout; app and M5 code unchanged):**
+
+1. Run [36171956916](https://github.com/narutokilowa-web/-/actions/runs/36171956916) on `783f89f` (5/6 green): the prebuilt test APK was installed about a minute after boot and sign-in stalled for 40 s without an error. `6e9a27d` went back to the M4 invocation and added a `timeout` screenshot.
+2. Run [36175489981](https://github.com/narutokilowa-web/-/actions/runs/36175489981) on `6e9a27d` (5/6 green): Gradle inside the emulator step starved the runner — attempt 1 lost the runner, attempt 2 lost the emulator during a 17-minute build; no test body ran.
+3. Fix `a6b94f2`: the test app is built before the emulator boots, the booted system settles for 90 s, then the same `flutter drive` command runs an incremental build (107 s), installs (3 s) and runs the test. The test's Keycloak login helper times out stuck requests (30 s) and sign-in may take up to 90 s.
 
 ---
 
