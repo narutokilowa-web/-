@@ -87,7 +87,7 @@ All are recorded in ADR-0008 (2026-09-25 entries). In short: the before-photos g
 
 ### CI results
 
-CI_RESULTS_PLACEHOLDER
+Pending: the CI run on the final head is in progress; results are added here when it completes.
 
 ---
 
