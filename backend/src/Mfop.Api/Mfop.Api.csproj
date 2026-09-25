@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <UserSecretsId>mfop-api-dev</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mfop.Kernel\Mfop.Kernel.csproj" />
+    <ProjectReference Include="..\Mfop.Infrastructure\Mfop.Infrastructure.csproj" />
+    <ProjectReference Include="..\Mfop.Http\Mfop.Http.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Access\Mfop.Access.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Assets\Mfop.Assets.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Faults\Mfop.Faults.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.WorkOrders\Mfop.WorkOrders.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Evidence\Mfop.Evidence.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Inventory\Mfop.Inventory.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Audit\Mfop.Audit.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Rules\Mfop.Rules.csproj" />
+    <ProjectReference Include="..\Modules\Mfop.Sync\Mfop.Sync.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,99 @@
+# Machine-readable permission matrix — DEMO 1 subset of docs/lean-pilot/03-roles-permissions.md
+# Loaded by tests (M0: consistency; M1+: generated authorization tests per endpoint).
+# Changing access rules means changing this file in the same PR.
+
+version: 1
+
+roles:
+  TECHNICIAN: {name_ar: فني ميداني, name_en: Field Technician}
+  INSPECTOR:  {name_ar: مفتش ميداني, name_en: Field Inspector}
+  SUPERVISOR: {name_ar: مشرف, name_en: Supervisor}
+  REGISTRAR:  {name_ar: مسجّل أصول, name_en: Asset Registrar}
+  APPROVER:   {name_ar: معتمد أصول, name_en: Asset Approver}
+  WAREHOUSE:  {name_ar: أمين مخزن, name_en: Warehouse Officer}
+  AUDITOR:    {name_ar: مدقق, name_en: Auditor}
+  ADMIN:      {name_ar: مدير النظام, name_en: System Administrator}
+
+# Static separation of duties: the same user may not hold both roles.
+static_sod:
+  - [REGISTRAR, APPROVER]
+  - [WAREHOUSE, TECHNICIAN]
+  - [AUDITOR, TECHNICIAN]
+  - [AUDITOR, INSPECTOR]
+  - [AUDITOR, SUPERVISOR]
+  - [AUDITOR, REGISTRAR]
+  - [AUDITOR, APPROVER]
+  - [AUDITOR, WAREHOUSE]
+  - [AUDITOR, ADMIN]
+  - [ADMIN, TECHNICIAN]
+  - [ADMIN, INSPECTOR]
+  - [ADMIN, SUPERVISOR]
+  - [ADMIN, REGISTRAR]
+  - [ADMIN, APPROVER]
+  - [ADMIN, WAREHOUSE]
+
+# Record-level policies referenced below (implemented in the backend authorization layer).
+policies:
+  approver_not_registrar: The approver of a registration is not its registrar.
+  reviewer_not_executor: The reviewer of a work order is not its assignee or any evidence author.
+  issuer_not_receiver: The warehouse officer issuing stock is not the receiving technician.
+  assignee_only: Only the current assignee of the work order may act.
+  own_records_only: Only records the actor created or is assigned to.
+  no_self_grant: A user cannot grant or change their own roles (nor disable or enable their own account).
+  resolver_not_author: A quarantined command is decided by someone other than the user who made it.
+  receiver_not_returner: The warehouse officer who receives or rejects returned material (unused or failed part) is not the technician who returns it.
+  waiver_not_technician: A core return is waived by a supervisor other than the technician concerned (03 note 8); always an INFO flag.
+
+# action -> allowed roles (+ policies). milestone = when the endpoint first exists.
+actions:
+  me.read:                    {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR, ADMIN], milestone: M0}
+
+  asset.read:                 {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M1}
+  asset.history.read:         {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M1}
+  tag.resolve:                {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M1}
+  registration.draft:         {roles: [REGISTRAR], milestone: M1}
+  registration.submit:        {roles: [REGISTRAR], policies: [own_records_only], milestone: M1}
+  registration.discard:       {roles: [REGISTRAR], policies: [own_records_only], milestone: M1}
+  registration.decide:        {roles: [APPROVER], policies: [approver_not_registrar], milestone: M1}   # approve / return / reject
+  registration.read:          {roles: [REGISTRAR, APPROVER, AUDITOR], milestone: M1}                  # REGISTRAR sees own; APPROVER/AUDITOR see all
+  audit.read:                 {roles: [AUDITOR], milestone: M3}           # audit search screen; asset history uses asset.history.read (M1)
+
+  device.register:            {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # register + read own device status
+  device.read:                {roles: [ADMIN, SUPERVISOR], milestone: M2}   # Devices page
+  device.approve:             {roles: [ADMIN, SUPERVISOR], milestone: M2}   # approve / reject
+  device.revoke:              {roles: [ADMIN, SUPERVISOR], milestone: M2}
+  sync.push:                  {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # transport only: every command inside is authorized by its own action
+  sync.pull:                  {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M2}   # transport only: returns only what the actor may see
+  sync.grant:                 {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, WAREHOUSE, AUDITOR], milestone: M4}   # offline grant for the caller's own ACTIVE device (05 §5.5)
+  sync.quarantine.read:       {roles: [SUPERVISOR, AUDITOR], milestone: M4}   # commands held because their time is not provably inside the grant
+  sync.quarantine.resolve:    {roles: [SUPERVISOR], policies: [resolver_not_author], milestone: M4}   # apply or discard, with a reason (03: "resolve sync quarantine")
+  fault.report:               {roles: [SUPERVISOR], milestone: M2}        # mobile reporting by TECHNICIAN/INSPECTOR comes after DEMO 1
+  fault.dismiss:              {roles: [SUPERVISOR], milestone: M2}
+  fault.read:                 {roles: [SUPERVISOR, AUDITOR], milestone: M2}
+  workorder.create:           {roles: [SUPERVISOR], milestone: M2}
+  workorder.assign:           {roles: [SUPERVISOR], milestone: M2}        # assign + reassign
+  workorder.cancel:           {roles: [SUPERVISOR], milestone: M2}
+  workorder.read_assigned:    {roles: [TECHNICIAN], policies: [assignee_only], milestone: M2}
+  workorder.read:             {roles: [SUPERVISOR, AUDITOR], milestone: M2}
+
+  workorder.execute:          {roles: [TECHNICIAN], policies: [assignee_only], milestone: M3}   # arrive, evidence, diagnosis, start, checklist, submit, resubmit
+  material.consume:           {roles: [TECHNICIAN], policies: [assignee_only], milestone: M3}
+  workorder.review:           {roles: [SUPERVISOR], policies: [reviewer_not_executor], milestone: M3}   # approve / return
+  evidence.preview:           {roles: [SUPERVISOR, APPROVER, AUDITOR, TECHNICIAN], policies: [own_records_only], milestone: M3}
+  evidence.original:          {roles: [AUDITOR], milestone: M3}
+  stock.receipt:              {roles: [WAREHOUSE], milestone: M3}
+  stock.issue:                {roles: [WAREHOUSE], policies: [issuer_not_receiver], milestone: M3}   # M5: issue to IN_TRANSIT, cancel an unacknowledged/disputed issue
+  stock.balances.read:        {roles: [WAREHOUSE, SUPERVISOR, AUDITOR], milestone: M3}   # M5: also issues, returns, core returns, reconciliation, history
+  stock.custody.read_own:     {roles: [TECHNICIAN], milestone: M3}
+  stock.issue.respond:        {roles: [TECHNICIAN], policies: [own_records_only], milestone: M5}   # acknowledge / dispute an issue addressed to me (phone)
+  stock.return.declare:       {roles: [TECHNICIAN], policies: [own_records_only], milestone: M5}   # declare unused material returned from my custody (phone)
+  core_return.declare:        {roles: [TECHNICIAN], policies: [assignee_only], milestone: M5}      # declare the failed part of my consumption (phone)
+  stock.return.receive:       {roles: [WAREHOUSE], policies: [receiver_not_returner], milestone: M5}   # receive / reject returns, receive core parts, offboarding returns
+  core_return.waive:          {roles: [SUPERVISOR], policies: [waiver_not_technician], milestone: M5}
+  dashboard.read:             {roles: [SUPERVISOR, AUDITOR], milestone: M3}
+  recommendation.read:        {roles: [TECHNICIAN, INSPECTOR, SUPERVISOR, REGISTRAR, APPROVER, AUDITOR], milestone: M3}
+  policy.settings.change:     {roles: [ADMIN], milestone: M3}             # includes rule_settings (repeated-failure threshold/window)
+
+  user.manage:                {roles: [ADMIN], policies: [no_self_grant], milestone: M4}   # M1 only provisions/links users on first login; management UI comes with offboarding (M4)
+
+# Nobody may delete operational or audit records. There is no action for it.

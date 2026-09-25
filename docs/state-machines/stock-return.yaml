@@ -1,0 +1,18 @@
+machine: StockReturn
+scope: m5
+spec_ref: docs/lean-pilot/04-state-machines.md#410-stock-return-unused-material
+# SR4 (M5, offboarding): a disabled technician cannot act, so the warehouse records what was physically handed back directly
+# from the custody (no free adjustment: only what is in that custody; the rest stays there and is flagged when final).
+states: [DECLARED, RECEIVED, REJECTED]
+initial: DECLARED
+terminal: [RECEIVED, REJECTED]
+transitions:
+  - {id: SR1, from: [_start], command: DeclareStockReturn, to: DECLARED, actor: TECHNICIAN,
+     policies: [own_records_only], requires: [custody_balance_sufficient, serials_in_custody], effects: [movement_return_declare_custody_to_in_transit]}
+  - {id: SR2, from: [DECLARED], command: ReceiveStockReturn, to: RECEIVED, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [serials_matched], effects: [movement_return_receive_in_transit_to_warehouse]}
+  - {id: SR3, from: [DECLARED], command: RejectStockReturn, to: REJECTED, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [reason], effects: [movement_reversal_in_transit_to_custody, flag_warning_stock_return_rejected]}
+  - {id: SR4, from: [_start], command: ReceiveOffboardingReturn, to: RECEIVED, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [user_disabled, note, custody_balance_sufficient, serials_in_custody],
+     effects: [movement_return_receive_custody_to_warehouse, flag_info_offboarding_return_recorded, flag_warning_custody_not_returned_if_final]}

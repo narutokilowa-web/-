@@ -1,0 +1,13 @@
+machine: User
+scope: m4
+spec_ref: docs/lean-pilot/04-state-machines.md#42-user
+states: [ACTIVE, DISABLED]
+initial: ACTIVE
+terminal: []
+transitions:
+  - {id: U0, from: [_start], command: ProvisionUser, to: ACTIVE, actor: system, effects: [linked_to_idp_subject_on_first_login]}
+  - {id: U1, from: [ACTIVE], command: DisableUser, to: DISABLED, actor: [ADMIN], requires: [reason, not_self],
+     effects: [devices_revoked_or_rejected, offline_grants_revoked, idp_disable_and_logout_all, open_work_orders_flagged_needs_reassignment,
+               custody_to_reconcile_flag]}
+  - {id: U2, from: [DISABLED], command: EnableUser, to: ACTIVE, actor: [ADMIN], requires: [reason, not_self],
+     effects: [idp_enable, devices_stay_revoked]}

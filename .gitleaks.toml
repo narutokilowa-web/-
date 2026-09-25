@@ -1,0 +1,12 @@
+# gitleaks configuration: default rules + allowlist for documented placeholders.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders, not secrets"
+regexes = [
+  '''change-me(-12chars)?''',
+  '''\$\{MFOP_DEV_USER_PASSWORD\}''',
+  '''\$\{MFOP_KEYCLOAK_BACKEND_SECRET\}''',
+  '''test-(owner|app|ro|kc|superuser)-pw''',
+]

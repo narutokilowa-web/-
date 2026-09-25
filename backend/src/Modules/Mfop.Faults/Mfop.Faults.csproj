@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\Mfop.Kernel\Mfop.Kernel.csproj" />
+    <ProjectReference Include="..\..\Mfop.Infrastructure\Mfop.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Mfop.Http\Mfop.Http.csproj" />
+    <ProjectReference Include="..\Mfop.Access\Mfop.Access.csproj" />
+    <ProjectReference Include="..\Mfop.Assets\Mfop.Assets.csproj" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="EFCore.NamingConventions" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,77 @@
+{
+  "_comment": "DEV ONLY. Synthetic demo users. Ids must match deploy/keycloak/realm-mfop.json (checked by SpecFiles tests). Passwords are NOT here; they come from MFOP_DEV_USER_PASSWORD in .env.",
+  "users": [
+    {
+      "id": "0197c000-0000-7000-8000-000000000001",
+      "username": "registrar1",
+      "displayName": "مسجّل تجريبي",
+      "roles": [
+        "REGISTRAR"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000002",
+      "username": "approver1",
+      "displayName": "معتمد تجريبي",
+      "roles": [
+        "APPROVER"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000003",
+      "username": "supervisor1",
+      "displayName": "مشرف تجريبي",
+      "roles": [
+        "SUPERVISOR"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000004",
+      "username": "tech1",
+      "displayName": "فني تجريبي",
+      "roles": [
+        "TECHNICIAN"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000005",
+      "username": "warehouse1",
+      "displayName": "أمين مخزن تجريبي",
+      "roles": [
+        "WAREHOUSE"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000006",
+      "username": "auditor1",
+      "displayName": "مدقق تجريبي",
+      "roles": [
+        "AUDITOR"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000007",
+      "username": "admin1",
+      "displayName": "مدير نظام تجريبي",
+      "roles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000008",
+      "username": "inspector1",
+      "displayName": "مفتش تجريبي",
+      "roles": [
+        "INSPECTOR"
+      ]
+    },
+    {
+      "id": "0197c000-0000-7000-8000-000000000009",
+      "username": "tech2",
+      "displayName": "فني تجريبي ٢",
+      "roles": [
+        "TECHNICIAN"
+      ]
+    }
+  ]
+}

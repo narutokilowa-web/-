@@ -1,0 +1,29 @@
+machine: CoreReturn
+scope: m5
+spec_ref: docs/lean-pilot/04-state-machines.md#411-core-return-failed-part
+# The phone sends one command, DeclareCoreReturn(outcome); the warehouse sends ReceiveCorePart(outcome). A (state, command)
+# pair must lead to exactly one state, so the table has one row per outcome:
+#   DeclareCoreReturn(WITH_PART)      → DeclareCoreReturnWithPart
+#   DeclareCoreReturn(UNRECOVERABLE)  → DeclareCoreReturnUnrecoverable
+#   ReceiveCorePart(RECEIVED)         → ReceiveCorePart
+#   ReceiveCorePart(NOT_PRESENTED)    → RecordCorePartNotPresented
+# Serial check at receipt: the presented serial must equal the known installed serial of the light (else the declared one);
+# a mismatch still records the receipt and raises CRITICAL CORE_SERIAL_MISMATCH.
+# Timer (policy core_return_overdue_days, default 7): DECLARED_WITH_PART not received → WARNING CORE_RETURN_OVERDUE.
+states: [OPEN, DECLARED_WITH_PART, DECLARED_UNRECOVERABLE, RECEIVED, WAIVED]
+initial: OPEN
+terminal: [RECEIVED, WAIVED]
+transitions:
+  - {id: CR1, from: [_start], command: ConsumeMaterial, to: OPEN, actor: assignee,
+     requires: [item_core_return_required], effects: [expected_serial_from_installed_unit]}
+  - {id: CR2, from: [OPEN], command: DeclareCoreReturnWithPart, to: DECLARED_WITH_PART, actor: assignee,
+     requires: [photo], effects: [historical_installed_serial_if_unknown]}
+  - {id: CR3, from: [OPEN], command: DeclareCoreReturnUnrecoverable, to: DECLARED_UNRECOVERABLE, actor: assignee,
+     requires: [reason, photo]}
+  - {id: CR4, from: [DECLARED_WITH_PART], command: ReceiveCorePart, to: RECEIVED, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [serial_checked],
+     effects: [movement_core_receive_field_to_core_bin, flag_critical_core_serial_mismatch_if_different]}
+  - {id: CR5, from: [DECLARED_WITH_PART], command: RecordCorePartNotPresented, to: DECLARED_UNRECOVERABLE, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [reason], effects: [flag_warning_core_part_not_presented]}
+  - {id: CR6, from: [DECLARED_UNRECOVERABLE], command: WaiveCoreReturn, to: WAIVED, actor: SUPERVISOR,
+     policies: [waiver_not_technician], requires: [reason], effects: [flag_info_core_return_waived]}

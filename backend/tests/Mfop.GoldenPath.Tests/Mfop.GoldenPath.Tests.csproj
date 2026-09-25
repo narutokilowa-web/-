@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <ProjectReference Include="..\..\src\Mfop.Api\Mfop.Api.csproj" />
+    <ProjectReference Include="..\..\src\Mfop.Migrator\Mfop.Migrator.csproj" />
+    <ProjectReference Include="..\..\..\tools\audit-verify\Mfop.AuditVerify.csproj" />
+  </ItemGroup>
+  <!-- The same real-database fixture, in-process API host and phone helpers as the API tests. -->
+  <ItemGroup>
+    <Compile Include="..\Mfop.Api.Tests\DatabaseFixture.cs" Link="Shared\DatabaseFixture.cs" />
+    <Compile Include="..\Mfop.Api.Tests\TestApp.cs" Link="Shared\TestApp.cs" />
+    <Compile Include="..\Mfop.Api.Tests\ApiHelpers.cs" Link="Shared\ApiHelpers.cs" />
+    <Compile Include="..\Mfop.Api.Tests\FieldFlow.cs" Link="Shared\FieldFlow.cs" />
+    <Compile Include="..\Mfop.Api.Tests\TestPhone.cs" Link="Shared\TestPhone.cs" />
+    <Compile Include="..\Mfop.Api.Tests\RepoPaths.cs" Link="Shared\RepoPaths.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

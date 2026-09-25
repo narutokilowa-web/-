@@ -1,0 +1,7 @@
+{
+  "oidcAuthority": "http://localhost:8080/realms/mfop",
+  "oidcClientId": "mfop-web",
+  "environment": "DEV",
+  "organizationNameAr": "بلدية تجريبية",
+  "storageMode": "local"
+}

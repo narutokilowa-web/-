@@ -1,0 +1,36 @@
+machine: StockLedger
+scope: m5
+spec_ref: docs/lean-pilot/07-inventory.md
+# Not a per-entity state machine: the allowed movement types of the append-only ledger.
+# A "state" here is a stock location kind; each transition is one movement type.
+# DEMO 1 had a one-step ISSUE to CUSTODY. M5 (04 §4.9–4.11): issue goes through IN_TRANSIT until the technician
+# acknowledges; unused returns go back through IN_TRANSIT; failed parts enter CORE_BIN. FIELD is the virtual source of parts
+# removed from lights (they were never in stock), so a core receipt is a balanced movement like a supplier receipt.
+# Corrections are REVERSAL movements of the command that owns the flow; there is no free adjustment.
+states: [SUPPLIER, WAREHOUSE, IN_TRANSIT, CUSTODY, CONSUMED, FIELD, CORE_BIN]
+initial: SUPPLIER
+terminal: [CONSUMED, CORE_BIN]
+transitions:
+  - {id: S0, from: [_start], command: DefineSupplierLocation, to: SUPPLIER, actor: system}
+  - {id: S1, from: [SUPPLIER], command: RecordReceipt, to: WAREHOUSE, actor: WAREHOUSE,
+     requires: [serials_for_tracked_items], effects: [movement_receipt]}
+  - {id: S2, from: [WAREHOUSE], command: IssueStock, to: IN_TRANSIT, actor: WAREHOUSE,
+     requires: [warehouse_balance_sufficient, serials_in_warehouse], policies: [issuer_not_receiver], effects: [movement_issue, stock_issue_issued]}
+  - {id: S3, from: [CUSTODY], command: ConsumeMaterial, to: CONSUMED, actor: assignee,
+     requires: [work_order_in_progress_or_returned],
+     effects: [movement_consume, linked_to_work_order_and_asset, flag_if_exceeds_custody, serial_installed_on_asset, core_return_opened_if_required]}
+  - {id: S4, from: [WAREHOUSE], command: ReverseReceipt, to: SUPPLIER, actor: WAREHOUSE, requires: [reversal_of, reason], effects: [movement_reversal]}
+  - {id: S5, from: [IN_TRANSIT], command: CancelStockIssue, to: WAREHOUSE, actor: WAREHOUSE, requires: [reversal_of, reason], effects: [movement_reversal]}
+  - {id: S6, from: [IN_TRANSIT], command: AcknowledgeStockIssue, to: CUSTODY, actor: TECHNICIAN,
+     policies: [own_records_only], requires: [serials_confirmed], effects: [movement_acknowledge]}
+  - {id: S7, from: [CUSTODY], command: DeclareStockReturn, to: IN_TRANSIT, actor: TECHNICIAN,
+     policies: [own_records_only], requires: [custody_balance_sufficient, serials_in_custody], effects: [movement_return_declare]}
+  - {id: S8, from: [IN_TRANSIT], command: ReceiveStockReturn, to: WAREHOUSE, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [serials_matched], effects: [movement_return_receive]}
+  - {id: S9, from: [IN_TRANSIT], command: RejectStockReturn, to: CUSTODY, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [reversal_of, reason], effects: [movement_reversal, flag_warning]}
+  - {id: S10, from: [_start], command: DefineFieldLocation, to: FIELD, actor: system}
+  - {id: S11, from: [FIELD], command: ReceiveCorePart, to: CORE_BIN, actor: WAREHOUSE,
+     policies: [receiver_not_returner], requires: [serial_checked], effects: [movement_core_receive]}
+  - {id: S12, from: [CUSTODY], command: ReceiveOffboardingReturn, to: WAREHOUSE, actor: WAREHOUSE,
+     requires: [user_disabled, custody_balance_sufficient, serials_in_custody, note], effects: [movement_return_receive, flag_info]}

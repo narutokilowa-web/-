@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>audit-verify</AssemblyName>
+    <RootNamespace>Mfop.AuditVerify</RootNamespace>
+  </PropertyGroup>
+  <!-- Deliberately does NOT reference the API or any module: the verifier must not trust the application (ADR-0007).
+       Hashing, canonical JSON and snapshot rendering are re-implemented here; a backend test checks both agree. -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>
